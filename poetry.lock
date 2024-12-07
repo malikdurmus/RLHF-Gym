@@ -1265,7 +1265,7 @@ files = [
 name = "glfw"
 version = "1.12.0"
 description = "A ctypes-based wrapper for GLFW3."
-optional = true
+optional = false
 python-versions = "*"
 files = [
     {file = "glfw-1.12.0-py2.py27.py3.py30.py31.py32.py33.py34.py35.py36.py37.py38-none-macosx_10_6_intel.whl", hash = "sha256:88bd1cd2ace036d275e9af8312993068d94b3ac19248421eedc35a4baf53bb8c"},
@@ -2697,7 +2697,7 @@ files = [
 name = "mujoco"
 version = "2.3.3"
 description = "MuJoCo Physics Simulator"
-optional = true
+optional = false
 python-versions = ">=3.7"
 files = [
     {file = "mujoco-2.3.3-2-cp310-cp310-macosx_10_12_x86_64.whl", hash = "sha256:7b95a0b7ae8bb9e36d04ba475a950025791c43087845235bb92bd2dd1787589a"},
@@ -3042,9 +3042,9 @@ files = [
 [package.dependencies]
 numpy = [
     {version = ">=1.21.0", markers = "python_version == \"3.9\" and platform_system == \"Darwin\" and platform_machine == \"arm64\""},
+    {version = ">=1.19.3", markers = "platform_system == \"Linux\" and platform_machine == \"aarch64\" and python_version >= \"3.8\" and python_version < \"3.10\" or python_version > \"3.9\" and python_version < \"3.10\" or python_version >= \"3.9\" and platform_system != \"Darwin\" and python_version < \"3.10\" or python_version >= \"3.9\" and platform_machine != \"arm64\" and python_version < \"3.10\""},
     {version = ">=1.21.4", markers = "python_version >= \"3.10\" and platform_system == \"Darwin\""},
     {version = ">=1.21.2", markers = "platform_system != \"Darwin\" and python_version >= \"3.10\""},
-    {version = ">=1.19.3", markers = "platform_system == \"Linux\" and platform_machine == \"aarch64\" and python_version >= \"3.8\" and python_version < \"3.10\" or python_version > \"3.9\" and python_version < \"3.10\" or python_version >= \"3.9\" and platform_system != \"Darwin\" and python_version < \"3.10\" or python_version >= \"3.9\" and platform_machine != \"arm64\" and python_version < \"3.10\""},
 ]
 
 [[package]]
@@ -3696,7 +3696,7 @@ extra = ["pygments (>=2.12)"]
 name = "pyopengl"
 version = "3.1.7"
 description = "Standard OpenGL bindings for Python"
-optional = true
+optional = false
 python-versions = "*"
 files = [
     {file = "PyOpenGL-3.1.7-py3-none-any.whl", hash = "sha256:a6ab19cf290df6101aaf7470843a9c46207789855746399d0af92521a0a92b7a"},
@@ -5049,4 +5049,4 @@ qdagger-dqn-atari-jax-impalacnn = ["AutoROM", "ale-py", "flax", "jax", "jaxlib",
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.11"
-content-hash = "0f61510fa2e053b9861aa6771ea69f7f80e46dda52a35c806eca5834904bbe92"
+content-hash = "106ec79caeded703d23246e863a1794339701559302efc2ffbc23f5a2d349f7a"
