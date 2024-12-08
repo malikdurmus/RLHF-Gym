@@ -3,11 +3,16 @@ name = "sep-groupb"
 version = "0.1.0"
 readme = "README.md"
 authors = [
-    "Malik Durmus <malikdurmus2@gmail.com>"
+    "Malik Durmus <malikdurmus2@gmail.com>",
+    "Tobias Huber",
+    "Aleksander Mijatovic",
+    "Thang Long Nguyen",
+    "Martin Plank"
+
 ]
 description = "Reinforcement Learning from Human Feedback Framework"
 packages = [
-    { include = "rlhf"}
+    { include = "rlhf-backend/rlhf"}
 ]
 
 
