@@ -35,7 +35,7 @@ class Args:
     """whether to capture videos of the agent performances (check out `videos` folder)"""
 
     # Algorithm specific arguments
-    env_id: str = "Hopper-v4"
+    env_id: str = "Humanoid-v4"
     """the environment id of the task"""
     total_timesteps: int = 1000000
     """total timesteps of the experiments"""
@@ -61,14 +61,14 @@ class Args:
     """Entropy regularization coefficient."""
     autotune: bool = True
     """automatic tuning of the entropy coefficient"""
-    #test33
 
+training_period = 20 #Jede 20te Episode wird als Video gespeichert
 
 def make_env(env_id, seed, idx, capture_video, run_name):
     def thunk():
         if capture_video and idx == 0:
             env = gym.make(env_id, render_mode="rgb_array")
-            env = gym.wrappers.RecordVideo(env, f"videos/{run_name}")
+            env = gym.experimental.wrappers.RecordVideoV0(env, f"videos/{run_name}", name_prefix="eval", episode_trigger=lambda x: x % training_period == 0)
         else:
             env = gym.make(env_id)
         env = gym.wrappers.RecordEpisodeStatistics(env)
@@ -76,7 +76,7 @@ def make_env(env_id, seed, idx, capture_video, run_name):
         return env
 
     return thunk
-
+#Fürs nächste mal versuchen zwei videos(pairs) für jede episode zu erstellen
 
 # ALGO LOGIC: initialize agent here:
 class SoftQNetwork(nn.Module):
