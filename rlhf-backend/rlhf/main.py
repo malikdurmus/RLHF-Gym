@@ -23,8 +23,7 @@ poetry run pip install "stable_baselines3==2.0.0a1"
 """
         )
 
-
-""" --- SETUP --- """
+# --- SETUP ---
 
     # Liest Argumente ein
     args = tyro.cli(Args)
@@ -105,7 +104,7 @@ poetry run pip install "stable_baselines3==2.0.0a1"
     start_time = time.time()
 
 
-""" --- AKTION --- """
+# --- AKTION ---
 
     obs, _ = envs.reset(seed=args.seed) # Zurücksetzen auf Ursprungsumgebung
     for global_step in range(args.total_timesteps):
@@ -139,7 +138,7 @@ poetry run pip install "stable_baselines3==2.0.0a1"
         obs = next_obs
 
 
-""" --- TRAINING --- """
+# --- TRAINING ---
 
         if global_step > args.learning_starts:
             data = rb.sample(args.batch_size) # Auswahl von Erfahrungen (s,a,r,s') aus Replay-Buffer
