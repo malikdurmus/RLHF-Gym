@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef} from 'react';
 
 function VideoPlayer() {
     const [videoUrl, setVideoUrl] = useState('');
+    const videoRef = useRef<HTMLVideoElement>(null);
 
     useEffect(() => {
         setVideoUrl('http://localhost:5000/video');
@@ -10,17 +11,32 @@ function VideoPlayer() {
         // is smaller than the data buffer
     }, []);
 
+
+    const resetVideo = () => {
+        if (videoRef.current) {
+            videoRef.current.currentTime = 0;
+            videoRef.current.pause();
+        }
+    }
+
     return (
         <div>
             {videoUrl ? (
-                <video width="360" height="360" controls>
-                    <source src={videoUrl} type="video/mp4" />
-                </video>
-            ) : (
-                <p>Loading video...</p>
-            )}
+                <div>
+                    <video ref= {videoRef} width="360" height="360" controls>
+                        <source src={videoUrl} type="video/mp4" />
+                    </video>
+                        <div>
+                            <button onClick={resetVideo}>Reset Video</button>
+                        </div>
+                    </div>
+                ) : (
+                    <p>Loading video...</p>
+                )}
         </div>
     );
 }
 
 export default VideoPlayer;
+
+

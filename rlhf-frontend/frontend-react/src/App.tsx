@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react';
 import './App.css';
 import VideoPlayer from "./VideoPlayer.tsx";
 
-
 function App() {
 
     interface ApiResponse {
-    members: [];
+        members: string[];
 }
-    const [data, setData] = useState([]);
+    const [data, setData] = useState<string[]>([]);
+    const [DarkMode, setDarkMode] = useState<boolean>(false);
 
     useEffect(() => {
         // Fetch members data after the component mounts
@@ -28,6 +28,15 @@ function App() {
             });
     }, []); //update the empty dependency array
 
+    useEffect(() => {
+        document.body.className = DarkMode ? 'dark-mode' : '';
+    }, [DarkMode]);
+
+    const handleDarkMode = () => {
+        setDarkMode(prevMode => !prevMode);
+    };
+
+
     const handleClick = () => (
         //send preference
         //get the new video
@@ -46,6 +55,9 @@ function App() {
             <VideoPlayer/>
             <button onClick={handleClick}> Button1</button>
             <button onClick={handleClick}> Button2</button>
+            <button onClick={handleDarkMode}>
+                {DarkMode ? 'Light Mode' : 'Dark Mode'}
+            </button>
         </div>
     );
 }
