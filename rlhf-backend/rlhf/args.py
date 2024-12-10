@@ -1,10 +1,10 @@
 import os
 from dataclasses import dataclass
 
-# Übergebene Argumente
+# Passed arguments
 @dataclass
 class Args:
-    exp_name: str = os.path.basename(__file__)[: -len(".py")]
+    exp_name: str = "rlhf"
     """the name of this experiment"""
     seed: int = 1
     """seed of the experiment"""
