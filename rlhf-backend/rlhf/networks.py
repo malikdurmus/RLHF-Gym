@@ -2,39 +2,41 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.optim as optim
+
 
 # Params Actor
 LOG_STD_MAX = 2
 LOG_STD_MIN = -5
 
-# Q-Netzwerk
+# Q-Network
 class SoftQNetwork(nn.Module):
-    # Netzarchitektur
+    # Neural network architecture
     def __init__(self, env):
         super().__init__()
-        self.fc1 = nn.Linear(np.array(env.single_observation_space.shape).prod() + np.prod(env.single_action_space.shape), 256) # erste Schicht
-        self.fc2 = nn.Linear(256, 256) # zweite Schicht
-        self.fc3 = nn.Linear(256, 1) # dritte Schicht -> eindeutiger Wert
+        self.fc1 = nn.Linear(np.array(env.single_observation_space.shape).prod() + np.prod(env.single_action_space.shape), 256) # first layer
+        self.fc2 = nn.Linear(256, 256) # second layer
+        self.fc3 = nn.Linear(256, 1) # third layer -> unique value
 
-    # Q(s,a) -> Q-Wert
+    # Q(s,a) -> Q-value
     def forward(self, x, a):
-        x = torch.cat([x, a], 1) # Verknüpfung von Zustand und Aktion
-        x = F.relu(self.fc1(x)) # erste Schicht - ReLU
-        x = F.relu(self.fc2(x)) # zweite Schicht - ReLU
-        x = self.fc3(x) # dritte Schicht -> Q-Wert
+        x = torch.cat([x, a], 1) # Concatenate state, action
+        x = F.relu(self.fc1(x)) # first layer - ReLU
+        x = F.relu(self.fc2(x)) # second layer - ReLU
+        x = self.fc3(x) # third layer -> Q-value
         return x
 
 
 
 class Actor(nn.Module):
-    # Netzarchitektur
+    # Neural network architecture
     def __init__(self, env):
         super().__init__()
-        self.fc1 = nn.Linear(np.array(env.single_observation_space.shape).prod(), 256) # erste Schicht
-        self.fc2 = nn.Linear(256, 256) # zweite Schicht
+        self.fc1 = nn.Linear(np.array(env.single_observation_space.shape).prod(), 256) # first layer
+        self.fc2 = nn.Linear(256, 256) # second layer
 
-        self.fc_mean = nn.Linear(256, np.prod(env.single_action_space.shape)) # Mittelwert
-        self.fc_logstd = nn.Linear(256, np.prod(env.single_action_space.shape)) # log-Standardabweichung
+        self.fc_mean = nn.Linear(256, np.prod(env.single_action_space.shape)) # mean
+        self.fc_logstd = nn.Linear(256, np.prod(env.single_action_space.shape)) # log-standard deviation
 
         # Rescaling
         self.register_buffer(
@@ -44,26 +46,44 @@ class Actor(nn.Module):
             "action_bias", torch.tensor((env.action_space.high + env.action_space.low) / 2.0, dtype=torch.float32)
         )
 
-    # Umgebungszustand -> Mittelwert, log-Standardabweichung
+    # state -> mean, log-standard deviation
     def forward(self, x):
-        x = F.relu(self.fc1(x)) # erste Schicht - ReLU
-        x = F.relu(self.fc2(x)) # zweite Schicht - ReLU
-        mean = self.fc_mean(x) # Mittelwert
-        log_std = self.fc_logstd(x)                                                 # log-Standardabweichung
-        log_std = torch.tanh(log_std)                                               # Einschränkung auf [-1, 1]
-        log_std = LOG_STD_MIN + 0.5 * (LOG_STD_MAX - LOG_STD_MIN) * (log_std + 1)   # Skalierung auf [MIN, MAX]
+        x = F.relu(self.fc1(x)) # first layer - ReLU
+        x = F.relu(self.fc2(x)) # second layer - ReLU
+        mean = self.fc_mean(x) # calculate mean
+        log_std = self.fc_logstd(x)                                                 # log-standard deviation
+        log_std = torch.tanh(log_std)                                               # restrict to [-1, 1]
+        log_std = LOG_STD_MIN + 0.5 * (LOG_STD_MAX - LOG_STD_MIN) * (log_std + 1)   # scale to [MIN, MAX]
         return mean, log_std
 
-    # Umgebungszustand -> Aktion, log-Wahrscheinlichkeit, Mittelwert
+    # state -> action, log-probability, mean
     def get_action(self, x):
-        mean, log_std = self(x) # forward -> Mittelwert, log-Standardabweichung
-        std = log_std.exp() # Umwandlung in Standardabweichung
-        normal = torch.distributions.Normal(mean, std) # Normalverteilung
-        x_t = normal.rsample() # Reparametrisiertes Sampling (?)
-        y_t = torch.tanh(x_t) # Einschränkung auf [-1, 1]
-        action = y_t * self.action_scale + self.action_bias # Reskalierung auf gültigen Aktionsbereich
-        log_prob = normal.log_prob(x_t)                                     # log-Wahrscheinlichkeit
-        log_prob -= torch.log(self.action_scale * (1 - y_t.pow(2)) + 1e-6)  # Jacobian-Anpassung
-        log_prob = log_prob.sum(1, keepdim=True)                            # Gesamt-log-Wahrscheinlichkeit
-        mean = torch.tanh(mean) * self.action_scale + self.action_bias # Mittelwerte der Aktionsverteilung
+        mean, log_std = self(x) # forward -> mean, log-standard deviation
+        std = log_std.exp() # convert log-standard deviation -> standard deviation
+        normal = torch.distributions.Normal(mean, std) # Gaussian distribution
+        x_t = normal.rsample() # reparametrize Sample (?)
+        y_t = torch.tanh(x_t) # restrict to [-1, 1]
+        action = y_t * self.action_scale + self.action_bias # scale to valid scope of actions
+        log_prob = normal.log_prob(x_t)                                     # log-probabibility
+        log_prob -= torch.log(self.action_scale * (1 - y_t.pow(2)) + 1e-6)  # Jacobi
+        log_prob = log_prob.sum(1, keepdim=True)                            # sum of log-probabilities
+        mean = torch.tanh(mean) * self.action_scale + self.action_bias # calculate mean of action distribution
         return action, log_prob, mean
+
+
+def initialize_networks(envs, device, policy_lr, q_lr):
+    actor = Actor(envs).to(device)
+    # Q-Networks
+    qf1 = SoftQNetwork(envs).to(device)
+    qf2 = SoftQNetwork(envs).to(device)
+    # Sync target networks
+    qf1_target = SoftQNetwork(envs).to(device)
+    qf2_target = SoftQNetwork(envs).to(device)
+    qf1_target.load_state_dict(qf1.state_dict())
+    qf2_target.load_state_dict(qf2.state_dict())
+    # Optimizer q-function (Critic)
+    q_optimizer = optim.Adam(list(qf1.parameters()) + list(qf2.parameters()), lr=q_lr)
+    # Optimizer Actor (policy)
+    actor_optimizer = optim.Adam(list(actor.parameters()), lr=policy_lr)
+
+    return actor, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer
