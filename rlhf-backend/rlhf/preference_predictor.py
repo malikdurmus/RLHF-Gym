@@ -35,8 +35,27 @@ class PreferencePredictor:
         predicted_prob = np.exp(total_prob0) / (np.exp(total_prob0) + np.exp(total_prob1)) #probability, that the human will chose trajectory0 over trajectory1
         return predicted_prob
 
-    def compute_loss(self):
+    def compute_loss(self, sample):
+        """
+        :param sample: A list of tuples where each tuple contains a pair of trajectories and their corresponding human feedback label.
+                       The human feedback label is an indicator of which trajectory is preferred by the human.
+        :return: The average entropy loss computed across all trajectory pairs in the sample. This represents the discrepancy
+                 between the predicted probabilities and the human-provided feedback.
+        """
+        entropy_loss = 0
+        for trajectory_pair, human_feedback_label in sample:
+            predicted_prob = self.compute_predicted_probability(trajectory_pair)
+            # human feedback label to tensor conversion for processing
+            label_1 = torch.tensor(human_feedback_label, dtype=torch.float)
+            label_2 = 1 - label_1
+
+            # calculate loss
+            loss_1 = label_1 * torch.log(predicted_prob)
+            loss_2 = label_2 * torch.log(1 - predicted_prob)
 
 
-        pass
+            entropy_loss += -(loss_1 + loss_2)
+
+        return entropy_loss / len(sample) # Since we calculate the loss for a batch, and not for each trajectory pair # TODO: ask this in the 16.10.2024 meeting
+
 
