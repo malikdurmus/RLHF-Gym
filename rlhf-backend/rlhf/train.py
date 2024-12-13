@@ -6,7 +6,7 @@ import numpy as np
 
 
 def train(envs, rb, actor, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer, args, writer, device):
-    # Optionale automatische Anpassung des Entropiekoeffizienten
+    # [Optional] automatic adjustment of the entropy coefficient
     if args.autotune:
         target_entropy = -torch.prod(torch.Tensor(envs.single_action_space.shape).to(device)).item()
         log_alpha = torch.zeros(1, requires_grad=True, device=device)
@@ -27,9 +27,9 @@ def train(envs, rb, actor, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_
             actions = actions.detach().cpu().numpy()
 
         # TRY NOT TO MODIFY: execute the game and log data.
-        next_obs, rewards, terminations, truncations, infos = envs.step(actions)
+        next_obs, rewards, terminations, truncations, infos = envs.step(actions) ##need to change this reward
 
-        # Logging der episodischen Rückflüsse
+        # Logging of episodic returns
         if "final_info" in infos:
             for info in infos["final_info"]:
                 print(f"global_step={global_step}, episodic_return={info['episode']['r']}")
@@ -37,17 +37,17 @@ def train(envs, rb, actor, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_
                 writer.add_scalar("charts/episodic_length", info["episode"]["l"], global_step)
                 break
 
-        # Verarbeiten von `final_observation`
+        # Processing `final_observation`
         real_next_obs = next_obs.copy()
         for idx, trunc in enumerate(truncations):
             if trunc:
                 real_next_obs[idx] = infos["final_observation"][idx]
 
-        # Hinzufügen zum Replay Buffer
+        # Adding to Replay Buffer
         rb.add(obs, real_next_obs, actions, rewards, terminations, infos)
         obs = next_obs
 
-        # --- Training des Agenten ---
+        # --- Training the agent ---
         if global_step > args.learning_starts:
             data = rb.sample(args.batch_size)
             with torch.no_grad():
@@ -94,7 +94,7 @@ def train(envs, rb, actor, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_
                         a_optimizer.step()
                         alpha = log_alpha.exp().item()
 
-            # Zielnetzwerk-Update
+            # Target network update
             if global_step % args.target_network_frequency == 0:
                 for param, target_param in zip(qf1.parameters(), qf1_target.parameters()):
                     target_param.data.copy_(args.tau * param.data + (1 - args.tau) * target_param.data)
