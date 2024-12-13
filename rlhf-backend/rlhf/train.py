@@ -3,10 +3,15 @@ import torch.nn.functional as F
 import torch.optim as optim
 import time
 import numpy as np
+from traj import Trajectories
 
 
 def train(envs, rb, actor, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer, args, writer, device):
     # Optionale automatische Anpassung des Entropiekoeffizienten
+    s_dim = envs.single_observation_space.shape[0]
+    a_dim = envs.single_action_space.shape[0]
+    trajectories = Trajectories(s_dim, a_dim, max_size=1000)
+
     if args.autotune:
         target_entropy = -torch.prod(torch.Tensor(envs.single_action_space.shape).to(device)).item()
         log_alpha = torch.zeros(1, requires_grad=True, device=device)
@@ -45,6 +50,7 @@ def train(envs, rb, actor, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_
 
         # Hinzufügen zum Replay Buffer
         rb.add(obs, real_next_obs, actions, rewards, terminations, infos)
+        trajectories.add_traj(obs,actions,rewards, done=(terminations | truncations))
         obs = next_obs
 
         # --- Training des Agenten ---
