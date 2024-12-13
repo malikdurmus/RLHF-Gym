@@ -1,5 +1,5 @@
 import gymnasium as gym
-from feedback_reward_wrapper import FeedbackRewardWrapper
+#from feedback_reward_wrapper import FeedbackRewardWrapper
 
 def make_env(env_id, seed, idx, capture_video, run_name, record_every_th_episode):
 
