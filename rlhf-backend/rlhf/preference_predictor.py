@@ -1,6 +1,35 @@
 import numpy as np
 import torch
 from networks import EstimatedRewardNetwork
+import torch.optim as optim
+
+
+def train_reward_model(reward_network, sample, lr, epochs):
+    # Recap: Function compute_predicted_probability, gives us a scalar value for the probability that the human chooses trajectory 0 over trajectory 1
+    # Compute_loss takes the human_feedback_label and calculates the entropy loss
+    # This function aims to change the weights of the reward model, so that it minimizes the entropy loss
+    """
+    :param reward_network: The reward model which weights are updated to minimize the entropy loss calculated with compute_loss
+    :param sample: A list of tuples where each tuple contains a pair of trajectories and their corresponding human feedback label.
+    :param lr: learning rate
+    :param epochs: training steps
+    :return:
+    """
+    optimizer = optim.Adam(reward_network.parameters(), lr=lr) #Optimizer used for reward model: Adam
+
+    for epoch in range(epochs):
+        #Reset Gradients
+        optimizer.zero_grad()
+
+        #Calculate entropy loss
+        entropy_loss = reward_network.compute_loss(sample)
+
+        #Backpropagation
+        entropy_loss.backward()
+
+        #Update the weights of network
+        optimizer.step()
+
 
 class PreferencePredictor:
 
@@ -57,5 +86,37 @@ class PreferencePredictor:
             entropy_loss += -(loss_1 + loss_2)
 
         return entropy_loss / len(sample) # Since we calculate the loss for a batch, and not for each trajectory pair # TODO: ask this in the 16.10.2024 meeting
+
+    @staticmethod
+    def train_reward_model(reward_network, sample, lr, epochs):
+        # Recap: Function compute_predicted_probability, gives us a scalar value for the probability that the human chooses trajectory 0 over trajectory 1
+        # Compute_loss takes the human_feedback_label and calculates the entropy loss
+        # This function aims to change the weights of the reward model, so that it minimizes the entropy loss
+        """
+        :param reward_network: The reward model which weights are updated to minimize the entropy loss calculated with compute_loss
+        :param sample: A list of tuples where each tuple contains a pair of trajectories and their corresponding human feedback label.
+        :param lr: learning rate
+        :param epochs: training steps
+        :return:
+        """
+        optimizer = optim.Adam(reward_network.parameters(), lr=lr) #Optimizer used for reward model: Adam
+
+        for epoch in range(epochs):
+            #Reset Gradients
+            optimizer.zero_grad()
+
+            #Calculate entropy loss
+            entropy_loss = reward_network.compute_loss(sample)
+
+            #Backpropagation
+            entropy_loss.backward()
+
+            #Update the weights of network
+            optimizer.step()
+
+
+
+
+
 
 
