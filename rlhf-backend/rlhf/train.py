@@ -3,9 +3,13 @@ import torch.nn.functional as F
 import torch.optim as optim
 import time
 import numpy as np
+from traj import Trajectories
 
 
 def train(envs, rb, actor, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer, args, writer, device):
+    trajectories = Trajectories(envs.single_observation_space.shape[0], envs.single_action_space.shape[0],
+                                max_size=1000)
+
     # [Optional] automatic adjustment of the entropy coefficient
     if args.autotune:
         target_entropy = -torch.prod(torch.Tensor(envs.single_action_space.shape).to(device)).item()
@@ -29,22 +33,26 @@ def train(envs, rb, actor, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_
         # TRY NOT TO MODIFY: execute the game and log data.
         next_obs, rewards, terminations, truncations, infos = envs.step(actions) ##need to change this reward
 
-        # Logging of episodic returns
-        if "final_info" in infos:
-            for info in infos["final_info"]:
-                print(f"global_step={global_step}, episodic_return={info['episode']['r']}")
-                writer.add_scalar("charts/episodic_return", info["episode"]["r"], global_step)
-                writer.add_scalar("charts/episodic_length", info["episode"]["l"], global_step)
-                break
+        # Logging of episodic returns (terminations)
+        if "episode" in infos:
+            episode_info = infos["episode"]
+            print(f"global_step={global_step}, episodic_return={episode_info['r'][0]}")
+            writer.add_scalar("charts/episodic_return", episode_info['r'][0], global_step)
+            writer.add_scalar("charts/episodic_length", episode_info['l'][0], global_step)
 
-        # Processing `final_observation`
         real_next_obs = next_obs.copy()
+
+        # Processing truncations
         for idx, trunc in enumerate(truncations):
             if trunc:
-                real_next_obs[idx] = infos["final_observation"][idx]
+                # last known state as replacement
+                # TODO: Prüfen, ob Funktionalität gleich bleibt
+                real_next_obs[idx] = next_obs[idx]
+                #real_next_obs[idx] = infos["final_observation"][idx]
 
         # Adding to Replay Buffer
         rb.add(obs, real_next_obs, actions, rewards, terminations, infos)
+        trajectories.add_traj(obs,actions,rewards, done=(terminations | truncations))
         obs = next_obs
 
         # --- Training the agent ---
