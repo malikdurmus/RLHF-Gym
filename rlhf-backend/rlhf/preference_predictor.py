@@ -1,11 +1,9 @@
-import numpy as np
 import torch
-from networks import EstimatedRewardNetwork
 import torch.optim as optim
 
 class PreferencePredictor:
 
-    def __init__(self, reward_network: EstimatedRewardNetwork, reward_model_lr):
+    def __init__(self, reward_network: "EstimatedRewardNetwork", reward_model_lr):
         self.reward_network = reward_network
         self.reward_model_lr = reward_model_lr
 

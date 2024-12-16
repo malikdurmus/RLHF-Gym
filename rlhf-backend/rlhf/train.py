@@ -5,8 +5,7 @@ import time
 import numpy as np
 from traj import Trajectories
 
-
-def train(envs, rb, actor, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer, args, writer, device):
+def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer,preference_optimizer, args, writer, device):
     trajectories = Trajectories(envs.single_observation_space.shape[0], envs.single_action_space.shape[0],
                                 max_size=1000)
 
