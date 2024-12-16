@@ -85,7 +85,7 @@ class PreferencePredictor:
 
             entropy_loss += -(loss_1 + loss_2)
 
-        return entropy_loss / len(sample) # Since we calculate the loss for a batch, and not for each trajectory pair # TODO: ask this in the 16.10.2024 meeting
+        return entropy_loss #loss for whole batch
 
 
 
