@@ -5,8 +5,9 @@ import torch.optim as optim
 
 class PreferencePredictor:
 
-    def __init__(self, reward_network: EstimatedRewardNetwork):
+    def __init__(self, reward_network: EstimatedRewardNetwork, reward_model_lr):
         self.reward_network = reward_network
+        self.reward_model_lr = reward_model_lr
 
     # for each data in sample we will use the predict function. after that we will use the preference to calculate entropy loss
     def _compute_predicted_probability(self, trajectories):
@@ -59,7 +60,7 @@ class PreferencePredictor:
 
         return entropy_loss #loss for whole batch
 
-    def train_reward_model(self, sample, lr, epochs=1): #remove later
+    def train_reward_model(self, sample, epochs=1): #remove the for loops and epochs later
         # Recap: Function compute_predicted_probability, gives us a scalar value for the probability that the human chooses trajectory 0 over trajectory 1
         # Compute_loss takes the human_feedback_label and calculates the entropy loss
         # This function aims to change the weights of the reward model, so that it minimizes the entropy loss
@@ -69,7 +70,7 @@ class PreferencePredictor:
         :param epochs: training steps
         :return:
         """
-        optimizer = optim.Adam(list(self.reward_network.parameters()), lr=lr)  # Optimizer used for reward model: Adam
+        optimizer = optim.Adam(list(self.reward_network.parameters()), lr=self.reward_model_lr)  # Optimizer used for reward model: Adam
 
         for epoch in range(epochs):
             # Reset Gradients
