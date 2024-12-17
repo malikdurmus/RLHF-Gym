@@ -58,5 +58,5 @@ class Args:
     """length of trajectories"""
     rew_nw_lr: float = 1e-3
     """the learning rate of the reward network"""
-    pref_buffer_size: int = 5
+    pref_batch_size: int = 5
     """the batch size of sample from the preference memory"""

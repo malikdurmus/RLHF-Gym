@@ -51,7 +51,7 @@ def train(envs, rb, actor, qf1, qf2, rew_nw, qf1_target, qf2_target, q_optimizer
             # (14)
             if global_step % args.policy_frequency == 0:
                 # (15)
-                data = pb.sample(args.pref_buffer_size)
+                data = pb.sample(args.pref_batch_size)
                 # (16)
                 # TODO Fix
                 # train_reward_model(rew_nw, data, args.rew_nw_lr, epochs=1)
