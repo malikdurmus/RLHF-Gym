@@ -41,6 +41,8 @@ class EstimatedRewardNetwork(nn.Module):
 
 
 
+
+
 # Q-Network
 class SoftQNetwork(nn.Module):
     # Neural network architecture
@@ -108,6 +110,8 @@ def initialize_networks(envs, device, policy_lr, q_lr):
     # Q-Networks
     qf1 = SoftQNetwork(envs).to(device)
     qf2 = SoftQNetwork(envs).to(device)
+    # Reward Network
+    rew_net = EstimatedRewardNetwork(envs).to(device)
     # Sync target networks
     qf1_target = SoftQNetwork(envs).to(device)
     qf2_target = SoftQNetwork(envs).to(device)
@@ -118,4 +122,4 @@ def initialize_networks(envs, device, policy_lr, q_lr):
     # Optimizer Actor (policy)
     actor_optimizer = optim.Adam(list(actor.parameters()), lr=policy_lr)
 
-    return actor, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer
+    return actor, qf1, qf2, rew_net, qf1_target, qf2_target, q_optimizer, actor_optimizer
