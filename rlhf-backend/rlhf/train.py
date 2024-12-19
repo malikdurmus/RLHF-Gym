@@ -37,7 +37,7 @@ def train(envs, rb, actor, qf1, qf2, rew_nw, qf1_target, qf2_target, q_optimizer
                 # (9)
                 for _ in range(args.query_size):
                     # (10)
-                    (trajectory1, trajectory2) = sampler.uniform_trajectory_pair(args.query_length)
+                    (trajectory1, trajectory2) = sampler.uniform_trajectory_pair(args.query_length, args.feedback_frequency)
                     # (11)
                     if sampler.sum_rewards(trajectory1) > sampler.sum_rewards(trajectory2):
                         preference = [1, 0]

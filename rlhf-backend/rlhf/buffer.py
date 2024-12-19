@@ -38,15 +38,17 @@ class TrajectorySampler:
         self.rb = rb
 
     # single trajectory
-    def uniform_trajectory(self, traj_length):
-        if self.rb.size() < traj_length:
+    def uniform_trajectory(self, traj_length, time_window):
+        # just in case, shouldn't really happen
+        if self.rb.size() < traj_length or self.rb.size() < time_window or time_window < traj_length:
             raise ValueError("Not enough data to sample")
 
         TrajectorySamples = namedtuple("TrajectorySamples", ["states", "actions", "rewards"])
 
         # random start index (exclude end of buffer)
-        max_start_index = self.rb.size() - traj_length + 1
-        start_index = np.random.randint(0, max_start_index)
+        min_start_index = self.rb.size() - time_window + 1  # only new trajectories since last query
+        max_start_index = self.rb.size() - traj_length + 1  # pick trajectories so they finish before end of buffer
+        start_index = np.random.randint(min_start_index, max_start_index)
         end_index = start_index + traj_length
 
         # extract states, actions, rewards
@@ -68,19 +70,19 @@ class TrajectorySampler:
 
 
     # trajectory pair
-    def uniform_trajectory_pair(self, traj_length):
-        trajectory1 = self.uniform_trajectory(traj_length)
-        trajectory2 = self.uniform_trajectory(traj_length)
+    def uniform_trajectory_pair(self, traj_length, time_window):
+        trajectory1 = self.uniform_trajectory(traj_length, time_window)
+        trajectory2 = self.uniform_trajectory(traj_length, time_window)
 
         return (trajectory1, trajectory2)
 
 
     # batch of trajectories
-    def uniform_trajectory_batch(self, traj_length, batch_size):
+    def uniform_trajectory_batch(self, traj_length, time_window, batch_size):
         trajectories_batch = []
 
         for _ in range(batch_size):
-            trajectory = self.uniform_trajectory(traj_length)
+            trajectory = self.uniform_trajectory(traj_length, time_window)
 
             trajectories_batch.append(trajectory)
 
@@ -88,11 +90,11 @@ class TrajectorySampler:
 
 
     # batch of trajectory pairs
-    def uniform_trajectory_pair_batch(self, traj_length, batch_size):
+    def uniform_trajectory_pair_batch(self, traj_length, time_window, batch_size):
         trajectories_batch = []
 
         for _ in range(batch_size):
-            (trajectory1, trajectory2) = self.uniform_trajectory_pair(traj_length)
+            (trajectory1, trajectory2) = self.uniform_trajectory_pair(traj_length, time_window)
 
             trajectories_batch.append((trajectory1, trajectory2))
 
