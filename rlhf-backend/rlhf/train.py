@@ -4,7 +4,7 @@ import torch.optim as optim
 import time
 import numpy as np
 
-def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer,preference_optimizer, args, writer, device, sampler, preference_buffer):
+def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer, preference_optimizer, args, writer, device, sampler, preference_buffer):
 
     # [Optional] automatic adjustment of the entropy coefficient
     if args.autotune:
@@ -47,12 +47,12 @@ def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_o
                     preference_buffer.add((trajectory1, trajectory2), preference)
 
             # (14)
-            if global_step % args.policy_frequency == 0:
+            if global_step % args.feedback_frequency == 0:
                 # (15)
                 data = preference_buffer.sample(args.pref_batch_size)
                 # (16)
                 # TODO Fix
-                # preference_optimizer.train_reward_model(data)
+                preference_optimizer.train_reward_model(data)
                 # (18)
                 # TODO Relabel entire Replay Buffer using the updated reward model
 

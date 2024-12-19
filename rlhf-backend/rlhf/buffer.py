@@ -58,9 +58,9 @@ class TrajectorySampler:
 
         # name tensors for better access
         trajectory = TrajectorySamples(
-            states=states.squeeze(1),
-            actions=actions.squeeze(1),
-            rewards=rewards,
+            states=states if states.ndim > 1 else states.unsqueeze(-1),
+            actions=actions if states.ndim > 1 else states.unsqueeze(-1),
+            rewards=rewards if states.ndim > 1 else states.unsqueeze(-1),
         )
 
         return trajectory

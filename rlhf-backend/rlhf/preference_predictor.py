@@ -19,22 +19,25 @@ class PreferencePredictor:
         # We can change this later on
         trajectory0, trajectory1 = trajectories[0], trajectories[1]
 
-        if trajectory0.length != trajectory1.length:
-            print("trajectory_lengths do not match")
-            return None
+        states0, actions0 = trajectory0.states, trajectory0.actions
+        states1, actions1 = trajectory1.states, trajectory1.actions
+
+        if len(trajectory0) != len(trajectory1):
+            raise ValueError("Trajectory lengths do not match")
+
         total_prob0 = 0
         total_prob1 = 0
-        for action, state in trajectory0:
-            prob_for_action = self.reward_network(action=torch.tensor(action),
-                                                  observation=torch.tensor(state)) # estimated probability, that the human will prefer action 0
+        for state, action in zip(states0, actions0):
+            prob_for_action = self.reward_network(action=action,
+                                                  observation=state) # estimated probability, that the human will prefer action 0
             total_prob0 += prob_for_action
-        for action, state in trajectory1:
-            prob_for_action = self.reward_network(action=torch.tensor(action),
-                                                  observation=torch.tensor(state))  # estimated probability, that the human will prefer action 1
+        for state, action in zip(states1, actions1):
+            prob_for_action = self.reward_network(action=action,
+                                                  observation=state)  # estimated probability, that the human will prefer action 1
             total_prob1 += prob_for_action
 
         predicted_prob = torch.exp(total_prob0) / (torch.exp(total_prob0) + torch.exp(total_prob1)) #probability, that the human will chose trajectory0 over trajectory1
-        return predicted_prob
+        return predicted_prob.squeeze()
 
     def _compute_loss(self, sample):
         """
@@ -73,7 +76,7 @@ class PreferencePredictor:
         optimizer.zero_grad()
 
         # Calculate entropy loss
-        entropy_loss = self._compute_loss(sample)
+        entropy_loss = self._compute_loss(sample).mean()
 
         # Backpropagation
         entropy_loss.backward()
