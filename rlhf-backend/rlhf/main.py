@@ -8,7 +8,7 @@ from args import Args
 from environment import initialize_env
 from networks import initialize_networks
 from train import train
-from buffer import initialize_rb
+from buffer import TrajectorySampler, PreferenceBuffer, initialize_rb
 
 
 
@@ -42,12 +42,18 @@ if __name__ == "__main__":
     envs = initialize_env(args.env_id, args.seed, args.capture_video, run_name, args.record_every_th_episode)
 
     # Initialize networks (networks.py)
-    actor, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer = initialize_networks(
+    actor, qf1, qf2, rew_nw, qf1_target, qf2_target, q_optimizer, actor_optimizer = initialize_networks(
         envs, device, args.policy_lr, args.q_lr
     )
 
     # Initialize replay buffer (buffer.py)
     rb = initialize_rb(envs, args.buffer_size, device)
+
+    # Initialize preference buffer (buffer.py)
+    pb = PreferenceBuffer(args.buffer_size, device)
+
+    # Initialize sampler (buffer.py)
+    sampler = TrajectorySampler(rb)
 
     # optional: track weight and biases
     if args.track:
@@ -72,6 +78,7 @@ if __name__ == "__main__":
         actor=actor,
         qf1=qf1,
         qf2=qf2,
+        rew_nw=rew_nw,
         qf1_target=qf1_target,
         qf2_target=qf2_target,
         q_optimizer=q_optimizer,
@@ -79,4 +86,6 @@ if __name__ == "__main__":
         args=args,
         writer=writer,
         device=device,
+        sampler=sampler,
+        pb=pb,
     )
