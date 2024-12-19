@@ -86,12 +86,3 @@ class PreferencePredictor:
             entropy_loss += -(loss_1 + loss_2)
 
         return entropy_loss #loss for whole batch
-
-
-
-
-
-
-
-
-
