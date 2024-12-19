@@ -1,7 +1,11 @@
 import gymnasium as gym
+import datetime
 #from feedback_reward_wrapper import FeedbackRewardWrapper
 
 def make_env(env_id, seed, idx, capture_video, run_name, record_every_th_episode):
+
+    # generate run_name based on current date and time
+    run_name = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 
     # optional: video capture
     def thunk():

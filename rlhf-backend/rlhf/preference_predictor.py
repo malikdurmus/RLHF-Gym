@@ -1,4 +1,6 @@
+import numpy as np
 import torch
+from networks import EstimatedRewardNetwork
 import torch.optim as optim
 
 class PreferencePredictor:
@@ -82,13 +84,3 @@ class PreferencePredictor:
 
             # Update the weights of network
             optimizer.step()
-
-
-
-
-
-
-
-
-
-

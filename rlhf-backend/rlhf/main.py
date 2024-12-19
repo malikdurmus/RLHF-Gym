@@ -8,7 +8,7 @@ from args import Args
 from environment import initialize_env
 from networks import initialize_networks
 from train import train
-from buffer import initialize_rb
+from buffer import TrajectorySampler, PreferenceBuffer, initialize_rb
 
 
 
@@ -49,6 +49,12 @@ if __name__ == "__main__":
     # Initialize replay buffer (buffer.py)
     rb = initialize_rb(envs, args.buffer_size, device)
 
+    # Initialize preference buffer (buffer.py)
+    preference_buffer = PreferenceBuffer(args.buffer_size, device)
+
+    # Initialize sampler (buffer.py)
+    sampler = TrajectorySampler(rb)
+
     # optional: track weight and biases
     if args.track:
         import wandb
@@ -81,4 +87,6 @@ if __name__ == "__main__":
         args=args,
         writer=writer,
         device=device,
+        sampler=sampler,
+        preference_buffer=preference_buffer,
     )
