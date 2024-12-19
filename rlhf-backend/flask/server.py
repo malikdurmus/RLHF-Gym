@@ -25,7 +25,7 @@ def get_video():
     if not os.path.exists(video_path):
         return jsonify({"error": f"Video {video_filename} not found"}), 404
 
-    return send_from_directory(os.path.dirname(video_path), os.path.basename(video_path))
+    return send_from_directory(os.path.join(VIDEO_DIRECTORY, run_name), video_filename)
 
 if __name__ == "__main__":
     app.run(debug=True)
