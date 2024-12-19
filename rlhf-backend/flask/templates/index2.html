@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Flask App</title>
+        <link rel="stylesheet" href="../static/index2.css">
+    </head>
+
+    <body>
+        <br>
+        <h1 class="main-title"> Train a RHLF agent </h1>
+        <br>
+        <div class="explanation">
+            <p>
+                <b>
+                In the following you will see two different videos used to train a RLHF agent.<br>
+                Please compare the agent's individual behavior and choose which agent has the better behavior.<br>
+                If the behavior is too similar, please choose the neutral option.<br>
+                Otherwise choose the left or right button to choose the agent with the better behavior.<br>
+                </b>
+            </p>
+        </div>
+        <br><br><br><br><br><br><br>
+
+        <div class="comparison">
+            <div id="loader-container">
+                <div id="loader"></div>
+                <p> Lädt...</p>
+            </div>
+
+            <button class="column">
+                <div>
+                    <br>
+                    <h1> Option 1 </h1>
+                    <br><br>
+                        <video id="videoPlayer" width="500" controls loop>
+                        <source id="videoSource" src="videos/{{run_name}}/training_episode_1.mp4" type="video/mp4">
+                        </video>
+                    <br><br><br><br>
+                </div>
+            </button>
+
+            <button class="column">
+                <div>
+                    <br>
+                    <h1> Option 2 </h1>
+                    <br><br>
+                        <video id="videoPlayer" width="500" controls loop>
+                        <source id="videoSource" src="videos/{{run_name}}/training_episode_2.mp4" type="video/mp4">
+                        </video>
+                    <br><br><br><br>
+                </div>
+            </button>
+        </div>
+
+        <br><br><br><br><br><br>
+
+            <button class="non">
+                <h3> Neutral </h3>
+            </button>
+
+        <br><br><br>
+        <hr>
+
+        <div class="sentence-container">
+            <div class="sentence">Softwareentwicklungspraktikum</div>
+            <div class="sentence" style="text-align: center">
+                   Aleksandar Mijatovic, Martin Plank, Thang Long Nguyen<br>
+                   Tobias Huber & Yusuf Durmus
+            </div>
+            <div class="sentence">Group B </div>
+        </div>
+    </body>
+</html>
