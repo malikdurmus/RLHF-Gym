@@ -8,7 +8,8 @@ from args import Args
 from environment import initialize_env
 from networks import initialize_networks
 from train import train
-from buffer import initialize_rb
+from buffer import TrajectorySampler, PreferenceBuffer, initialize_rb
+from preference_predictor import PreferencePredictor
 
 
 
@@ -42,12 +43,21 @@ if __name__ == "__main__":
     envs = initialize_env(args.env_id, args.seed, args.capture_video, run_name, args.record_every_th_episode)
 
     # Initialize networks (networks.py)
-    actor, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer = initialize_networks(
-        envs, device, args.policy_lr, args.q_lr
+    actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer = initialize_networks(
+        envs, device, args.policy_lr, args.q_lr ,args.reward_model_lr
     )
+
+    #Initialize pref predictor
+    preference_optimizer = PreferencePredictor(reward_network, reward_model_lr=args.reward_model_lr)
 
     # Initialize replay buffer (buffer.py)
     rb = initialize_rb(envs, args.buffer_size, device)
+
+    # Initialize preference buffer (buffer.py)
+    preference_buffer = PreferenceBuffer(args.buffer_size, device)
+
+    # Initialize sampler (buffer.py)
+    sampler = TrajectorySampler(rb)
 
     # optional: track weight and biases
     if args.track:
@@ -70,13 +80,17 @@ if __name__ == "__main__":
         envs=envs,
         rb=rb,
         actor=actor,
+        reward_network=reward_network,
         qf1=qf1,
         qf2=qf2,
         qf1_target=qf1_target,
         qf2_target=qf2_target,
         q_optimizer=q_optimizer,
         actor_optimizer=actor_optimizer,
+        preference_optimizer=preference_optimizer,
         args=args,
         writer=writer,
         device=device,
+        sampler=sampler,
+        preference_buffer=preference_buffer,
     )

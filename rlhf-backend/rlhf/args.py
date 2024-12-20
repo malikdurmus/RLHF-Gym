@@ -20,6 +20,8 @@ class Args:
     """the entity (team) of wandb's project"""
     capture_video: bool = False
     """whether to capture videos of the agent performances (check out `videos` folder)"""
+    record_every_th_episode: int = 20
+    """will record videos every `record_every_th_episode` episodes"""
 
     # Algorithm specific arguments
     env_id: str = "Hopper-v5"
@@ -36,6 +38,8 @@ class Args:
     """the batch size of sample from the reply memory"""
     learning_starts: int = 5e3
     """timestep to start learning"""
+    reward_model_lr: float = 1e-3
+    """the learning rate of the reward model optimizer"""
     policy_lr: float = 3e-4
     """the learning rate of the policy network optimizer"""
     q_lr: float = 1e-3
@@ -48,5 +52,11 @@ class Args:
     """Entropy regularization coefficient."""
     autotune: bool = True
     """automatic tuning of the entropy coefficient"""
-    record_every_th_episode: int = 20
-    """will record videos every `record_every_th_episode` episodes"""
+    feedback_frequency: int = 1000
+    """how often we ask for feedback"""
+    query_size: int = 32
+    """how much feedback each iteration"""
+    query_length: int = 120
+    """length of trajectories"""
+    pref_batch_size: int = 5
+    """the batch size of sample from the preference memory"""
