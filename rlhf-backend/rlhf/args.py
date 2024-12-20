@@ -38,6 +38,8 @@ class Args:
     """the batch size of sample from the reply memory"""
     learning_starts: int = 5e3
     """timestep to start learning"""
+    reward_model_lr: float = 1e-3
+    """the learning rate of the reward model optimizer"""
     policy_lr: float = 3e-4
     """the learning rate of the policy network optimizer"""
     q_lr: float = 1e-3
@@ -56,7 +58,5 @@ class Args:
     """how much feedback each iteration"""
     query_length: int = 120
     """length of trajectories"""
-    rew_nw_lr: float = 1e-3
-    """the learning rate of the reward network"""
     pref_batch_size: int = 5
     """the batch size of sample from the preference memory"""
