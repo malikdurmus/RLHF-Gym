@@ -59,9 +59,8 @@ class PreferencePredictor:
 
 
             entropy_loss += -(loss_1 + loss_2)
-        entropy = entropy_loss  # entropy loss shouldn't be a tensor that has 2 arrays, it should be one
-        # the problem results from the type of the human feedback
-        return entropy #loss for whole batch
+
+        return entropy_loss #loss for whole batch
 
     def train_reward_model(self, sample):
         # Recap: Function compute_predicted_probability, gives us a scalar value for the probability that the human chooses trajectory 0 over trajectory 1
