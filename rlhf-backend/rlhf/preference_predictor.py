@@ -37,7 +37,7 @@ class PreferencePredictor:
             total_prob1 += prob_for_action
 
         predicted_prob = torch.exp(total_prob0) / (torch.exp(total_prob0) + torch.exp(total_prob1)) #probability, that the human will chose trajectory0 over trajectory1
-        return predicted_prob.squeeze()
+        return predicted_prob
 
     def _compute_loss(self, sample):
         """
@@ -50,7 +50,7 @@ class PreferencePredictor:
         for trajectory_pair, human_feedback_label in sample:
             predicted_prob = self._compute_predicted_probability(trajectory_pair)
             # human feedback label to tensor conversion for processing
-            label_1 = torch.tensor(human_feedback_label, dtype=torch.float)
+            label_1 = torch.tensor(human_feedback_label[0], dtype=torch.float)
             label_2 = 1 - label_1
 
             # calculate loss
@@ -59,8 +59,9 @@ class PreferencePredictor:
 
 
             entropy_loss += -(loss_1 + loss_2)
-
-        return entropy_loss #loss for whole batch
+        entropy = entropy_loss  # entropy loss shouldn't be a tensor that has 2 arrays, it should be one
+        # the problem results from the type of the human feedback
+        return entropy #loss for whole batch
 
     def train_reward_model(self, sample):
         # Recap: Function compute_predicted_probability, gives us a scalar value for the probability that the human chooses trajectory 0 over trajectory 1
@@ -76,7 +77,7 @@ class PreferencePredictor:
         optimizer.zero_grad()
 
         # Calculate entropy loss
-        entropy_loss = self._compute_loss(sample).mean()
+        entropy_loss = self._compute_loss(sample)
 
         # Backpropagation
         entropy_loss.backward()
