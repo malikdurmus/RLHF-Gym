@@ -3,6 +3,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 import time
 import numpy as np
+from render import render_trajectory_gym
 
 def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer, preference_optimizer, args, writer, device, sampler, preference_buffer):
 
@@ -31,18 +32,38 @@ def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_o
         ### REWARD LEARNING ### (7)
         if global_step > args.learning_starts:
             # (8)
-            if global_step % args.feedback_frequency == 0:
+            if global_step % args.feedback_frequency == 0: #Is it a good idea to do sampling only with feedback query?
                 # (9)
                 for _ in range(args.query_size):
                     # (10)
                     (trajectory1, trajectory2) = sampler.uniform_trajectory_pair(args.query_length, args.feedback_frequency)
                     # (11)
-                    if sampler.sum_rewards(trajectory1) > sampler.sum_rewards(trajectory2):
-                        preference = [1, 0]
-                    elif sampler.sum_rewards(trajectory1) < sampler.sum_rewards(trajectory2):
-                        preference = [0, 1]
+                    if args.synthetic_feedback:
+                        if sampler.sum_rewards(trajectory1) > sampler.sum_rewards(trajectory2):
+                            preference = [1, 0]
+                        elif sampler.sum_rewards(trajectory1) < sampler.sum_rewards(trajectory2):
+                            preference = [0, 1]
+                        else:
+                            preference = [0.5, 0.5]
                     else:
-                        preference = [0.5, 0.5]
+                        try:
+
+                            render_trajectory_gym(args.env_id, trajectory1, global_step,"trajectory1")
+                            render_trajectory_gym(args.env_id, trajectory2, global_step, "trajectory2")
+                            user_input = int(input("Prefer 0, 1, or 2 (0.5/0.5 split): "))
+                            if user_input == 0:
+                                preference = [1, 0]
+                                break
+                            elif user_input == 1:
+                                preference = [0, 1]
+                                break
+                            elif user_input == 2:
+                                preference = [0.5, 0.5]
+                                break
+                            else:
+                                print("Invalid input. Please enter 0, 1, or 2.")
+                        except ValueError:
+                            print("Invalid input. Please enter a valid integer (0, 1, or 2).")
                     # (12)
                     preference_buffer.add((trajectory1, trajectory2), preference)
 
@@ -51,7 +72,6 @@ def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_o
                 # (15)
                 data = preference_buffer.sample(args.pref_batch_size)
                 # (16)
-                # TODO Fix
                 preference_optimizer.train_reward_model(data)
                 # (18)
                 # TODO Relabel entire Replay Buffer using the updated reward model

@@ -1,17 +1,9 @@
 import time
-
 import cv2
-import glfw
-import mediapy as media
-from gym.envs.mujoco import MujocoEnv
-from gymnasium.envs.mujoco import MujocoRenderer
 from gymnasium.wrappers import RecordVideo
-from mujoco import mjv_defaultCamera
-from stable_baselines3.common.buffers import ReplayBufferSamples
 import gymnasium as gym
 import numpy as np
 import mujoco
-import imageio
 from tqdm import tqdm
 
 
@@ -26,25 +18,26 @@ DEFAULT_CAMERA_CONFIG = { #specific to hopper, might change for diff envs.TODO:l
 }
 
 
-def render_trajectory_gym(env_name, observations, filename="trajectory_rendered_gym.mp4"):
+def render_trajectory_gym(env_name, observations1,global_step,trajectory_id,filename="gym_trajectory_step"):
     begin = time.time()
     env = gym.make(env_name, render_mode="rgb_array")
     images = []
     env.reset()
 
-    for obs in tqdm(observations, desc="Processing Observations"):
+    for obs in tqdm(observations1.states, desc="Processing Observations"):
         try:
+            #there is a problem in slicing here, fix that
             qpos = obs[:env.unwrapped.model.nq] # No need for explicit dynamic checking, this is already specified in env xml
             qvel = obs[env.unwrapped.model.nq:] # same thing
             env.unwrapped.set_state(qpos, qvel)   # hint type
         except AttributeError as e:
             print(f"Attribute Error: {e}")
-            print("State causing the problem:", state)
+            print("State causing the problem:", obs)
             env.reset()
             continue
         except Exception as e:
             print(f"Some other error: {e}")
-            print("State causing the problem:", state)
+            print("State causing the problem:", obs)
             env.reset()
             continue
 
@@ -52,7 +45,7 @@ def render_trajectory_gym(env_name, observations, filename="trajectory_rendered_
         images.append(img)
 
     env.close()
-
+    filename = f"{filename}_{global_step}_{trajectory_id}.mp4"
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Or try other codecs like 'XVID'
     out = cv2.VideoWriter(filename, fourcc, 60.0, (480, 480))
 
@@ -129,19 +122,5 @@ def render_trajectory_mujoco_native(env_name, trajectory, file_video="trajectory
 
 
 
-env = gym.make("Hopper-v5", render_mode="rgb_array")
-RecordVideo(env, "./videos",video_length=100000)
-states = []
-env.reset()
-for _ in range(1000): #Remove later
-    action = env.action_space.sample()
-    obs, reward, terminated, truncated, info = env.step(action)
-    state = np.concatenate([env.unwrapped.data.qpos.flat, env.unwrapped.data.qvel.flat])
-    states.append(state)
 
-env.close()
-trajectory = states
-
-render_trajectory_mujoco_native("Hopper-v5", trajectory)
-render_trajectory_gym("Hopper-v5", trajectory)
 
