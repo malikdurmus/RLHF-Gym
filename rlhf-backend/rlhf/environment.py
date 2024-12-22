@@ -1,5 +1,9 @@
 import gymnasium as gym
 import datetime
+
+from gymnasium.wrappers import RecordVideo
+
+
 #from feedback_reward_wrapper import FeedbackRewardWrapper
 
 def make_env(env_id, seed, idx, capture_video, run_name, record_every_th_episode):
@@ -11,8 +15,9 @@ def make_env(env_id, seed, idx, capture_video, run_name, record_every_th_episode
     def thunk():
         # if capture_video=True + env_id = 0 (?)
         if capture_video and idx == 0:
-            env = gym.make(env_id, render_mode="rgb_array")
-            env = gym.experimental.wrappers.RecordVideoV0(env, f"videos/{run_name}", name_prefix="training", episode_trigger=lambda x: x % record_every_th_episode == 0)
+            env = gym.make(env_id, render_mode="rgb_array",terminate_when_unhealthy=True,exclude_current_positions_from_observation=False)
+            env = RecordVideo(env, f"videos/{run_name}", name_prefix="training",
+                                                          episode_trigger=lambda x: x % record_every_th_episode == 0)
         else:
             env = gym.make(env_id)
         #env = FeedbackRewardWrapper(env)

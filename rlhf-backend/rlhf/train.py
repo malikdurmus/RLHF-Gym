@@ -38,6 +38,8 @@ def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_o
                     # (10)
                     (trajectory1, trajectory2) = sampler.uniform_trajectory_pair(args.query_length, args.feedback_frequency)
                     # (11)
+                    render_trajectory_gym(args.env_id, trajectory1, global_step, "trajectory1")
+                    render_trajectory_gym(args.env_id, trajectory2, global_step, "trajectory2")
                     if args.synthetic_feedback:
                         if sampler.sum_rewards(trajectory1) > sampler.sum_rewards(trajectory2):
                             preference = [1, 0]

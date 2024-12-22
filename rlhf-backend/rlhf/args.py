@@ -18,7 +18,7 @@ class Args:
     """the wandb's project name"""
     wandb_entity: str = None
     """the entity (team) of wandb's project"""
-    capture_video: bool = False
+    capture_video: bool = True
     """whether to capture videos of the agent performances (check out `videos` folder)"""
     record_every_th_episode: int = 20
     """will record videos every `record_every_th_episode` episodes"""
@@ -47,17 +47,17 @@ class Args:
     policy_frequency: int = 2
     """the frequency of training policy (delayed)"""
     target_network_frequency: int = 1  # Denis Yarats' implementation delays this by 2.
-    """the frequency of updates for the target nerworks"""
+    """the frequency of updates for the target networks"""
     alpha: float = 0.2
     """Entropy regularization coefficient."""
     autotune: bool = True
     """automatic tuning of the entropy coefficient"""
-    feedback_frequency: int = 100
+    feedback_frequency: int = 1000
     """how often we ask for feedback"""
     query_size: int = 32
     """how much feedback each iteration"""
-    query_length: int = 10
+    query_length: int = 500
     """length of trajectories"""
-    pref_batch_size: int = 5
+    pref_batch_size: int = 50
     """the batch size of sample from the preference memory"""
     synthetic_feedback: bool = False

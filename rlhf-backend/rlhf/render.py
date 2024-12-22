@@ -1,6 +1,5 @@
 import time
 import cv2
-from gymnasium.wrappers import RecordVideo
 import gymnasium as gym
 import numpy as np
 import mujoco
@@ -26,7 +25,7 @@ def render_trajectory_gym(env_name, observations1,global_step,trajectory_id,file
 
     for obs in tqdm(observations1.states, desc="Processing Observations"):
         try:
-            #there is a problem in slicing here, fix that
+            obs = obs.squeeze().numpy()
             qpos = obs[:env.unwrapped.model.nq] # No need for explicit dynamic checking, this is already specified in env xml
             qvel = obs[env.unwrapped.model.nq:] # same thing
             env.unwrapped.set_state(qpos, qvel)   # hint type
