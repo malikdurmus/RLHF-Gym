@@ -44,11 +44,10 @@ if __name__ == "__main__":
 
     # Initialize networks (networks.py)
     actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer = initialize_networks(
-        envs, device, args.policy_lr, args.q_lr ,args.reward_model_lr
-    )
+    envs, device, args.policy_lr, args.q_lr)
 
     #Initialize pref predictor
-    preference_optimizer = PreferencePredictor(reward_network, reward_model_lr=args.reward_model_lr)
+    preference_optimizer = PreferencePredictor(reward_network, reward_model_lr=args.reward_model_lr, device=device)
 
     # Initialize replay buffer (buffer.py)
     rb = initialize_rb(envs, args.buffer_size, device)

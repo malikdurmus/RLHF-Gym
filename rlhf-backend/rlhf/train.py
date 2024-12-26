@@ -5,7 +5,9 @@ import time
 import numpy as np
 from render import render_trajectory_gym
 
-def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer, preference_optimizer, args, writer, device, sampler, preference_buffer):
+
+def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer,
+          preference_optimizer, args, writer, device, sampler, preference_buffer):
 
     # [Optional] automatic adjustment of the entropy coefficient
     if args.autotune:
@@ -37,8 +39,8 @@ def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_o
                 for _ in range(args.query_size):
                     (trajectory1, trajectory2) = sampler.uniform_trajectory_pair(args.query_length,
                                                                                  args.feedback_frequency)
-                    render_trajectory_gym(args.env_id, trajectory1, global_step, "trajectory1")
-                    render_trajectory_gym(args.env_id, trajectory2, global_step, "trajectory2")
+                    # render_trajectory_gym(args.env_id, trajectory1, global_step, "trajectory1")
+                    # render_trajectory_gym(args.env_id, trajectory2, global_step, "trajectory2")
                     if args.synthetic_feedback:
                         if sampler.sum_rewards(trajectory1) > sampler.sum_rewards(trajectory2):
                             preference = [1, 0]
@@ -46,20 +48,21 @@ def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_o
                             preference = [0, 1]
                         else:
                             preference = [0.5, 0.5]
-                    preference = None
-                    while preference is None:  # Keep prompting until valid input
-                        try:
-                            user_input = int(input("Prefer 0, 1, or 2 (0.5/0.5 split): "))
-                            if user_input == 0:
-                                preference = [1, 0]
-                            elif user_input == 1:
-                                preference = [0, 1]
-                            elif user_input == 2:
-                                preference = [0.5, 0.5]
-                            else:
-                                print("Invalid input. Please enter 0, 1, or 2.")
-                        except ValueError:
-                            print("Invalid input. Please enter a valid integer (0, 1, or 2).")
+                    else:
+                        preference = None
+                        while preference is None:  # Keep prompting until valid input
+                            try:
+                                user_input = int(input("Prefer 0, 1, or 2 (0.5/0.5 split): "))
+                                if user_input == 0:
+                                    preference = [1, 0]
+                                elif user_input == 1:
+                                    preference = [0, 1]
+                                elif user_input == 2:
+                                    preference = [0.5, 0.5]
+                                else:
+                                    print("Invalid input. Please enter 0, 1, or 2.")
+                            except ValueError:
+                                print("Invalid input. Please enter a valid integer (0, 1, or 2).")
 
                     # Add to preference buffer after valid input
                     preference_buffer.add((trajectory1, trajectory2), preference)

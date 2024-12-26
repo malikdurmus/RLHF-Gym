@@ -4,9 +4,10 @@ import torch.optim as optim
 
 class PreferencePredictor:
 
-    def __init__(self, reward_network: "EstimatedRewardNetwork", reward_model_lr):
+    def __init__(self, reward_network: "EstimatedRewardNetwork", reward_model_lr,device):
         self.reward_network = reward_network
         self.reward_model_lr = reward_model_lr
+        self.device = device
 
     # for each data in sample we will use the predict function. after that we will use the preference to calculate entropy loss
     def _compute_predicted_probability(self, trajectories):
@@ -28,10 +29,14 @@ class PreferencePredictor:
         total_prob0 = 0
         total_prob1 = 0
         for state, action in zip(states0, actions0):
+            action = action.to(self.device)
+            state = state.to(self.device)
             prob_for_action = self.reward_network(action=action,
                                                   observation=state) # estimated probability, that the human will prefer action 0
             total_prob0 += prob_for_action
         for state, action in zip(states1, actions1):
+            action = action.to(self.device)
+            state = state.to(self.device)
             prob_for_action = self.reward_network(action=action,
                                                   observation=state)  # estimated probability, that the human will prefer action 1
             total_prob1 += prob_for_action
