@@ -35,9 +35,8 @@ def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_o
             if global_step % args.feedback_frequency == 0: #Is it a good idea to do sampling only with feedback query?
                 # (9)
                 for _ in range(args.query_size):
-                    # (10)
-                    (trajectory1, trajectory2) = sampler.uniform_trajectory_pair(args.query_length, args.feedback_frequency)
-                    # (11)
+                    (trajectory1, trajectory2) = sampler.uniform_trajectory_pair(args.query_length,
+                                                                                 args.feedback_frequency)
                     render_trajectory_gym(args.env_id, trajectory1, global_step, "trajectory1")
                     render_trajectory_gym(args.env_id, trajectory2, global_step, "trajectory2")
                     if args.synthetic_feedback:
@@ -47,26 +46,22 @@ def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_o
                             preference = [0, 1]
                         else:
                             preference = [0.5, 0.5]
-                    else:
+                    preference = None
+                    while preference is None:  # Keep prompting until valid input
                         try:
-
-                            render_trajectory_gym(args.env_id, trajectory1, global_step,"trajectory1")
-                            render_trajectory_gym(args.env_id, trajectory2, global_step, "trajectory2")
                             user_input = int(input("Prefer 0, 1, or 2 (0.5/0.5 split): "))
                             if user_input == 0:
                                 preference = [1, 0]
-                                break
                             elif user_input == 1:
                                 preference = [0, 1]
-                                break
                             elif user_input == 2:
                                 preference = [0.5, 0.5]
-                                break
                             else:
                                 print("Invalid input. Please enter 0, 1, or 2.")
                         except ValueError:
                             print("Invalid input. Please enter a valid integer (0, 1, or 2).")
-                    # (12)
+
+                    # Add to preference buffer after valid input
                     preference_buffer.add((trajectory1, trajectory2), preference)
 
             # (14)

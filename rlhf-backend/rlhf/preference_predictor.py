@@ -46,7 +46,7 @@ class PreferencePredictor:
         :return: The average entropy loss computed across all trajectory pairs in the sample. This represents the discrepancy
                  between the predicted probabilities and the human-provided feedback.
         """
-        entropy_loss = 0
+        entropy_loss = torch.tensor(0.0, requires_grad=True)
         for trajectory_pair, human_feedback_label in sample:
             predicted_prob = self._compute_predicted_probability(trajectory_pair)
             # human feedback label to tensor conversion for processing
@@ -57,8 +57,7 @@ class PreferencePredictor:
             loss_1 = label_1 * torch.log(predicted_prob)
             loss_2 = label_2 * torch.log(1 - predicted_prob)
 
-
-            entropy_loss += -(loss_1 + loss_2)
+            entropy_loss = entropy_loss + -(loss_1 + loss_2)
 
         return entropy_loss #loss for whole batch
 

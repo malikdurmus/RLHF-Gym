@@ -52,12 +52,12 @@ class Args:
     """Entropy regularization coefficient."""
     autotune: bool = True
     """automatic tuning of the entropy coefficient"""
-    feedback_frequency: int = 1000
+    feedback_frequency: int = 100 #1000
     """how often we ask for feedback"""
-    query_size: int = 32
+    query_size: int = 5 #32
     """how much feedback each iteration"""
-    query_length: int = 500
+    query_length: int = 50 #500
     """length of trajectories"""
     pref_batch_size: int = 50
     """the batch size of sample from the preference memory"""
-    synthetic_feedback: bool = False
+    synthetic_feedback: bool = True
