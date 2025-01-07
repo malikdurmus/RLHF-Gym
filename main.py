@@ -1,23 +1,34 @@
+import threading
 import time
 import random
 import numpy as np
 import torch
 import tyro
 from torch.utils.tensorboard import SummaryWriter
-from args import Args
-from environment import initialize_env
-from networks import initialize_networks
-from train import train
-from buffer import TrajectorySampler, PreferenceBuffer, initialize_rb
-from preference_predictor import PreferencePredictor
-
+from backend.rlhf.args import Args
+from backend.rlhf.environment import initialize_env
+from backend.rlhf.networks import initialize_networks
+from backend.rlhf.train import train
+from backend.rlhf.buffer import TrajectorySampler, PreferenceBuffer, initialize_rb
+from backend.rlhf.preference_predictor import PreferencePredictor
+from backend.flask_app_server.server import create_app
 
 
 if __name__ == "__main__":
+    ### SERVER SETUP ###
+    app, socketio, video_process, notify_ready_videos = create_app()
 
-### SETUP ###
+    # Start the server in a separate thread
+    server_thread = threading.Thread(target=socketio.run, args=(app,), kwargs={"host": "0.0.0.0", "port": 5000})
+    server_thread.daemon = True
+    server_thread.start()
 
-    # Parse arguments (args.py)
+    # Start video processing in a separate thread
+    video_process.start()
+
+
+    ### RLHF SETUP ###
+    # Parse arguments
     args = tyro.cli(Args)
 
     # Unique run_name
@@ -44,7 +55,8 @@ if __name__ == "__main__":
 
     # Initialize networks (networks.py)
     actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer = initialize_networks(
-    envs, device, args.policy_lr, args.q_lr)
+        envs, device, args.policy_lr, args.q_lr
+    )
 
     #Initialize pref predictor
     preference_optimizer = PreferencePredictor(reward_network, reward_model_lr=args.reward_model_lr, device=device)
@@ -72,7 +84,7 @@ if __name__ == "__main__":
             save_code=True,
         )
 
-### TRAINING ### (train.py)
+    ### TRAINING ### (train.py)
 
     # start training
     train(
