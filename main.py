@@ -1,5 +1,3 @@
-import logging
-import threading
 import time
 import random
 import numpy as np
@@ -12,25 +10,14 @@ from backend.rlhf.networks import initialize_networks
 from backend.rlhf.train import train
 from backend.rlhf.buffer import TrajectorySampler, PreferenceBuffer, initialize_rb
 from backend.rlhf.preference_predictor import PreferencePredictor
+from backend.rlhf.intrinsic_reward import IntrinsicRewardCalculator
 
 
 if __name__ == "__main__":
-    ### SERVER SETUP ###
-    app, socketio, video_queue, stored_pairs, received_feedback, feedback_event  = create_app()
 
-    # Start the server in a separate thread
-    server_thread = threading.Thread(target=app.run, args=(app,), kwargs={"host": "0.0.0.0", "port": 5000, "debug": True})
-    server_thread.daemon = True
-    print("Starting server...")
-    logging.debug("Server is about to start.")
-    server_thread.start()
-    server_thread.join()
+### SETUP ###
 
-    #notify_ready_videos_thread = threading.Thread(target=notify_ready_videos, args=())
-    #notify_ready_videos_thread.start()
-
-    ### RLHF SETUP ###
-    # Parse arguments
+    # Parse arguments (args.py)
     args = tyro.cli(Args)
 
     # Unique run_name
@@ -64,13 +51,16 @@ if __name__ == "__main__":
     preference_optimizer = PreferencePredictor(reward_network, reward_model_lr=args.reward_model_lr, device=device)
 
     # Initialize replay buffer (buffer.py)
-    rb = initialize_rb(envs, args.buffer_size, device)
+    rb = CustomReplayBuffer.initialize(envs, args.buffer_size, device)
 
     # Initialize preference buffer (buffer.py)
     preference_buffer = PreferenceBuffer(args.buffer_size, device)
 
     # Initialize sampler (buffer.py)
     sampler = TrajectorySampler(rb)
+
+    # Initialize intrinsic reward calculator
+    int_rew_calc = IntrinsicRewardCalculator(k=5)
 
     # optional: track weight and biases
     if args.track:
@@ -106,8 +96,5 @@ if __name__ == "__main__":
         device=device,
         sampler=sampler,
         preference_buffer=preference_buffer,
-        video_queue = video_queue,
-        stored_pairs = stored_pairs,
-        received_feedback=received_feedback,
-        feedback_event  = feedback_event
+        int_rew_calc=int_rew_calc,
     )

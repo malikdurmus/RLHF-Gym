@@ -1,4 +1,3 @@
-import os
 from dataclasses import dataclass
 
 # Passed arguments
@@ -61,3 +60,5 @@ class Args:
     pref_batch_size: int = 50
     """the batch size of sample from the preference memory"""
     synthetic_feedback: bool = True
+    pretrain_timesteps: int = 1000
+    """how many steps for random exploration"""

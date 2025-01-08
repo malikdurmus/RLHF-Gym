@@ -8,6 +8,7 @@ class PreferencePredictor:
         self.reward_network = reward_network
         self.reward_model_lr = reward_model_lr
         self.device = device
+        self.optimizer = optim.Adam(self.reward_network.parameters(), lr=reward_model_lr)  # Optimizer used for reward model: Adam
 
     # for each data in sample we will use the predict function. after that we will use the preference to calculate entropy loss
     def _compute_predicted_probability(self, trajectories):
@@ -74,10 +75,9 @@ class PreferencePredictor:
         :param sample: A list of tuples where each tuple contains a pair of trajectories and their corresponding human feedback label.
         :return: None
         """
-        optimizer = optim.Adam(list(self.reward_network.parameters()), lr=self.reward_model_lr)  # Optimizer used for reward model: Adam
 
         # Reset Gradients
-        optimizer.zero_grad()
+        self.optimizer.zero_grad()
 
         # Calculate entropy loss
         entropy_loss = self._compute_loss(sample)
@@ -86,4 +86,7 @@ class PreferencePredictor:
         entropy_loss.backward()
 
         # Update the weights of network
-        optimizer.step()
+        self.optimizer.step()
+
+        return entropy_loss
+        #why return entropy loss?

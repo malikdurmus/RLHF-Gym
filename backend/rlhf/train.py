@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 import time
 import numpy as np
-
+from buffer import relabel_replay_buffer
 from backend.rlhf.render import render_trajectory_gym
 
 
@@ -23,32 +23,24 @@ def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_o
 
     start_time = time.time()
     obs, _ = envs.reset(seed=args.seed)
+    episodic_true_rewards = 0
 
-    ### POLICY LEARNING ### (6)
+    ### PEBBLE ALGO ###
+    ### PEBBLE: (6)
+    ### Unsupervised (2)
     for global_step in range(args.total_timesteps):
-        ### EXPLORATION PHASE ### (4)
-        # TODO Replace Exploration Phase
-        if global_step < args.learning_starts:
-            actions = np.array([envs.single_action_space.sample() for _ in range(envs.num_envs)])
-        else:
-            actions, _, _ = actor.get_action(torch.Tensor(obs).to(device))
-            actions = actions.detach().cpu().numpy()
-
-
-
-
-
-
-        ### REWARD LEARNING ### (7)
-        if global_step > args.learning_starts:
+        ### REWARD LEARNING ###
+        # PEBBLE: (7)
+        if global_step > args.reward_learning_starts:
             # (8)
-            if global_step % args.feedback_frequency == 0: #Is it a good idea to do sampling only with feedback query?
+            if global_step % args.reward_frequency == 0: #Is it a good idea to do sampling only with feedback query?
                 # (9)
-                for query in range(args.query_size):
-                    trajectory1, trajectory2 = sampler.uniform_trajectory_pair(args.query_length,
-                                                                                 args.feedback_frequency)
-                    # Notify that rendering has started
-                    print(f"Requested rendering for query {query} at step {global_step}")
+                if args.feedback_mode == "synthetic":
+                    for query in range(args.query_size):
+                        trajectory1, trajectory2 = sampler.uniform_trajectory_pair(args.query_length,
+                                                                                 args.reward_frequency, args.feedback_mode)
+                        # Notify that rendering has started
+                        print(f"Requested rendering for query {query} at step {global_step}")
                     video1_path = render_trajectory_gym(
                         args.env_id, trajectory2, global_step, "trajectory2", query)
                     video2_path = render_trajectory_gym(
@@ -71,19 +63,46 @@ def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_o
 
             # (14)
                 # (15)
-                data = preference_buffer.sample(args.pref_batch_size)
+                data = preference_buffer.sample(args.query_size)
                 # (16)
-                preference_optimizer.train_reward_model(data)
+                entropy_loss = preference_optimizer.train_reward_model(data)
                 received_feedback.clear()
                 stored_pairs.clear()
+                writer.add_scalar("losses/entropy_loss", entropy_loss.mean().item(), global_step)
                 # (18)
-                # TODO Relabel entire Replay Buffer using the updated reward model
+                relabel_replay_buffer(rb, reward_network, device)
+                # Clear Preference Buffer
+                preference_buffer.reset()
 
-        #actions, _, _ = actor.get_action(torch.Tensor(obs).to(device))
-        #actions = actions.detach().cpu().numpy()
 
-        # (21)
-        next_obs, rewards, terminations, truncations, infos = envs.step(actions) ##need to change this reward
+        ### ACTION ###
+        # PEBBLE: (20)
+        # Unsupervised: (3)
+        # choose random action
+        if global_step < args.pretrain_timesteps:
+            actions = np.array([envs.single_action_space.sample() for _ in range(envs.num_envs)])
+            int_rew_calc.add_state(obs)
+        # actor chooses action
+        else:
+            actions, _, _ = actor.get_action(torch.Tensor(obs).to(device))
+            actions = actions.detach().cpu().numpy()
+
+        # PEBBLE: (21)
+        # Unsupervised: (4)
+        next_obs, rewards, terminations, truncations, infos = envs.step(actions)
+
+        ### EXPLORATION PHASE ###
+        # Unsupervised: (5)
+        if args.pretrain_timesteps <= global_step < args.reward_learning_starts:
+            true_rewards = int_rew_calc.compute_intrinsic_reward(obs)
+        # PEBBLE: (22)
+        else:
+            action = torch.tensor(actions, device=device, dtype=torch.float32)
+            state = torch.tensor(obs, device=device, dtype=torch.float32)
+            with torch.no_grad():
+                true_rewards = reward_network.forward(action=action, observation=state).cpu().numpy()
+        episodic_true_rewards += true_rewards
+
 
         # Logging and processing of terminations
         if "episode" in infos:
@@ -91,8 +110,9 @@ def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_o
             print(f"global_step={global_step}, episodic_return={episode_info['r'][0]}")
             writer.add_scalar("charts/episodic_return", episode_info['r'][0], global_step)
             writer.add_scalar("charts/episodic_length", episode_info['l'][0], global_step)
+            writer.add_scalar("charts/episodic_true_return", episodic_true_rewards, global_step)
+            episodic_true_rewards = 0
 
-        # (21)
         real_next_obs = next_obs.copy()
 
         # Processing truncations
@@ -100,20 +120,23 @@ def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_o
             if trunc:
                 real_next_obs[idx] = next_obs[idx]
 
-        # Adding to Replay Buffer (22)
-        rb.add(obs, real_next_obs, actions, rewards, terminations, infos)
+        # Adding to Replay Buffer
+        # PEBBLE: (22)
+        # Unsupervised: (6)
+        rb.add(obs, real_next_obs, actions, rewards, true_rewards, terminations, infos)
         obs = next_obs
 
-        # Sample random minibatch (25)
-        # TODO: if-statement might be redundant after exploration phase rework
-        if global_step > args.learning_starts:
+        # Sample random minibatch
+        # PEBBLE: (25)
+        # Unsupervised: (9)
+        if global_step >= args.pretrain_timesteps:
             data = rb.sample(args.batch_size)
             with torch.no_grad():
                 next_state_actions, next_state_log_pi, _ = actor.get_action(data.next_observations)
                 qf1_next_target = qf1_target(data.next_observations, next_state_actions)
                 qf2_next_target = qf2_target(data.next_observations, next_state_actions)
                 min_qf_next_target = torch.min(qf1_next_target, qf2_next_target) - alpha * next_state_log_pi
-                next_q_value = data.rewards.flatten() + (1 - data.dones.flatten()) * args.gamma * (
+                next_q_value = data.true_rewards.flatten() + (1 - data.dones.flatten()) * args.gamma * (
                     min_qf_next_target).view(-1)
 
             qf1_a_values = qf1(data.observations, data.actions).view(-1)
@@ -122,7 +145,9 @@ def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_o
             qf2_loss = F.mse_loss(qf2_a_values, next_q_value)
             qf_loss = qf1_loss + qf2_loss
 
-            # optimize the model (26)
+            # Optimize Critic
+            # PEBBLE: (26)
+            # Unsupervised: (10)
             q_optimizer.zero_grad()
             qf_loss.backward()
             q_optimizer.step()
@@ -138,6 +163,9 @@ def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_o
                     min_qf_pi = torch.min(qf1_pi, qf2_pi)
                     actor_loss = ((alpha * log_pi) - min_qf_pi).mean()
 
+                    # Optimize Actor:
+                    # PEBBLE: (26)
+                    # Unsupervised: (10)
                     actor_optimizer.zero_grad()
                     actor_loss.backward()
                     actor_optimizer.step()
@@ -159,6 +187,7 @@ def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_o
                 for param, target_param in zip(qf2.parameters(), qf2_target.parameters()):
                     target_param.data.copy_(args.tau * param.data + (1 - args.tau) * target_param.data)
 
+
             # Logging Tensorflow
             if global_step % 100 == 0:
                 writer.add_scalar("losses/qf1_values", qf1_a_values.mean().item(), global_step)
@@ -173,8 +202,12 @@ def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_o
                 if args.autotune:
                     writer.add_scalar("losses/alpha_loss", alpha_loss.item(), global_step)
 
-        envs.close()
-        writer.close()
+        # Once unsupervised exploration is finished, we overwrite the intrinsic reward with our model
+        if global_step == args.reward_learning_starts:
+            relabel_replay_buffer(rb, reward_network, device)
+
+    envs.close()
+    writer.close()
 
 
 def process_video_requests(video_request_queue,video_response_queue):

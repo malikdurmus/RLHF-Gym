@@ -31,9 +31,9 @@ function loadVideo(videoSrc1, videoSrc2) {
         const loader1 = document.getElementById('loader1');
         const loader2= document.getElementById('loader2');
 
-    mainOption1.onclick = mainOption2.onclick = neutralOption.onclick = clicks;
+    mainOption1.onclick = mainOption2.onclick = neutralOption.onclick = clickOption;
 
-    function clicks() {
+    function clickOption() {
         videoPlayer1.pause();
         videoPlayer2.pause();
         videoPlayer1.style.display = 'none';
@@ -56,5 +56,30 @@ function loadVideo(videoSrc1, videoSrc2) {
             videoPlayer2.play();
         }, 5000);
     }
-}
 
+    mainOption1.onclick = () => sendFeedback(1);
+    mainOption2.onclick = () => sendFeedback(2);
+    neutralOption.onclick = () => sendFeedback(0);
+
+    function sendFeedback(option) {
+
+        const feedbackData = {
+        preference: option === 1 ? "option1" : option === 2 ? "option2" : "neutral_option",
+        neutralOption: option === 0 ? "neutral_option" : ""
+   };
+
+    fetch('/train-agent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(feedbackData)
+    })
+
+    .then(response => response.json())
+    .then(result => {
+        console.log('Feedback received:', result);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+}
