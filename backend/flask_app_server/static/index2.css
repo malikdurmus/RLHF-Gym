@@ -1,0 +1,120 @@
+ :root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  --primary-color: #ffffff;
+  --secondary-color: #000000;
+  --tertiary-color: #774ba3;
+  --quartenary-color: #292828;
+  --quinary-color: #7021bd;
+  color: var(--primary-color);
+  background-color: var(--secondary-color);
+  text-align: center;
+}
+
+.main-title {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto;
+  padding: 20px;
+  border-color: var(--tertiary-color);
+  border-style: solid;
+  border-width: 2px;
+  border-radius: 25px;
+  box-shadow: 0 0 20px var(--quinary-color);
+}
+
+.explanation {
+  border-style: solid;
+  font-size: 20px;
+  border-color: var(--tertiary-color);
+  border-style: solid;
+  border-width: 2px;
+  border-radius: 25px;
+  box-shadow: 0 0 20px var(--quinary-color);
+}
+
+.comparisonContainer {
+  width: 95%;
+  margin: auto;
+  padding: 5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 250px;
+}
+
+.mainOptions {
+  width: 49%;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--primary-color);
+  background-color: var(--quartenary-color);
+  border-color: var(--tertiary-color);
+  box-shadow: 0 0 20px var(--quinary-color);
+  border-style: solid;
+  border-width: 2px;
+  border-radius: 12.5px;
+}
+
+.neutralOption {
+    cursor: pointer;
+    display: block;
+    margin: 0 auto;
+    color: var(--primary-color);
+    background-color: var(--quartenary-color);
+    border-color: var(--tertiary-color);
+    box-shadow: 0 0 20px var(--quinary-color);
+    border-style: solid;
+    border-width: 2px;
+    border-radius: 12.5px;
+    padding: 15px 100px;
+}
+
+.mainOptions:hover, .neutralOption:hover {
+  opacity: 80%;
+}
+
+.video {
+   max-width: 100%;
+   height: auto;
+}
+
+.sentence-container {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.sentence {
+    flex: 1;
+    margin: 0 10px;
+    padding: 15px;
+}
+
+.loader {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 6px solid var(--primary-color);
+    border-top: 6px solid var(--tertiary-color);
+    box-shadow: 0 0 20px var(--quinary-color);
+    border-radius: 60%;
+    width: 60px;
+    height: 60px;
+    animation: rotation 2s linear infinite;
+}
+
+@keyframes rotation {
+      100% { transform: rotate(360deg); }
+}

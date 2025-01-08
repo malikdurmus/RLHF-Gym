@@ -1,0 +1,14 @@
+lets say we render 5 video pairs each time, therefore, we will be getting 5 preferences from the frontend
+
+start the app
+
+backend generates videos and queues their paths in a queue consisting of pairs, when the queue is full, the backend sends the paths to the frontend
+
+frontend receives all path pairs and shows each video pair and saves the preference for each pair one by one. when all the preferences are collected
+the frontend sends them all back to the backend.
+
+to update the reward model, train_reward_model method should be used. this method takes 1 argument, a list consisting of tuples of (trajectory1,trajectory2,preference)
+
+after that the training continues
+
+

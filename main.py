@@ -1,3 +1,4 @@
+import logging
 import threading
 import time
 import random
@@ -11,21 +12,22 @@ from backend.rlhf.networks import initialize_networks
 from backend.rlhf.train import train
 from backend.rlhf.buffer import TrajectorySampler, PreferenceBuffer, initialize_rb
 from backend.rlhf.preference_predictor import PreferencePredictor
-from backend.flask_app_server.server import create_app
 
 
 if __name__ == "__main__":
     ### SERVER SETUP ###
-    app, socketio, video_process, notify_ready_videos = create_app()
+    app, socketio, video_queue, stored_pairs, received_feedback, feedback_event  = create_app()
 
     # Start the server in a separate thread
-    server_thread = threading.Thread(target=socketio.run, args=(app,), kwargs={"host": "0.0.0.0", "port": 5000})
+    server_thread = threading.Thread(target=app.run, args=(app,), kwargs={"host": "0.0.0.0", "port": 5000, "debug": True})
     server_thread.daemon = True
+    print("Starting server...")
+    logging.debug("Server is about to start.")
     server_thread.start()
+    server_thread.join()
 
-    # Start video processing in a separate thread
-    video_process.start()
-
+    #notify_ready_videos_thread = threading.Thread(target=notify_ready_videos, args=())
+    #notify_ready_videos_thread.start()
 
     ### RLHF SETUP ###
     # Parse arguments
@@ -104,4 +106,8 @@ if __name__ == "__main__":
         device=device,
         sampler=sampler,
         preference_buffer=preference_buffer,
+        video_queue = video_queue,
+        stored_pairs = stored_pairs,
+        received_feedback=received_feedback,
+        feedback_event  = feedback_event
     )
