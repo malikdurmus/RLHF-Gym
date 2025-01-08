@@ -103,7 +103,7 @@ class Actor(nn.Module):
         return action, log_prob, mean
 
 
-def initialize_networks(envs, device, policy_lr, q_lr,reward_model_lr):
+def initialize_networks(envs, device, policy_lr, q_lr):
     actor = Actor(envs).to(device)
     # Reward network
     reward_network = EstimatedRewardNetwork(envs).to(device)

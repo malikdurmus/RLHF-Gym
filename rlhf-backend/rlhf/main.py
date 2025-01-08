@@ -8,8 +8,9 @@ from args import Args
 from environment import initialize_env
 from networks import initialize_networks
 from train import train
-from buffer import TrajectorySampler, PreferenceBuffer, initialize_rb
+from buffer import TrajectorySampler, PreferenceBuffer, CustomReplayBuffer#, initialize_rb
 from preference_predictor import PreferencePredictor
+from intrinsic_reward import IntrinsicRewardCalculator
 
 
 
@@ -44,20 +45,22 @@ if __name__ == "__main__":
 
     # Initialize networks (networks.py)
     actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer = initialize_networks(
-        envs, device, args.policy_lr, args.q_lr ,args.reward_model_lr
-    )
+        envs, device, args.policy_lr, args.q_lr)
 
     #Initialize pref predictor
-    preference_optimizer = PreferencePredictor(reward_network, reward_model_lr=args.reward_model_lr)
+    preference_optimizer = PreferencePredictor(reward_network, reward_model_lr=args.reward_model_lr, device=device)
 
     # Initialize replay buffer (buffer.py)
-    rb = initialize_rb(envs, args.buffer_size, device)
+    rb = CustomReplayBuffer.initialize(envs, args.buffer_size, device)
 
     # Initialize preference buffer (buffer.py)
     preference_buffer = PreferenceBuffer(args.buffer_size, device)
 
     # Initialize sampler (buffer.py)
     sampler = TrajectorySampler(rb)
+
+    # Initialize intrinsic reward calculator
+    int_rew_calc = IntrinsicRewardCalculator(k=5)
 
     # optional: track weight and biases
     if args.track:
@@ -93,4 +96,5 @@ if __name__ == "__main__":
         device=device,
         sampler=sampler,
         preference_buffer=preference_buffer,
+        int_rew_calc=int_rew_calc,
     )
