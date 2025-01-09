@@ -62,15 +62,14 @@ def create_app():
     return app, socketio
 
 if __name__ == "__main__":
-    # Create and configure Flask app
     app, socketio = create_app()
     logging.basicConfig(level=logging.DEBUG)
     os.makedirs(VIDEO_DIRECTORY, exist_ok=True)
+
     # RLHF setup
     args = tyro.cli(Args)
 
     parent_directory = os.path.abspath(os.path.join(os.getcwd(), '..', '..'))
-
     run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
     run_path = os.path.join(parent_directory, "runs", run_name)
 
@@ -78,6 +77,7 @@ if __name__ == "__main__":
 
     writer.add_text("hyperparameters", "|param|value|\n|-|-|\n%s" % ("\n".join([f"|{key}|{value}|" for key, value in vars(args).items()])))
 
+    #Seeding
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -87,11 +87,17 @@ if __name__ == "__main__":
 
     envs = initialize_env(args.env_id, args.seed, args.capture_video, run_name, args.record_every_th_episode)
 
-    actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer = initialize_networks(envs, device, args.policy_lr, args.q_lr)
+    actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer = (
+        initialize_networks(envs, device, args.policy_lr, args.q_lr))
+
     preference_optimizer = PreferencePredictor(reward_network, reward_model_lr=args.reward_model_lr, device=device)
+
     rb = CustomReplayBuffer.initialize(envs, args.buffer_size, device)
+
     preference_buffer = PreferenceBuffer(args.buffer_size, device)
+
     sampler = TrajectorySampler(rb)
+
     int_rew_calc = IntrinsicRewardCalculator(k=5)
 
     # Start training in a separate thread
