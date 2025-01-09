@@ -89,4 +89,3 @@ class PreferencePredictor:
         self.optimizer.step()
 
         return entropy_loss
-        #why return entropy loss?

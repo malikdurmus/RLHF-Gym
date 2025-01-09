@@ -20,20 +20,15 @@ DEFAULT_CAMERA_CONFIG = { #specific to hopper, might change for diff envs.TODO:l
 
 parent_directory = os.path.abspath(os.path.join(os.getcwd(), '..', '..'))
 
-
-
-def render_trajectory_gym(env_name, observations1,global_step,trajectory_id,query,filename="gym_trajectory_step"):
-    begin = time.time()
-    env = gym.make(env_name, render_mode="rgb_array")
+def _generate_images(env, observations):
+    """Generate images from a sequence of observations."""
     images = []
-    env.reset()
-
-    for obs in tqdm(observations1.states, desc="Processing Observations"):
+    for obs in tqdm(observations.states, desc="Processing Observations"):
         try:
             obs = obs.squeeze().numpy()
-            qpos = obs[:env.unwrapped.model.nq] # No need for explicit dynamic checking, this is already specified in env xml
-            qvel = obs[env.unwrapped.model.nq:] # same thing
-            env.unwrapped.set_state(qpos, qvel)   # hint type
+            qpos = obs[:env.unwrapped.model.nq]
+            qvel = obs[env.unwrapped.model.nq:]
+            env.unwrapped.set_state(qpos, qvel)
         except AttributeError as e:
             print(f"Attribute Error: {e}")
             print("State causing the problem:", obs)
@@ -44,24 +39,35 @@ def render_trajectory_gym(env_name, observations1,global_step,trajectory_id,quer
             print("State causing the problem:", obs)
             env.reset()
             continue
+        images.append(env.render())
+    return images
 
-        img = env.render()
-        images.append(img)
+def render_trajectory_gym(env_name, observations, global_step, trajectory_id, query_id,
+                          base_filename="gym_trajectory_step"):
+    """
+    Render a gym trajectory based on observations and save as a video file.
+    """
+    start_time = time.time()
+    env = gym.make(env_name, render_mode="rgb_array")
+    env.reset()
+
+    # Generate rendered images
+    images = _generate_images(env, observations)
 
     env.close()
-    query = "query" + str(query)
-    filename = f"{filename}_{global_step}_{query}_{trajectory_id}.mp4"
+    query_str = f"query{query_id}"
+    filename = f"{base_filename}_{global_step}_{query_str}_{trajectory_id}.mp4"
     run_path = os.path.join(parent_directory, "videos", filename)
 
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Or try other codecs like 'XVID'
+    # Save video
+    fourcc = cv2.VideoWriter_fourcc(*"mpv4")
     out = cv2.VideoWriter(run_path, fourcc, 60.0, (480, 480))
-
     for img in images:
         out.write(img)
     out.release()
+
     print(f"Trajectory saved to {run_path}")
-    end = time.time()
-    print("time it has taken for gym rendering",end-begin) # TODO: altough not crucial, i might laterconnect the runs with the created videos eg: for benchmarking
+    print(f"Time taken for gym rendering: {time.time() - start_time:.2f} seconds")
     return filename
 
 def dont_use_render_trajectory_gym(env_name, observations1,global_step,trajectory_id,query,filename="gym_trajectory_step"):
