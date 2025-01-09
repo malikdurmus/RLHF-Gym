@@ -35,7 +35,7 @@ class Args:
     """target smoothing coefficient (default: 0.005)"""
     batch_size: int = 100
     """the batch size of sample from the replay memory"""
-    learning_starts: int = 100 #5e3
+    reward_learning_starts: int = 100 #5e3
     """timestep to start learning"""
     reward_model_lr: float = 1e-3
     """the learning rate of the reward model optimizer"""
@@ -59,6 +59,6 @@ class Args:
     """length of trajectories"""
     pref_batch_size: int = 50
     """the batch size of sample from the preference memory"""
-    synthetic_feedback: bool = True
+    synthetic_feedback: bool = False
     pretrain_timesteps: int = 1000
     """how many steps for random exploration"""

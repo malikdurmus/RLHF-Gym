@@ -1,4 +1,5 @@
 import datetime
+import os
 import time
 import cv2
 import gymnasium as gym
@@ -16,6 +17,9 @@ DEFAULT_CAMERA_CONFIG = { #specific to hopper, might change for diff envs.TODO:l
     "lookat": np.array((0.0, 0.0, 1.15)),
     "elevation": -20.0,
 }
+
+parent_directory = os.path.abspath(os.path.join(os.getcwd(), '..', '..'))
+
 
 
 def render_trajectory_gym(env_name, observations1,global_step,trajectory_id,query,filename="gym_trajectory_step"):
@@ -46,19 +50,21 @@ def render_trajectory_gym(env_name, observations1,global_step,trajectory_id,quer
 
     env.close()
     query = "query" + str(query)
-    filename = f"videos/{filename}_{global_step}_{query}_{trajectory_id}.mp4"
+    filename = f"{filename}_{global_step}_{query}_{trajectory_id}.mp4"
+    run_path = os.path.join(parent_directory, "videos", filename)
+
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Or try other codecs like 'XVID'
-    out = cv2.VideoWriter(filename, fourcc, 60.0, (480, 480))
+    out = cv2.VideoWriter(run_path, fourcc, 60.0, (480, 480))
 
     for img in images:
         out.write(img)
     out.release()
-    print(f"Trajectory saved to {filename}")
+    print(f"Trajectory saved to {run_path}")
     end = time.time()
-    print("time it has taken for gym rendering",end-begin)
+    print("time it has taken for gym rendering",end-begin) # TODO: altough not crucial, i might laterconnect the runs with the created videos eg: for benchmarking
     return filename
 
-def reander_trajectory_gym(env_name, observations1,global_step,trajectory_id,query,filename="gym_trajectory_step"):
+def dont_use_render_trajectory_gym(env_name, observations1,global_step,trajectory_id,query,filename="gym_trajectory_step"):
     run_name = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     begin = time.time()
     env = gym.make(env_name, render_mode="rgb_array")

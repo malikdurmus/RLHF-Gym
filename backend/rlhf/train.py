@@ -4,13 +4,13 @@ import torch.nn.functional as F
 import torch.optim as optim
 import time
 import numpy as np
-from buffer import relabel_replay_buffer
+from backend.rlhf.buffer import relabel_replay_buffer
 from backend.rlhf.render import render_trajectory_gym
 
 
 def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer,
           preference_optimizer, args, writer, device, sampler,
-          preference_buffer,video_queue,stored_pairs,received_feedback,feedback_event ):
+          preference_buffer,video_queue,stored_pairs,received_feedback,feedback_event,int_rew_calc ):
 
     # [Optional] automatic adjustment of the entropy coefficient
     if args.autotune:
@@ -33,39 +33,40 @@ def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_o
         # PEBBLE: (7)
         if global_step > args.reward_learning_starts:
             # (8)
-            if global_step % args.reward_frequency == 0: #Is it a good idea to do sampling only with feedback query?
+            if global_step % args.feedback_frequency == 0: #Is it a good idea to do sampling only with feedback query?
                 # (9)
-                if args.feedback_mode == "synthetic":
+                if not args.synthetic_feedback:
                     for query in range(args.query_size):
                         trajectory1, trajectory2 = sampler.uniform_trajectory_pair(args.query_length,
-                                                                                 args.reward_frequency, args.feedback_mode)
+                                                                                   args.feedback_frequency,args.synthetic_feedback)
                         # Notify that rendering has started
                         print(f"Requested rendering for query {query} at step {global_step}")
-                    video1_path = render_trajectory_gym(
-                        args.env_id, trajectory2, global_step, "trajectory2", query)
-                    video2_path = render_trajectory_gym(
-                        args.env_id, trajectory2, global_step, "trajectory2", query)
+                        video1_path = render_trajectory_gym(
+                            args.env_id, trajectory1, global_step, "trajectory1", query)
+                        video2_path = render_trajectory_gym(
+                            args.env_id, trajectory2, global_step, "trajectory2", query)
 
-                    pair_id = str(uuid.uuid4())  # UUID generation
-                    video_queue.put((pair_id, trajectory1, trajectory2, video1_path, video2_path))
+                        pair_id = str(uuid.uuid4())  # UUID generation
+                        video_queue.put((pair_id, trajectory1, trajectory2, video1_path, video2_path))
 
-                    stored_pairs.append({
-                        'id': pair_id,
-                        'trajectory1': trajectory1,
-                        'trajectory2': trajectory2
-                    })
-                if not video_queue.qsize() == args.query_size:
-                    raise Exception("queue has more entries")
-                # now the video queue is full of video paths and pair ids
-                print("Waiting for user feedback...")
-                feedback_event.wait()  # Blocks until feedback is received
-                feedback_event.clear()  # Reset the event for the next feedback cycle
+                        stored_pairs.append({
+                            'id': pair_id,
+                            'trajectory1': trajectory1,
+                            'trajectory2': trajectory2
+                        })
+
+                    if not video_queue.qsize() == args.query_size:
+                        raise Exception("queue has more/less entries")
+                    # now the video queue is full of video paths and pair ids
+                    print("Waiting for user feedback...")
+                    feedback_event.wait()  # Blocks until feedback is received
+                    feedback_event.clear()  # Reset the event for the next feedback cycle
 
             # (14)
                 # (15)
                 data = preference_buffer.sample(args.query_size)
                 # (16)
-                entropy_loss = preference_optimizer.train_reward_model(data)
+                entropy_loss = preference_optimizer.train_reward_model(data) # TODO: need to train with the received_feedback object
                 received_feedback.clear()
                 stored_pairs.clear()
                 writer.add_scalar("losses/entropy_loss", entropy_loss.mean().item(), global_step)

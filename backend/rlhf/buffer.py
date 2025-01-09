@@ -98,7 +98,7 @@ class TrajectorySampler:
         self.rb = rb
 
     # Single trajectory
-    def uniform_trajectory(self, traj_length, time_window, feedback_mode):
+    def uniform_trajectory(self, traj_length, time_window, synthetic_feedback):
         if self.rb.size() < traj_length or self.rb.size() < time_window or time_window < traj_length:
             raise ValueError("Not enough data to sample")
 
@@ -112,7 +112,7 @@ class TrajectorySampler:
         states = torch.tensor(self.rb.observations[start_index:end_index])
         actions = torch.tensor(self.rb.actions[start_index:end_index])
 
-        if feedback_mode == "synthetic":
+        if synthetic_feedback:
             rewards = torch.tensor(self.rb.rewards[start_index:end_index])
             rewards = rewards if rewards.ndim > 1 else rewards.unsqueeze(-1)
         else:
@@ -132,19 +132,19 @@ class TrajectorySampler:
 
 
     # trajectory pair
-    def uniform_trajectory_pair(self, traj_length, time_window, feedback_mode):
-        trajectory1 = self.uniform_trajectory(traj_length, time_window, feedback_mode)
-        trajectory2 = self.uniform_trajectory(traj_length, time_window, feedback_mode)
+    def uniform_trajectory_pair(self, traj_length, time_window, synthetic_feedback):
+        trajectory1 = self.uniform_trajectory(traj_length, time_window, synthetic_feedback)
+        trajectory2 = self.uniform_trajectory(traj_length, time_window, synthetic_feedback)
 
-        return (trajectory1, trajectory2)
+        return trajectory1, trajectory2
 
 
     # batch of trajectories
-    def uniform_trajectory_batch(self, traj_length, time_window, batch_size, feedback_mode):
+    def uniform_trajectory_batch(self, traj_length, time_window, batch_size, synthetic_feedback):
         trajectories_batch = []
 
         for _ in range(batch_size):
-            trajectory = self.uniform_trajectory(traj_length, time_window, feedback_mode)
+            trajectory = self.uniform_trajectory(traj_length, time_window, synthetic_feedback)
 
             trajectories_batch.append(trajectory)
 
@@ -152,11 +152,11 @@ class TrajectorySampler:
 
 
     # batch of trajectory pairs
-    def uniform_trajectory_pair_batch(self, traj_length, time_window, batch_size, feedback_mode):
+    def uniform_trajectory_pair_batch(self, traj_length, time_window, batch_size, synthetic_feedback):
         trajectories_batch = []
 
         for _ in range(batch_size):
-            (trajectory1, trajectory2) = self.uniform_trajectory_pair(traj_length, time_window, feedback_mode)
+            (trajectory1, trajectory2) = self.uniform_trajectory_pair(traj_length, time_window, synthetic_feedback)
 
             trajectories_batch.append((trajectory1, trajectory2))
 

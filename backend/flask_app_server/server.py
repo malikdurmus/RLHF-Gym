@@ -12,11 +12,11 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from flask_socketio import SocketIO
 from multiprocessing import Event
-
 from backend.rlhf.args import Args
 from backend.rlhf.environment import initialize_env
+from backend.rlhf.intrinsic_reward import IntrinsicRewardCalculator
 from backend.rlhf.networks import initialize_networks
-from backend.rlhf.buffer import TrajectorySampler, PreferenceBuffer, initialize_rb
+from backend.rlhf.buffer import TrajectorySampler, PreferenceBuffer, CustomReplayBuffer
 from backend.rlhf.preference_predictor import PreferencePredictor
 from backend.rlhf.train import train
 
@@ -46,6 +46,7 @@ def create_app():
 
     @app.route('/submit_preferences', methods=['POST'])
     def submit_preferences():
+        print("Reached here")  # Add this for visibility in console
         global received_feedback
         feedback = request.json.get('preferences', [])
         for feedback_item in feedback:
@@ -55,6 +56,7 @@ def create_app():
             if trajectory_data:
                 received_feedback.append((trajectory_data['trajectory1'], trajectory_data['trajectory2'], preference))
         feedback_event.set()
+        print(received_feedback)
         return jsonify({'status': 'success'})
 
     return app, socketio
@@ -64,13 +66,15 @@ if __name__ == "__main__":
     app, socketio = create_app()
     logging.basicConfig(level=logging.DEBUG)
     os.makedirs(VIDEO_DIRECTORY, exist_ok=True)
-
     # RLHF setup
     args = tyro.cli(Args)
 
-    run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
+    parent_directory = os.path.abspath(os.path.join(os.getcwd(), '..', '..'))
 
-    writer = SummaryWriter(f"runs/{run_name}")
+    run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
+    run_path = os.path.join(parent_directory, "runs", run_name)
+
+    writer = SummaryWriter(run_path)
 
     writer.add_text("hyperparameters", "|param|value|\n|-|-|\n%s" % ("\n".join([f"|{key}|{value}|" for key, value in vars(args).items()])))
 
@@ -85,9 +89,10 @@ if __name__ == "__main__":
 
     actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer = initialize_networks(envs, device, args.policy_lr, args.q_lr)
     preference_optimizer = PreferencePredictor(reward_network, reward_model_lr=args.reward_model_lr, device=device)
-    rb = initialize_rb(envs, args.buffer_size, device)
+    rb = CustomReplayBuffer.initialize(envs, args.buffer_size, device)
     preference_buffer = PreferenceBuffer(args.buffer_size, device)
     sampler = TrajectorySampler(rb)
+    int_rew_calc = IntrinsicRewardCalculator(k=5)
 
     # Start training in a separate thread
     training_thread = threading.Thread(
@@ -95,7 +100,8 @@ if __name__ == "__main__":
         args=(
             envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_optimizer,
             actor_optimizer, preference_optimizer, args, writer, device, sampler,
-            preference_buffer, video_queue, stored_pairs, received_feedback, feedback_event
+            preference_buffer, video_queue, stored_pairs, received_feedback, feedback_event,
+            int_rew_calc
         )
     )
     training_thread.daemon = True

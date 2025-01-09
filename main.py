@@ -8,7 +8,7 @@ from backend.rlhf.args import Args
 from backend.rlhf.environment import initialize_env
 from backend.rlhf.networks import initialize_networks
 from backend.rlhf.train import train
-from backend.rlhf.buffer import TrajectorySampler, PreferenceBuffer, initialize_rb
+from backend.rlhf.buffer import TrajectorySampler, PreferenceBuffer, initialize_rb, CustomReplayBuffer
 from backend.rlhf.preference_predictor import PreferencePredictor
 from backend.rlhf.intrinsic_reward import IntrinsicRewardCalculator
 
