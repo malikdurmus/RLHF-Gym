@@ -103,10 +103,12 @@ class Actor(nn.Module):
         return action, log_prob, mean
 
 
-def initialize_networks(envs, device, policy_lr, q_lr):
+def initialize_networks(envs, device, policy_lr, q_lr, num_models):
     actor = Actor(envs).to(device)
     # Reward network
-    reward_network = EstimatedRewardNetwork(envs).to(device)
+    #reward_network = EstimatedRewardNetwork(envs).to(device)
+    # TODO different weights (by seeding?)
+    reward_networks = [EstimatedRewardNetwork(envs).to(device) for _ in range(num_models)]
     # Q-Networks
     qf1 = SoftQNetwork(envs).to(device)
     qf2 = SoftQNetwork(envs).to(device)
@@ -120,4 +122,4 @@ def initialize_networks(envs, device, policy_lr, q_lr):
     # Optimizer Actor (policy)
     actor_optimizer = optim.Adam(list(actor.parameters()), lr=policy_lr)
 
-    return actor, reward_network ,qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer
+    return actor, reward_networks ,qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer

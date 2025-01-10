@@ -170,7 +170,7 @@ class TrajectorySampler:
         return traj.rewards.sum().item()
 
 
-def relabel_replay_buffer(rb, reward_model, device):
+def relabel_replay_buffer(rb, reward_models, device):
     num_entries = rb.buffer_size if rb.full else rb.pos
 
     for idx in range(num_entries):
@@ -178,7 +178,14 @@ def relabel_replay_buffer(rb, reward_model, device):
         action = torch.tensor(rb.actions[idx], device=device, dtype=torch.float32)
         state = torch.tensor(rb.observations[idx], device=device, dtype=torch.float32)
 
-        # Compute the new reward using the reward model
+        # Compute the new reward using the reward models' mean
+        rewards = []
         with torch.no_grad():
-            new_reward = reward_model.forward(action=action, observation=state).cpu().numpy()
-        rb.true_rewards[idx] = new_reward
+            for reward_model in reward_models:
+                reward = reward_model.forward(action=action, observation=state)
+                rewards.append(reward.cpu().numpy())
+
+        # Compute mean reward
+        mean_reward = np.mean(rewards, axis=0)
+
+        rb.true_rewards[idx] = mean_reward

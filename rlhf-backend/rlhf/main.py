@@ -44,11 +44,11 @@ if __name__ == "__main__":
     envs = initialize_env(args.env_id, args.seed, args.capture_video, run_name, args.record_every_th_episode)
 
     # Initialize networks (networks.py)
-    actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer = initialize_networks(
-        envs, device, args.policy_lr, args.q_lr)
+    actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer = initialize_networks(
+        envs, device, args.policy_lr, args.q_lr, args.num_models)
 
     #Initialize pref predictor
-    preference_optimizer = PreferencePredictor(reward_network, reward_model_lr=args.reward_model_lr, device=device)
+    preference_optimizer = PreferencePredictor(reward_networks, reward_model_lr=args.reward_model_lr, device=device)
 
     # Initialize replay buffer (buffer.py)
     rb = CustomReplayBuffer.initialize(envs, args.buffer_size, device)
@@ -83,7 +83,7 @@ if __name__ == "__main__":
         envs=envs,
         rb=rb,
         actor=actor,
-        reward_network=reward_network,
+        reward_networks=reward_networks,
         qf1=qf1,
         qf2=qf2,
         qf1_target=qf1_target,

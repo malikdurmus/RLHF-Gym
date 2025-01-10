@@ -5,7 +5,7 @@ import time
 import numpy as np
 from buffer import relabel_replay_buffer
 
-def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer,
+def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer,
           preference_optimizer, args, writer, device, sampler, preference_buffer, int_rew_calc):
 
     # [Optional] automatic adjustment of the entropy coefficient
@@ -32,7 +32,7 @@ def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_o
             if global_step % args.reward_frequency == 0:
                 # (9)
                 if args.feedback_mode == "synthetic":
-                    for _ in range(args.query_size):
+                    for _ in range(args.uniform_query_size):
                         # (10)
                         (trajectory1, trajectory2) = sampler.uniform_trajectory_pair(args.query_length, args.reward_frequency, args.feedback_mode)
                         # (11)
@@ -51,12 +51,12 @@ def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_o
 
                 ### REWARD MODEL UPDATE / RELABELING
                 # (15)
-                data = preference_buffer.sample(args.query_size)
+                data = preference_buffer.sample(args.uniform_query_size)
                 # (16)
                 entropy_loss = preference_optimizer.train_reward_model(data)
                 writer.add_scalar("losses/entropy_loss", entropy_loss.mean().item(), global_step)
                 # (18)
-                relabel_replay_buffer(rb, reward_network, device)
+                relabel_replay_buffer(rb, reward_networks, device)
                 # Clear Preference Buffer
                 preference_buffer.reset()
 
@@ -85,8 +85,12 @@ def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_o
         else:
             action = torch.tensor(actions, device=device, dtype=torch.float32)
             state = torch.tensor(obs, device=device, dtype=torch.float32)
+            true_rewards = []
             with torch.no_grad():
-                true_rewards = reward_network.forward(action=action, observation=state).cpu().numpy()
+                for reward_model in reward_networks:
+                    true_reward = reward_model.forward(action=action, observation=state)
+                    true_rewards.append(true_reward.cpu().numpy())
+            true_rewards = np.mean(true_rewards, axis=0)
         episodic_true_rewards += true_rewards
 
 
@@ -190,7 +194,7 @@ def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_o
 
         # Once unsupervised exploration is finished, we overwrite the intrinsic reward with our model
         if global_step == args.reward_learning_starts:
-            relabel_replay_buffer(rb, reward_network, device)
+            relabel_replay_buffer(rb, reward_networks, device)
 
     envs.close()
     writer.close()

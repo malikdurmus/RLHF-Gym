@@ -4,14 +4,15 @@ import torch.optim as optim
 
 class PreferencePredictor:
 
-    def __init__(self, reward_network: "EstimatedRewardNetwork", reward_model_lr, device):
-        self.reward_network = reward_network
-        self.reward_model_lr = reward_model_lr
+    def __init__(self, reward_networks: list, reward_model_lr, device):
+        self.reward_networks = reward_networks
         self.device = device
-        self.optimizer = optim.Adam(self.reward_network.parameters(), lr=self.reward_model_lr)  # Optimizer used for reward model: Adam
+        self.optimizers = [
+            optim.Adam(reward_network.parameters(), lr=reward_model_lr) for reward_network in reward_networks
+        ]  # Optimizer used for reward models: Adam
 
     # for each data in sample we will use the predict function. after that we will use the preference to calculate entropy loss
-    def _compute_predicted_probability(self, trajectories):
+    def compute_predicted_probabilities(self, trajectories):
         """
         :param trajectories: A tuple consisting of two trajectories, where each trajectory is an iterable of tuples. Each tuple represents (action, state) pairs from the trajectory.
         :return: A scalar value representing the predicted probability that the human will choose the first trajectory over the second. Returns None if the trajectories have mismatched lengths.
@@ -24,53 +25,51 @@ class PreferencePredictor:
         states0, actions0 = trajectory0.states, trajectory0.actions
         states1, actions1 = trajectory1.states, trajectory1.actions
 
-        if len(trajectory0) != len(trajectory1):
-            raise ValueError("Trajectory lengths do not match")
+        predictions = []
 
-        total_prob0 = 0
-        total_prob1 = 0
-        for state, action in zip(states0, actions0):
-            action = action.to(self.device)
-            state = state.to(self.device)
-            prob_for_action = self.reward_network(action=action,
-                                                  observation=state) # estimated probability, that the human will prefer action 0
-            total_prob0 += prob_for_action
-        for state, action in zip(states1, actions1):
-            action = action.to(self.device)
-            state = state.to(self.device)
-            prob_for_action = self.reward_network(action=action,
-                                                  observation=state)  # estimated probability, that the human will prefer action 1
-            total_prob1 += prob_for_action
+        for model_idx, reward_model in enumerate(self.reward_networks):
+            prob0, prob1 = 0.0, 0.0
+            for state, action in zip(states0, actions0):
+                action = action.to(self.device)
+                state = state.to(self.device)
+                prob0 += reward_model(action=action, observation=state)
+            for state, action in zip(states1, actions1):
+                action = action.to(self.device)
+                state = state.to(self.device)
+                prob1 += reward_model(action=action, observation=state)
 
-        #predicted_prob = torch.exp(total_prob0) / (torch.exp(total_prob0) + torch.exp(total_prob1)) #probability, that the human will chose trajectory0 over trajectory1
-        max_prob = torch.max(total_prob0, total_prob1)
-        predicted_prob = torch.exp(total_prob0 - max_prob) / (
-                torch.exp(total_prob0 - max_prob) + torch.exp(total_prob1 - max_prob)
-        )
-        return predicted_prob
+            # predicted_prob = torch.exp(total_prob0) / (torch.exp(total_prob0) + torch.exp(total_prob1)) #probability, that the human will chose trajectory0 over trajectory1
+            max_prob = torch.max(prob0, prob1)
+            predicted_prob = torch.exp(prob0 - max_prob) / (
+                torch.exp(prob0 - max_prob) + torch.exp(prob1 - max_prob)
+            )
 
-    def _compute_loss(self, sample):
+            predictions.append((model_idx, predicted_prob))
+
+        return predictions
+
+    def _compute_losses(self, sample):
         """
         :param sample: A list of tuples where each tuple contains a pair of trajectories and their corresponding human feedback label.
                        The human feedback label is an indicator of which trajectory is preferred by the human.
         :return: The average entropy loss computed across all trajectory pairs in the sample. This represents the discrepancy
                  between the predicted probabilities and the human-provided feedback.
         """
-        entropy_loss = 0.0
+        model_losses = [0.0 for _ in range(len(self.reward_networks))]
+
         for trajectory_pair, human_feedback_label in sample:
-            predicted_prob = self._compute_predicted_probability(trajectory_pair)
-            # human feedback label to tensor conversion for processing
-            label_1 = torch.tensor(human_feedback_label[0], dtype=torch.float)
-            label_2 = 1 - label_1
+            predicted_probs = self.compute_predicted_probabilities(trajectory_pair)
+            for idx, predicted_prob in predicted_probs:
+                # human feedback label to tensor conversion for processing
+                label_1 = torch.tensor(human_feedback_label[0], dtype=torch.float, device=self.device)
+                label_2 = 1 - label_1
 
-            # calculate loss
-            loss_1 = label_1 * torch.log(predicted_prob+1e-6)
-            loss_2 = label_2 * torch.log(1 - predicted_prob + 1e-6)
+                # calculate loss for this model
+                loss_1 = label_1 * torch.log(predicted_prob+1e-6)
+                loss_2 = label_2 * torch.log(1 - predicted_prob + 1e-6)
+                model_losses[idx] += -(loss_1 + loss_2)
 
-
-            entropy_loss += -(loss_1 + loss_2)
-
-        return entropy_loss #loss for whole batch
+        return model_losses #loss for whole batch
 
     def train_reward_model(self, sample):
         # Recap: Function compute_predicted_probability, gives us a scalar value for the probability that the human chooses trajectory 0 over trajectory 1
@@ -81,16 +80,18 @@ class PreferencePredictor:
         :return: None
         """
 
-        # Reset Gradients
-        self.optimizer.zero_grad()
+        model_losses = self._compute_losses(sample)
 
-        # Calculate entropy loss
-        entropy_loss = self._compute_loss(sample)
+        for i, (reward_model, optimizer) in enumerate(zip(self.reward_networks, self.optimizers)):
+            # Reset Gradients
+            optimizer.zero_grad()
 
-        # Backpropagation
-        entropy_loss.backward()
+            # Backpropagation
+            model_losses[i].backward()
 
-        # Update the weights of network
-        self.optimizer.step()
+            # Update the weights of network
+            optimizer.step()
+
+        entropy_loss = sum(model_losses) / len(model_losses)
 
         return entropy_loss

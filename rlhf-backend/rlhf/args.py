@@ -7,6 +7,8 @@ class Args:
     """the name of this experiment"""
     seed: int = 1
     """seed of the experiment"""
+    num_models: int = 5
+    """how many reward-models to use"""
     torch_deterministic: bool = True
     """if toggled, `torch.backends.cudnn.deterministic=False`"""
     cuda: bool = True
@@ -53,12 +55,14 @@ class Args:
     """automatic tuning of the entropy coefficient"""
     reward_frequency: int = 4000
     """how often we ask for feedback / update the model"""
-    query_size: int = 90
-    """how much feedback each iteration"""
-    query_length: int = 25
+    uniform_query_size: int = 100
+    """how much uniform feedback each iteration"""
+    ensemble_query_size: int = 40
+    """how much ensemble-based sampling each iteration (needs to be less than uniform)"""
+    pref_batch_size: int = 25
+    """the batch size of sample from the preference memory"""
+    query_length: int = 32
     """length of trajectories"""
-    #pref_batch_size: int = 20
-    #"""the batch size of sample from the preference memory"""
     pretrain_timesteps: int = 1000
     """how many steps for random exploration"""
     feedback_mode: str = "synthetic"
