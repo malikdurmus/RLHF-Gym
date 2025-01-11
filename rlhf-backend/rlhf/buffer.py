@@ -165,6 +165,35 @@ class TrajectorySampler:
         return trajectories_batch
 
     # TODO Ensemble-based sampling
+    def ensemble_sampling(self,ensemble_size, uniform_size,traj_length, time_window, feedback_mode, preference_optimizer):
+        # Create empty list for variance (tuple: (traj, variance))
+
+        variance_list = []
+        # for _ in range (number of trajectories)
+        for _ in range(uniform_size):
+            # sample one trajectory
+            traj_pair = self.uniform_trajectory_pair(traj_length, time_window, feedback_mode)
+
+            # pass traj to each network: for reward_model in reward_networks, networks calculate a reward
+            predictions = preference_optimizer.compute_predicted_probabilities(traj_pair)
+
+            predicted_prob_list = []
+            for _, predicted_prob  in predictions:
+                predicted_prob = predicted_prob.detach().numpy()
+                # append variance to a list
+                predicted_prob_list.append(predicted_prob)
+
+            # Calculate the variance
+            variance_list.append((traj_pair, np.var(predicted_prob_list)))
+
+        # for end
+
+        # sort list in descending order
+        sorted_variance = sorted(variance_list, key=lambda x: x[1], reverse=True)
+
+        return [element[0] for element in sorted_variance[:ensemble_size]]
+
+
 
     def sum_rewards(self, traj):
         return traj.rewards.sum().item()

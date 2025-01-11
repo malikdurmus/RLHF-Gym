@@ -31,10 +31,12 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
             # (8)
             if global_step % args.reward_frequency == 0:
                 # (9)
+                traj_sample = sampler.ensemble_sampling(args.ensemble_query_size, args.uniform_query_size,
+                                                        args.query_length, args.reward_frequency, args.feedback_mode, preference_optimizer)
+                # (10)
                 if args.feedback_mode == "synthetic":
-                    for _ in range(args.uniform_query_size):
-                        # (10)
-                        (trajectory1, trajectory2) = sampler.uniform_trajectory_pair(args.query_length, args.reward_frequency, args.feedback_mode)
+
+                    for trajectory1, trajectory2 in traj_sample:
                         # (11)
                         if sampler.sum_rewards(trajectory1) > sampler.sum_rewards(trajectory2):
                             preference = [1, 0]
@@ -46,7 +48,7 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
                         preference_buffer.add((trajectory1, trajectory2), preference)
 
                 elif args.feedback_mode == "human":
-                    # TODO Replace with human query
+                    #TODO Replace with human query
                     pass
 
                 ### REWARD MODEL UPDATE / RELABELING
