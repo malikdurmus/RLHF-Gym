@@ -57,9 +57,9 @@ class Args:
     """how often we ask for feedback / update the model"""
     uniform_query_size: int = 100
     """how much uniform feedback each iteration"""
-    ensemble_query_size: int = 40
+    ensemble_query_size: int = 60
     """how much ensemble-based sampling each iteration (needs to be less than uniform)"""
-    pref_batch_size: int = 25
+    pref_batch_size: int = 40
     """the batch size of sample from the preference memory"""
     query_length: int = 32
     """length of trajectories"""

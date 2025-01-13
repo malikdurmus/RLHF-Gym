@@ -52,11 +52,9 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
                     pass
 
                 ### REWARD MODEL UPDATE / RELABELING
-                # (15)
-                data = preference_buffer.sample(args.uniform_query_size)
-                # (16)
-                entropy_loss = preference_optimizer.train_reward_model(data)
-                writer.add_scalar("losses/entropy_loss", entropy_loss.mean().item(), global_step)
+                # (15) & # (16)
+                entropy_loss = preference_optimizer.train_reward_models(preference_buffer, args.pref_batch_size)
+                writer.add_scalar("losses/entropy_loss", entropy_loss, global_step)
                 # (18)
                 relabel_replay_buffer(rb, reward_networks, device)
                 # Clear Preference Buffer
