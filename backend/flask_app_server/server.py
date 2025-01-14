@@ -20,7 +20,10 @@ from backend.rlhf.buffer import TrajectorySampler, PreferenceBuffer, CustomRepla
 from backend.rlhf.preference_predictor import PreferencePredictor
 from backend.rlhf.train import train
 
-VIDEO_DIRECTORY = "../../videos"
+script_dir = os.path.dirname(__file__)
+parent_directory = os.path.abspath(os.path.join(script_dir, '..','..'))
+VIDEO_DIRECTORY = os.path.join(parent_directory, 'videos')
+
 video_queue = queue.Queue()
 feedback_event = Event()
 received_feedback = []
