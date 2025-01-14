@@ -1,85 +1,77 @@
-const socket = io("http://localhost:5000"); // Replace with your backend URL if needed
+const socket = io();
 
-socket.on("connect", () => {
-  console.log("Connected to the server via WebSocket.");
-});
+let currentIndex = 0;
+let feedback = [];
+let videoPairs = [];
 
-socket.on("disconnect", () => {
-  console.log("Disconnected from the server.");
-});
+async function fetchVideoPairs() {
+  try {
+    const response = await fetch('/get_video_pairs');
+    const data = await response.json();
 
-// Listen for the 'videos_ready' event
-// socket.on("videos_ready", (data) => {
-//   console.log("Videos ready:", data.ready_videos);
-//   if (data.ready_videos.length >= 2) {
-//     // Assuming data.ready_videos contains paths for two videos
-//     loadVideo(data.ready_videos[0], data.ready_videos[1]);
-//   }
-// });
-socket.on("videos_ready", (data) => {
-  console.log("Videos ready:", data);
-});
-
-function loadVideo(videoSrc1, videoSrc2) {
-        const mainOption1 = document.getElementById('mainOption1');
-        const mainOption2 = document.getElementById('mainOption2');
-        const neutralOption = document.getElementById('neutralOption');
-        const videoPlayer1 = document.getElementById('videoPlayer1');
-        const videoPlayer2 = document.getElementById('videoPlayer2');
-        const videoSource1 = document.getElementById('videoSource1');
-        const videoSource2 = document.getElementById('videoSource2');
-        const loader1 = document.getElementById('loader1');
-        const loader2= document.getElementById('loader2');
-
-    mainOption1.onclick = mainOption2.onclick = neutralOption.onclick = clickOption;
-
-    function clickOption() {
-        videoPlayer1.pause();
-        videoPlayer2.pause();
-        videoPlayer1.style.display = 'none';
-        videoPlayer2.style.display = 'none';
-        neutralOption.style.display = 'none';
-        loader1.style.display = 'block';
-        loader2.style.display = 'block';
-
-        setTimeout(() => {
-            videoSource1.src = videoSrc1;
-            videoSource2.src = videoSrc2;
-            videoPlayer1.load();
-            videoPlayer2.load();
-            loader1.style.display = 'none';
-            loader2.style.display = 'none';
-            videoPlayer1.style.display = 'block';
-            videoPlayer2.style.display = 'block';
-            neutralOption.style.display = 'block';
-            videoPlayer1.play();
-            videoPlayer2.play();
-        }, 5000);
+    if (data.video_pairs && data.video_pairs.length > 0) {
+      videoPairs = data.video_pairs;
+      currentIndex = 0;
+      displayVideoPair(videoPairs[currentIndex]);
+      document.getElementById('status').innerText = "New video pairs loaded.";
+    } else {
+      document.getElementById('status').innerText = "No video pairs available. Waiting for new pairs to render..";
     }
+  } catch (error) {
+    console.error('Error fetching video pairs:', error);
+    document.getElementById('status').innerText = "Failed to fetch video pairs.";
+  }
+}
 
-    mainOption1.onclick = () => sendFeedback(1);
-    mainOption2.onclick = () => sendFeedback(2);
-    neutralOption.onclick = () => sendFeedback(0);
+function displayVideoPair(pair) {
+  document.getElementById('video1').src = `/videos/${pair.video1}`;
+  document.getElementById('video2').src = `/videos/${pair.video2}`;
+  document.getElementById('status').innerText = `Pair ${currentIndex + 1} of ${videoPairs.length}`;
+}
+function setPreference(preference) {
+  if (currentIndex >= videoPairs.length) return;
 
-    function sendFeedback(option) {
+  const pair = videoPairs[currentIndex];
+  feedback.push({ id: pair.id, preference });
 
-        const feedbackData = {
-        preference: option === 1 ? "option1" : option === 2 ? "option2" : "neutral_option",
-        neutralOption: option === 0 ? "neutral_option" : ""
-   };
+  currentIndex++;
+  if (currentIndex < videoPairs.length) {
+    displayVideoPair(videoPairs[currentIndex]);
+  } else {
+    document.getElementById('status').innerText = "All pairs completed. Submitting feedback...";
+    submitFeedback();
+  }
+}
 
-    fetch('/train-agent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(feedbackData)
-    })
-
-    .then(response => response.json())
-    .then(result => {
-        console.log('Feedback received:', result);
-    })
-    .catch(error => {
-        console.error('Error:', error);
+async function submitFeedback() {
+  try {
+    await fetch('/submit_preferences', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ preferences: feedback })
     });
+
+    document.getElementById('status').innerText = "Feedback submitted. Now waiting for new video pairs...";
+    feedback = [];
+    videoPairs = [];
+    currentIndex = 0;
+  } catch (error) {
+    console.error('Error submitting feedback:', error);
+    document.getElementById('status').innerText = "Failed to submit feedback.";
+  }
 }
-}
+
+socket.on('new_video_pairs', (data) => {
+  console.log('New video pairs notification received:', data);
+  fetchVideoPairs();
+});
+
+window.onload = function () {
+  fetchVideoPairs();
+};
+// this runs initially fiest time
+// TODO: need to ensure reloading doesnt raise errors in the train.py (it rose the following error once,
+//  but couldnt reproduce the error again) "queue has more/less entries"
+// TODO: submitted preference must be processed in the backend for rew net update

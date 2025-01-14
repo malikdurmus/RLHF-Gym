@@ -20,7 +20,7 @@ from backend.rlhf.buffer import TrajectorySampler, PreferenceBuffer, CustomRepla
 from backend.rlhf.preference_predictor import PreferencePredictor
 from backend.rlhf.train import train
 
-VIDEO_DIRECTORY = "videos"
+VIDEO_DIRECTORY = "../../videos"
 video_queue = queue.Queue()
 feedback_event = Event()
 received_feedback = []
@@ -44,6 +44,10 @@ def create_app():
             video_pairs.append({'id': pair_id, 'video1': video1_path, 'video2': video2_path})
         return jsonify({'video_pairs': video_pairs})
 
+    @app.route('/videos/<filename>')
+    def serve_video(filename):
+        return send_from_directory(VIDEO_DIRECTORY, filename)
+
     @app.route('/submit_preferences', methods=['POST'])
     def submit_preferences():
         print("Reached here")  # Add this for visibility in console
@@ -56,13 +60,15 @@ def create_app():
             if trajectory_data:
                 received_feedback.append((trajectory_data['trajectory1'], trajectory_data['trajectory2'], preference))
         feedback_event.set()
-        print(received_feedback)
         return jsonify({'status': 'success'})
 
-    return app, socketio
+    def notify_new_video_pairs():
+        # this notifies the frontend that the videos are ready, (no need for inefficient polling)
+        socketio.emit('new_video_pairs', {'status': 'ready'})
+    return app, socketio, notify_new_video_pairs
 
 if __name__ == "__main__":
-    app, socketio = create_app()
+    app, socketio, notify = create_app()
     logging.basicConfig(level=logging.DEBUG)
     os.makedirs(VIDEO_DIRECTORY, exist_ok=True)
 
@@ -107,7 +113,7 @@ if __name__ == "__main__":
             envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_optimizer,
             actor_optimizer, preference_optimizer, args, writer, device, sampler,
             preference_buffer, video_queue, stored_pairs, received_feedback, feedback_event,
-            int_rew_calc
+            int_rew_calc, notify
         )
     )
     training_thread.daemon = True
@@ -115,3 +121,5 @@ if __name__ == "__main__":
 
     # Run the Flask server
     socketio.run(app, host="0.0.0.0", port=5000, debug=False, allow_unsafe_werkzeug=True)
+    # If debug is true, the app will render the first batch twice
+    # TODO: Needs documentation

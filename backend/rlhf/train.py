@@ -10,7 +10,7 @@ from backend.rlhf.render import render_trajectory_gym
 
 def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer,
           preference_optimizer, args, writer, device, sampler,
-          preference_buffer,video_queue,stored_pairs,received_feedback,feedback_event,int_rew_calc ):
+          preference_buffer,video_queue,stored_pairs,received_feedback,feedback_event,int_rew_calc, notify ):
 
     # [Optional] automatic adjustment of the entropy coefficient
     if args.autotune:
@@ -57,10 +57,13 @@ def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_o
 
                     if not video_queue.qsize() == args.query_size:
                         raise Exception("queue has more/less entries")
+                    elif video_queue.qsize() == args.query_size:
+                        notify()
+
                     # now the video queue is full of video paths and pair ids
                     print("Waiting for user feedback...")
-                    feedback_event.wait()  # Blocks until feedback is received
-                    feedback_event.clear()  # Reset the event for the next feedback cycle
+                    feedback_event.wait()  # Blocks until feedback
+                    feedback_event.clear()  # Reset the event
 
             # (14)
                 # (15)

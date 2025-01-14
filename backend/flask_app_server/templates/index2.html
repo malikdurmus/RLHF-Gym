@@ -1,143 +1,68 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Flask App</title>
-        <link rel="stylesheet" href="../static/index2.css">
-    </head>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flask App</title>
+    <link rel="stylesheet" href="../static/index2.css">
+    <script src="https://cdn.jsdelivr.net/npm/socket.io-client@4.6.0/dist/socket.io.min.js"></script>
+    <script src="../static/script.js"></script>
+</head>
+<body>
+    <br>
+    <h1 class="main-title">RLHF Agent Training</h1>
+    <br>
+    <div class="explanation">
+        <p>
+            <b>
+            Below you see two different videos used to train a RLHF agent.<br>
+            Please carefully compare the agents' behaviors and select the agent with the better performance.<br>
+            If the behavior appears too similar, choose "Neutral".<br>
+        </p>
+    </div>
 
-    <body>
-        <br>
-        <h1 class="main-title"> RLHF Agent Training </h1 >
-        <br>
-        <div class="explanation">
-            <p>
-                <b>
-                Below you see two different videos used to train a RLHF agent.<br>
-                Please carefully compare the agents' behaviors and select the agent with the better performance.<br>
-                If the behavior appears too similar, choose "Neutral".<br>
-            </p>
-        </div>
+    <br><br><br><br><br><br>
 
-        <br><br><br><br><br><br>
-
-        <div class="comparisonContainer">
-            <button class="mainOptions" id="mainOption1" onclick="savePreference(1)">
-                <div>
-                    <br>
-                    <h1>Agent 1</h1>
-                    <br><br>
-                    <video id="videoPlayer1" width="500" controls loop>
-                        <source id="videoSource1" src="" type="video/mp4">
-                    </video>
-                    <div class="loader" id="loader1"></div>
-                    <br><br><br><br>
-                </div>
-            </button>
-
-            <button class="mainOptions" id="mainOption2" onclick="savePreference(2)">
-                <div>
-                    <br>
-                    <h1>Agent 2</h1>
-                    <br><br>
-                    <video id="videoPlayer2" width="500" controls loop>
-                        <source id="videoSource2" src="" type="video/mp4">
-                    </video>
-                    <div class="loader" id="loader2"></div>
-                    <br><br><br><br>
-                </div>
-            </button>
-        </div>
-
-        <br><br><br><br><br>
-
-        <button class="neutralOption" id="neutralOption" onclick="savePreference(0)">
-            <h3> Neutral </h3>
+    <div class="comparisonContainer">
+        <button class="mainOptions" onclick="setPreference(1)">
+            <div  id="mainOption1">
+                <br>
+                <h1>Agent 1</h1>
+                <br><br>
+                  <video id="video1" width="320" height="240" controls></video>
+                <br><br><br><br>
+            </div>
+            <div class="loader" id="loader1"></div>
         </button>
 
-        <br><br><br><br>
-        <hr>
-
-        <div class="sentence-container">
-            <div class="sentence">Softwareentwicklungspraktikum</div>
-            <div class="sentence">
-                Aleksandar Mijatovic, Martin Plank, Thang Long Nguyen<br>
-                Tobias Huber & Yusuf Malik Durmus
+        <button class="mainOptions" onclick="setPreference(0)">
+            <div id="mainOption2">
+                <br>
+                <h1>Agent 2</h1>
+                <br><br>
+                  <video id="video2" width="320" height="240" controls></video>
+                <br><br><br><br>
             </div>
-            <div class="sentence">Group B </div>
+            <div class="loader" id="loader2"></div>
+        </button>
+    </div>
+
+    <br><br><br><br><br>
+
+    <button class="neutralOption" id="neutralOption" onclick="setPreference()">
+        <h3>Neutral</h3>
+    </button>
+
+    <div id="status"></div>
+
+    <br><br><br><br>
+    <hr>
+
+    <div class="sentence-container">
+        <div class="sentence">Softwareentwicklungspraktikum</div>
+        <div class="sentence">
         </div>
-
-        <script>
-            let videoPairs = [];
-            let currentIndex = 0;
-            let preferences = [];
-
-            // fetch
-            async function fetchVideoPairs() {
-                const response = await fetch('/get_video_pairs');
-                const data = await response.json();
-                videoPairs = data.video_pairs;
-                showNextPair();
-            }
-
-            // next video pair
-            function showNextPair() {
-                if (currentIndex < videoPairs.length) {
-                    const pair = videoPairs[currentIndex];
-                    console.log(pair);
-                    document.getElementById('videoSource1').src = `/../../../videos/${pair.video1}`;
-                    document.getElementById('videoSource1').src = `/../../../videos/${pair.video2}`;
-                    document.getElementById('videoSource1').src = `/../../videos/gym_trajectory_step_200_query0_trajectory1.mp4`;
-                    document.getElementById('videoSource1').src = `/../../videos/gym_trajectory_step_200_query0_trajectory2.mp4`;
-                    // TODO: consider moving the videos file to backend/flask_app_server/static for easy access
-                    document.getElementById('videoPlayer1').load();
-                    document.getElementById('videoPlayer2').load();
-                } else {
-                    submitPreferences();
-                }
-            }
-
-            // save user preference
-            function savePreference(choice) {
-                let preference = 0.5;
-                if (choice === 1) {
-                    preference = 0;
-                } else if (choice === 2) {
-                    preference = 1;
-                }
-
-                preferences.push({
-                    id: videoPairs[currentIndex].id,
-                    preference: preference
-                });
-
-                currentIndex++;
-                showNextPair();
-            }
-
-            // submit preferences
-            async function submitPreferences() {
-                const response = await fetch('/submit_preferences', {
-                    method: 'POST',
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        preferences: preferences
-                    })
-                });
-
-                if (response.ok) {
-                    alert("Preferences submitted successfully!");
-                    fetchVideoPairs(); // Fetch next video pairs after submitting
-                } else {
-                    alert("There was an error submitting the preferences.");
-                }
-            }
-
-            // Start here
-            fetchVideoPairs();
-        </script>
-    </body>
+        <div class="sentence">Group B</div>
+    </div>
+</body>
 </html>
