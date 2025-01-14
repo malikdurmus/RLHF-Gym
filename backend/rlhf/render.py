@@ -17,8 +17,8 @@ DEFAULT_CAMERA_CONFIG = { #specific to hopper, might change for diff envs.TODO:l
     "lookat": np.array((0.0, 0.0, 1.15)),
     "elevation": -20.0,
 }
-
-parent_directory = os.path.abspath(os.path.join(os.getcwd(), '..', '..'))
+script_dir = os.path.dirname(__file__)
+parent_directory = os.path.abspath(os.path.join(script_dir, '..','..'))
 
 def _generate_images(env, observations):
     """Generate images from a sequence of observations."""

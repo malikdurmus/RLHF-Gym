@@ -69,17 +69,8 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.extras]
-atari = ["ale-py", "AutoROM", "opencv-python", "shimmy"]
-procgen = ["procgen"]
-plot = ["pandas", "seaborn"]
-pytest = ["pytest"]
 mujoco = ["mujoco", "imageio"]
-jax = ["jax", "jaxlib", "flax"]
-docs = ["mkdocs-material", "markdown-include", "openrlbenchmark"]
-envpool = ["envpool"]
-optuna = ["optuna", "optuna-dashboard"]
-pettingzoo = ["PettingZoo", "SuperSuit", "multi-agent-ale-py"]
-dm_control = ["shimmy", "mujoco", "dm-control", "h5py"]
+
 
 # dependencies for algorithm variant (useful when you want to run a specific algorithm)
 dqn = []
