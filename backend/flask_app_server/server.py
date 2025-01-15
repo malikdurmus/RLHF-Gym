@@ -4,6 +4,8 @@ import logging
 import threading
 import time
 import random
+from threading import Thread
+
 import numpy as np
 import torch
 import tyro
@@ -24,10 +26,13 @@ script_dir = os.path.dirname(__file__)
 parent_directory = os.path.abspath(os.path.join(script_dir, '..','..'))
 VIDEO_DIRECTORY = os.path.join(parent_directory, 'videos')
 
+args = tyro.cli(Args)
+
 video_queue = queue.Queue()
 feedback_event = Event()
-received_feedback = []
+preference_buffer = PreferenceBuffer(args.buffer_size)
 stored_pairs = []
+preference_mutex = threading.Lock()
 
 def create_app():
     app = Flask(__name__)
@@ -53,16 +58,18 @@ def create_app():
 
     @app.route('/submit_preferences', methods=['POST'])
     def submit_preferences():
-        print("Reached here")  # Add this for visibility in console
-        global received_feedback
+        global preference_buffer
         feedback = request.json.get('preferences', [])
+        print("feedback is er",feedback)
         for feedback_item in feedback:
             pair_id = feedback_item['id']
             preference = feedback_item['preference']
-            trajectory_data = next((item for item in stored_pairs if item['id'] == pair_id), None)
-            if trajectory_data:
-                received_feedback.append((trajectory_data['trajectory1'], trajectory_data['trajectory2'], preference))
-        feedback_event.set()
+            with preference_mutex:
+                trajectory_data = next((item for item in stored_pairs if item['id'] == pair_id), None)
+                if trajectory_data:
+                    preference_buffer.add( (trajectory_data['trajectory1'], trajectory_data['trajectory2']), preference)
+
+        feedback_event.set() # Signal training thread
         return jsonify({'status': 'success'})
 
     def notify_new_video_pairs():
@@ -76,8 +83,6 @@ if __name__ == "__main__":
     os.makedirs(VIDEO_DIRECTORY, exist_ok=True)
 
     # RLHF setup
-    args = tyro.cli(Args)
-
     parent_directory = os.path.abspath(os.path.join(os.getcwd(), '..', '..'))
     run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
     run_path = os.path.join(parent_directory, "runs", run_name)
@@ -103,8 +108,6 @@ if __name__ == "__main__":
 
     rb = CustomReplayBuffer.initialize(envs, args.buffer_size, device)
 
-    preference_buffer = PreferenceBuffer(args.buffer_size, device)
-
     sampler = TrajectorySampler(rb)
 
     int_rew_calc = IntrinsicRewardCalculator(k=5)
@@ -115,14 +118,15 @@ if __name__ == "__main__":
         args=(
             envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_optimizer,
             actor_optimizer, preference_optimizer, args, writer, device, sampler,
-            preference_buffer, video_queue, stored_pairs, received_feedback, feedback_event,
-            int_rew_calc, notify
+            preference_buffer, video_queue, stored_pairs, feedback_event,
+            int_rew_calc, notify, preference_mutex
         )
     )
     training_thread.daemon = True
-    training_thread.start()
 
     # Run the Flask server
+    training_thread.start()
     socketio.run(app, host="0.0.0.0", port=5000, debug=False, allow_unsafe_werkzeug=True)
     # If debug is true, the app will render the first batch twice
     # TODO: Needs documentation
+    # TODO: The get_video_pairs endpoint shouldnt be consumed (disappear) before the frontend makes the post request # this can be handled either in frontend or backend

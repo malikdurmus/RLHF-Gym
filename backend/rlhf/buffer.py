@@ -75,12 +75,13 @@ class CustomReplayBuffer(ReplayBuffer):
 
 
 class PreferenceBuffer:
-    def __init__(self, buffer_size, device):
+    def __init__(self, buffer_size):
         self.buffer = []
         self.buffer_size = buffer_size
-        self.device = device
 
     def add(self, trajectories, preference):
+        if len(trajectories) != 2:
+            raise Exception("More than 2 trajectories")
         if len(self.buffer) >= self.buffer_size:
             self.buffer.pop(0)
         self.buffer.append([trajectories, preference])

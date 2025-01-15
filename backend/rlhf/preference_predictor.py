@@ -40,7 +40,7 @@ class PreferencePredictor:
             state = state.to(self.device)
             prob_for_action = self.reward_network(action=action,
                                                   observation=state)  # estimated probability, that the human will prefer action 1
-            total_prob1 += prob_for_action
+            total_prob1 += prob_for_action # Tensor of shape {Tensor : {1,1}} , tested
 
         predicted_prob = torch.exp(total_prob0) / (torch.exp(total_prob0) + torch.exp(total_prob1)) #probability, that the human will chose trajectory0 over trajectory1
         return predicted_prob
@@ -56,7 +56,7 @@ class PreferencePredictor:
         for trajectory_pair, human_feedback_label in sample:
             predicted_prob = self._compute_predicted_probability(trajectory_pair)
             # human feedback label to tensor conversion for processing
-            label_1 = torch.tensor(human_feedback_label[0], dtype=torch.float)
+            label_1 = torch.tensor(human_feedback_label, dtype=torch.float)
             label_2 = 1 - label_1
 
             # calculate loss

@@ -10,7 +10,7 @@ from backend.rlhf.render import render_trajectory_gym
 
 def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer,
           preference_optimizer, args, writer, device, sampler,
-          preference_buffer,video_queue,stored_pairs,received_feedback,feedback_event,int_rew_calc, notify ):
+          preference_buffer,video_queue,stored_pairs,feedback_event,int_rew_calc, notify, preference_mutex ):
 
     # [Optional] automatic adjustment of the entropy coefficient
     if args.autotune:
@@ -62,21 +62,24 @@ def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_o
 
                     # now the video queue is full of video paths and pair ids
                     print("Waiting for user feedback...")
-                    feedback_event.wait()  # Blocks until feedback
+                    feedback_event.wait()  # Wait until feedback , received feedback is populated (contains data) after this point
                     feedback_event.clear()  # Reset the event
 
-            # (14)
+                # (14)
                 # (15)
-                data = preference_buffer.sample(args.query_size)
+                with preference_mutex:
+                    data = preference_buffer.sample(args.query_size)
+                    entropy_loss = preference_optimizer.train_reward_model(
+                        data)
+                    preference_buffer.reset()
+                    stored_pairs.clear()
                 # (16)
-                entropy_loss = preference_optimizer.train_reward_model(data) # TODO: need to train with the received_feedback object
-                received_feedback.clear()
-                stored_pairs.clear()
+
                 writer.add_scalar("losses/entropy_loss", entropy_loss.mean().item(), global_step)
                 # (18)
                 relabel_replay_buffer(rb, reward_network, device)
                 # Clear Preference Buffer
-                preference_buffer.reset()
+
 
 
         ### ACTION ###
