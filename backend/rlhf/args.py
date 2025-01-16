@@ -35,7 +35,7 @@ class Args:
     """target smoothing coefficient (default: 0.005)"""
     batch_size: int = 100
     """the batch size of sample from the replay memory"""
-    reward_learning_starts: int = 100 #5e3
+    reward_learning_starts: int = 5000 #5e3
     """timestep to start learning"""
     reward_model_lr: float = 1e-3
     """the learning rate of the reward model optimizer"""
@@ -51,14 +51,17 @@ class Args:
     """Entropy regularization coefficient."""
     autotune: bool = True
     """automatic tuning of the entropy coefficient"""
-    feedback_frequency: int = 1000
+    feedback_frequency: int = 5001
     """how often we ask for feedback"""
-    query_size: int = 4
+    query_size: int = 10
     """how much feedback each iteration"""
-    query_length: int = 500
+    query_length: int = 100   ## Torch Nan error when over 500?
     """length of trajectories"""
-    pref_batch_size: int = 50
+    pref_batch_size: int = 50  # Unused arg
     """the batch size of sample from the preference memory"""
     synthetic_feedback: bool = False
     pretrain_timesteps: int = 1000
     """how many steps for random exploration"""
+
+# TODO: We need to add a function to ensure that all args are compatible
+# TODO: Needs better documentation, ambigious as is

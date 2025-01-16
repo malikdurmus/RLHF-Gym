@@ -8,6 +8,74 @@ from backend.rlhf.buffer import relabel_replay_buffer
 from backend.rlhf.render import render_trajectory_gym
 
 
+## Helper Functions
+
+def handle_feedback(args, global_step, video_queue, stored_pairs, preference_buffer,
+                    feedback_event, sampler, notify):
+
+    if not args.synthetic_feedback:
+        for query in range(args.query_size):
+            render_and_queue_trajectories(args,query, global_step, sampler, video_queue, stored_pairs)
+
+        if not video_queue.qsize() == args.query_size:
+            raise Exception("queue has more/less entries")
+        elif video_queue.qsize() == args.query_size:
+            notify()
+
+        print("Waiting for user feedback...")
+        feedback_event.wait()  # Wait until feedback is populated
+        feedback_event.clear()  # Reset the event
+    else:
+        for query in range(args.query_size):
+            handle_synthetic_feedback(args, query, sampler,preference_buffer,global_step)
+
+
+def render_and_queue_trajectories(args,query, global_step, sampler, video_queue, stored_pairs):
+
+    trajectory1, trajectory2 = sampler.uniform_trajectory_pair(args.query_length,
+                                                               args.feedback_frequency, args.synthetic_feedback)
+    # Notify that rendering has started
+    print(f"Requested rendering for query {query} at step {global_step}")
+    video1_path = render_trajectory_gym(
+        args.env_id, trajectory1, global_step, "trajectory1", query)
+    video2_path = render_trajectory_gym(
+        args.env_id, trajectory2, global_step, "trajectory2", query)
+
+    pair_id = str(uuid.uuid4())  # UUID generation
+    video_queue.put((pair_id, trajectory1, trajectory2, video1_path, video2_path))
+
+    stored_pairs.append({
+        'id': pair_id,
+        'trajectory1': trajectory1,
+        'trajectory2': trajectory2
+    })
+
+def handle_synthetic_feedback(args, query, sampler,preference_buffer,global_step):
+
+    trajectory1, trajectory2 = sampler.uniform_trajectory_pair(args.query_length,
+                                                               args.feedback_frequency,
+                                                               args.synthetic_feedback)
+
+    print(f"Requested rendering for query {query} at step {global_step} --synthetic")
+    _ = render_trajectory_gym(
+        args.env_id, trajectory1, global_step, "trajectory1", query)
+    _ = render_trajectory_gym(
+        args.env_id, trajectory2, global_step, "trajectory2", query)
+    (trajectory1, trajectory2) = sampler.uniform_trajectory_pair(args.query_length,
+                                                                 args.feedback_frequency)
+    print(f"Requested rendering for query {query} at step {global_step}")
+
+    # (11)
+    if sampler.sum_rewards(trajectory1) > sampler.sum_rewards(trajectory2):
+        preference = [1, 0]
+    elif sampler.sum_rewards(trajectory1) < sampler.sum_rewards(trajectory2):
+        preference = [0, 1]
+    else:
+        preference = [0.5, 0.5]
+    # (12)
+    preference_buffer.add((trajectory1, trajectory2), preference)
+
+
 def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer,
           preference_optimizer, args, writer, device, sampler,
           preference_buffer,video_queue,stored_pairs,feedback_event,int_rew_calc, notify, preference_mutex ):
@@ -34,36 +102,10 @@ def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_o
         if global_step > args.reward_learning_starts:
             # (8)
             if global_step % args.feedback_frequency == 0: #Is it a good idea to do sampling only with feedback query?
+
                 # (9)
-                if not args.synthetic_feedback:
-                    for query in range(args.query_size):
-                        trajectory1, trajectory2 = sampler.uniform_trajectory_pair(args.query_length,
-                                                                                   args.feedback_frequency,args.synthetic_feedback)
-                        # Notify that rendering has started
-                        print(f"Requested rendering for query {query} at step {global_step}")
-                        video1_path = render_trajectory_gym(
-                            args.env_id, trajectory1, global_step, "trajectory1", query)
-                        video2_path = render_trajectory_gym(
-                            args.env_id, trajectory2, global_step, "trajectory2", query)
-
-                        pair_id = str(uuid.uuid4())  # UUID generation
-                        video_queue.put((pair_id, trajectory1, trajectory2, video1_path, video2_path))
-
-                        stored_pairs.append({
-                            'id': pair_id,
-                            'trajectory1': trajectory1,
-                            'trajectory2': trajectory2
-                        })
-
-                    if not video_queue.qsize() == args.query_size:
-                        raise Exception("queue has more/less entries")
-                    elif video_queue.qsize() == args.query_size:
-                        notify()
-
-                    # now the video queue is full of video paths and pair ids
-                    print("Waiting for user feedback...")
-                    feedback_event.wait()  # Wait until feedback , received feedback is populated (contains data) after this point
-                    feedback_event.clear()  # Reset the event
+                handle_feedback(args, global_step, video_queue, stored_pairs, preference_buffer,
+                    feedback_event, sampler, notify)
 
                 # (14)
                 # (15)
@@ -216,23 +258,3 @@ def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_o
     envs.close()
     writer.close()
 
-
-def process_video_requests(video_request_queue,video_response_queue):
-    """
-    Continuously processes video rendering requests.
-    looks at the video request queue, renders the video and puts it into response_queue
-    """
-    while True:
-        try:
-            if not video_request_queue.empty():
-                # Fetch rendering request
-                env_name, trajectory, global_step, trajectory_id, query = video_request_queue.get()
-                print(f"Processing video: {trajectory_id} query {query} at step {global_step}")
-                # Render the video
-                filename = render_trajectory_gym(env_name, trajectory, global_step, trajectory_id, query)
-
-                print(f"Video rendered and added to response queue: {filename}")
-                # Add the completed video to the response queue
-                video_response_queue.put(filename)
-        except Exception as e:
-            print(f"Error processing video request: {e}")

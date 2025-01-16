@@ -126,7 +126,7 @@ if __name__ == "__main__":
 
     # Run the Flask server
     training_thread.start()
-    socketio.run(app, host="0.0.0.0", port=5000, debug=False, allow_unsafe_werkzeug=True)
+    if not args.synthetic_feedback: socketio.run(app, host="0.0.0.0", port=5000, debug=False, allow_unsafe_werkzeug=True)
     # If debug is true, the app will render the first batch twice
     # TODO: Needs documentation
     # TODO: The get_video_pairs endpoint shouldnt be consumed (disappear) before the frontend makes the post request # this can be handled either in frontend or backend
