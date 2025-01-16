@@ -3,12 +3,25 @@ import torch.optim as optim
 
 class PreferencePredictor:
 
-    def __init__(self, reward_networks: list, reward_model_lr, device):
+    def __init__(self, reward_networks: list, reward_model_lr, device, l2):
         self.reward_networks = reward_networks
         self.device = device
-        self.optimizers = [
-            optim.Adam(reward_network.parameters(), lr=reward_model_lr) for reward_network in reward_networks
-        ]  # Optimizer used for reward models: Adam
+        self.l2 = l2
+        self.reward_model_lr = reward_model_lr
+        self.optimizers = self._initialize_optimizers()
+
+    def _initialize_optimizers(self):
+        return [
+            optim.Adam(
+                reward_network.parameters(),
+                lr=self.reward_model_lr,
+                weight_decay=self.l2
+            )
+            for reward_network in self.reward_networks
+        ]
+
+    def _update_optimizers(self):
+        self.optimizers = self._initialize_optimizers()
 
     # for each data in sample we will use the predict function. after that we will use the preference to calculate entropy loss
     def compute_predicted_probability(self, reward_model, trajectories):
@@ -80,21 +93,37 @@ class PreferencePredictor:
 
     def train_reward_models(self, pb, sample_size):
         model_losses = []
+        val_losses = []
 
         for reward_model, optimizer in zip(self.reward_networks, self.optimizers):
             # Individual sampling
-            sample = pb.sample(sample_size)
+            sample = pb.sample(sample_size, replace=True)
+            val_sample = pb.sample(int(sample_size / 2.718), replace=False)
 
             # Compute loss for this model
-            loss = self._compute_loss(reward_model, sample)
+            model_loss = self._compute_loss(reward_model, sample)
 
             # Training for this model
             optimizer.zero_grad()
-            loss.backward()
+            model_loss.backward()
             optimizer.step()
 
-            model_losses.append(loss.item())
+            model_losses.append(model_loss.item())
+
+            with torch.no_grad():
+                val_loss = self._compute_loss(reward_model, val_sample)
+                val_losses.append(val_loss.item())
 
         # Average entropy loss over all models
         avg_entropy_loss = sum(model_losses) / len(model_losses)
-        return avg_entropy_loss
+        avg_overfit_loss = sum(val_losses) / len(val_losses)
+
+        ratio = avg_overfit_loss / avg_entropy_loss
+        if ratio < 1.1:
+            self.l2 *= 1.1
+            self._update_optimizers()
+        elif ratio > 1.5:
+            self.l2 *= 0.9
+            self._update_optimizers()
+
+        return avg_entropy_loss, ratio

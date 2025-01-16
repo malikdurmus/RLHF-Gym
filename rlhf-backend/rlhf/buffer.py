@@ -84,8 +84,8 @@ class PreferenceBuffer:
             self.buffer.pop(0)
         self.buffer.append([trajectories, preference])
 
-    def sample(self, batch_size):
-        indices = np.random.choice(len(self.buffer), size=min(batch_size, len(self.buffer)), replace=False)
+    def sample(self, batch_size, replace=False):
+        indices = np.random.choice(len(self.buffer), size=min(batch_size, len(self.buffer)), replace=replace)
         return [self.buffer[i] for i in indices]
 
     def reset(self):
@@ -100,7 +100,7 @@ class TrajectorySampler:
     def uniform_trajectory(self, traj_length, time_window, feedback_mode):
         # just in case, shouldn't really happen
         if self.rb.size() < traj_length or self.rb.size() < time_window or time_window < traj_length:
-            raise ValueError("Not enough data to sample")
+            raise ValueError("Not enough data to sample, consider adjusting args")
 
         TrajectorySamples = namedtuple("TrajectorySamples", ["states", "actions", "rewards"])
 
@@ -177,7 +177,8 @@ class TrajectorySampler:
 
             predicted_prob_list = []
             for predicted_prob  in predictions:
-                predicted_prob = predicted_prob.detach().numpy()
+                # TODO maybe keep calculations on the gpu with tensor.var()
+                predicted_prob = predicted_prob.detach().cpu().numpy()
                 # append variance to a list
                 predicted_prob_list.append(predicted_prob)
 

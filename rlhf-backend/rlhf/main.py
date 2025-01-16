@@ -48,7 +48,7 @@ if __name__ == "__main__":
         envs, device, args.policy_lr, args.q_lr, args.num_models)
 
     #Initialize pref predictor
-    preference_optimizer = PreferencePredictor(reward_networks, reward_model_lr=args.reward_model_lr, device=device)
+    preference_optimizer = PreferencePredictor(reward_networks, reward_model_lr=args.reward_model_lr, device=device, l2=args.l2)
 
     # Initialize replay buffer (buffer.py)
     rb = CustomReplayBuffer.initialize(envs, args.buffer_size, device)

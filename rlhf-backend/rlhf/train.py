@@ -27,9 +27,9 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
     for global_step in range(args.total_timesteps):
         ### REWARD LEARNING ###
         # PEBBLE: (7)
-        if global_step > args.reward_learning_starts:
+        if global_step >= args.reward_learning_starts:
             # (8)
-            if global_step % args.reward_frequency == 0:
+            if global_step % args.reward_frequency == 0 or global_step == args.reward_learning_starts:
                 # (9)
                 traj_sample = sampler.ensemble_sampling(args.ensemble_query_size, args.uniform_query_size,
                                                         args.query_length, args.reward_frequency, args.feedback_mode, preference_optimizer)
@@ -53,8 +53,9 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
 
                 ### REWARD MODEL UPDATE / RELABELING
                 # (15) & # (16)
-                entropy_loss = preference_optimizer.train_reward_models(preference_buffer, args.pref_batch_size)
+                entropy_loss, ratio = preference_optimizer.train_reward_models(preference_buffer, args.ensemble_query_size)
                 writer.add_scalar("losses/entropy_loss", entropy_loss, global_step)
+                writer.add_scalar("losses/ratio", ratio, global_step)
                 # (18)
                 relabel_replay_buffer(rb, reward_networks, device)
                 # Clear Preference Buffer
@@ -191,10 +192,6 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
                 writer.add_scalar("charts/SPS", int(global_step / (time.time() - start_time)), global_step)
                 if args.autotune:
                     writer.add_scalar("losses/alpha_loss", alpha_loss.item(), global_step)
-
-        # Once unsupervised exploration is finished, we overwrite the intrinsic reward with our model
-        if global_step == args.reward_learning_starts:
-            relabel_replay_buffer(rb, reward_networks, device)
 
     envs.close()
     writer.close()

@@ -35,6 +35,8 @@ class Args:
     """the discount factor gamma"""
     tau: float = 0.005
     """target smoothing coefficient (default: 0.005)"""
+    l2: float = 0.01
+    """regularization coefficient"""
     batch_size: int = 256
     """the batch size of sample from the replay memory"""
     reward_learning_starts: int = 5e3
@@ -53,15 +55,13 @@ class Args:
     """Entropy regularization coefficient."""
     autotune: bool = True
     """automatic tuning of the entropy coefficient"""
-    reward_frequency: int = 4000
+    reward_frequency: int = 5000
     """how often we ask for feedback / update the model"""
     uniform_query_size: int = 100
     """how much uniform feedback each iteration"""
     ensemble_query_size: int = 60
     """how much ensemble-based sampling each iteration (needs to be less than uniform)"""
-    pref_batch_size: int = 40
-    """the batch size of sample from the preference memory"""
-    query_length: int = 32
+    query_length: int = 90
     """length of trajectories"""
     pretrain_timesteps: int = 1000
     """how many steps for random exploration"""
