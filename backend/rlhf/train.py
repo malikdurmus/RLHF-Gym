@@ -13,7 +13,7 @@ from backend.rlhf.render import render_trajectory_gym
 def handle_feedback(args, global_step, video_queue, stored_pairs, preference_buffer,
                     feedback_event, sampler, notify):
 
-    if not args.synthetic_feedback:
+    if not args.synthetic_feedback: # human feedback
         for query in range(args.query_size):
             render_and_queue_trajectories(args,query, global_step, sampler, video_queue, stored_pairs)
 
@@ -43,7 +43,6 @@ def render_and_queue_trajectories(args,query, global_step, sampler, video_queue,
 
     pair_id = str(uuid.uuid4())  # UUID generation
     video_queue.put((pair_id, trajectory1, trajectory2, video1_path, video2_path))
-
     stored_pairs.append({
         'id': pair_id,
         'trajectory1': trajectory1,
@@ -149,7 +148,7 @@ def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_o
             action = torch.tensor(actions, device=device, dtype=torch.float32)
             state = torch.tensor(obs, device=device, dtype=torch.float32)
             with torch.no_grad():
-                true_rewards = reward_network.forward(action=action, observation=state).cpu().numpy()
+                true_rewards = reward_network.forward(action=action, observation=state).cpu().numpy() # TODO: is there a reason why we use forward here?
         episodic_true_rewards += true_rewards
 
 

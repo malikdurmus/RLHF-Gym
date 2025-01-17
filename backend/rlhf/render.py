@@ -23,22 +23,22 @@ parent_directory = os.path.abspath(os.path.join(script_dir, '..','..'))
 def _generate_images(env, observations):
     """Generate images from a sequence of observations."""
     images = []
-    for obs in tqdm(observations.states, desc="Processing Observations"):
+    for obs in observations.states : # len(observations.states)  = query_length  #tqdm(observations.states, desc="Processing Observations"):
         try:
-            obs = obs.squeeze().numpy()
+            obs = obs.squeeze().cpu().numpy()  #Obs has to be a cpu device type tensor
+                                                # ant and humanoid has some different variables than qpos and qvel, are they needed for rendering?
             qpos = obs[:env.unwrapped.model.nq]
             qvel = obs[env.unwrapped.model.nq:]
             env.unwrapped.set_state(qpos, qvel)
         except AttributeError as e:
             print(f"Attribute Error: {e}")
             print("State causing the problem:", obs)
-            env.reset()
-            continue
+            raise AttributeError
         except Exception as e:
             print(f"Some other error: {e}")
             print("State causing the problem:", obs)
             env.reset()
-            continue
+            raise Exception
         images.append(env.render())
     return images
 

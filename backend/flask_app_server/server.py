@@ -4,7 +4,6 @@ import logging
 import threading
 import time
 import random
-from threading import Thread
 
 import numpy as np
 import torch
@@ -21,6 +20,7 @@ from backend.rlhf.networks import initialize_networks
 from backend.rlhf.buffer import TrajectorySampler, PreferenceBuffer, CustomReplayBuffer
 from backend.rlhf.preference_predictor import PreferencePredictor
 from backend.rlhf.train import train
+from backend.rlhf.utils.evaluate import evaluate_agent
 
 script_dir = os.path.dirname(__file__)
 parent_directory = os.path.abspath(os.path.join(script_dir, '..','..'))
@@ -124,9 +124,18 @@ if __name__ == "__main__":
     )
     training_thread.daemon = True
 
+    # evaluation_thread = threading.Thread(
+    #     target = evaluate_agent,
+    #     args= (args.eval_env_id, args.eval_max_steps,  args.n_eval_episodes , actor ,
+    #     device, 0,
+    #     args.capture_video, run_name, args.record_every_th_episode
+    #     )
+    # )
+
     # Run the Flask server
     training_thread.start()
     if not args.synthetic_feedback: socketio.run(app, host="0.0.0.0", port=5000, debug=False, allow_unsafe_werkzeug=True)
     # If debug is true, the app will render the first batch twice
+
     # TODO: Needs documentation
     # TODO: The get_video_pairs endpoint shouldnt be consumed (disappear) before the frontend makes the post request # this can be handled either in frontend or backend
