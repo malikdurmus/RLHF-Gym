@@ -61,16 +61,16 @@ def handle_synthetic_feedback(args, query, sampler,preference_buffer,global_step
     _ = render_trajectory_gym(
         args.env_id, trajectory2, global_step, "trajectory2", query)
     (trajectory1, trajectory2) = sampler.uniform_trajectory_pair(args.query_length,
-                                                                 args.feedback_frequency)
+                                                                 args.feedback_frequency,args.synthetic_feedback)
     print(f"Requested rendering for query {query} at step {global_step}")
 
     # (11)
     if sampler.sum_rewards(trajectory1) > sampler.sum_rewards(trajectory2):
-        preference = [1, 0]
+        preference = 1
     elif sampler.sum_rewards(trajectory1) < sampler.sum_rewards(trajectory2):
-        preference = [0, 1]
+        preference = 0
     else:
-        preference = [0.5, 0.5]
+        preference = 0.5
     # (12)
     preference_buffer.add((trajectory1, trajectory2), preference)
 
@@ -78,7 +78,7 @@ def handle_synthetic_feedback(args, query, sampler,preference_buffer,global_step
 def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer,
           preference_optimizer, args, writer, device, sampler,
           preference_buffer,video_queue,stored_pairs,feedback_event,int_rew_calc, notify, preference_mutex ):
-
+    torch.autograd.set_detect_anomaly(True)
     # [Optional] automatic adjustment of the entropy coefficient
     if args.autotune:
         target_entropy = -torch.prod(torch.Tensor(envs.single_action_space.shape).to(device)).item()
@@ -132,7 +132,7 @@ def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_o
             int_rew_calc.add_state(obs)
         # actor chooses action
         else:
-            actions, _, _ = actor.get_action(torch.Tensor(obs).to(device))
+            actions, _, _ = actor.get_action(torch.Tensor(obs).to(device)) #hier kp?
             actions = actions.detach().cpu().numpy()
 
         # PEBBLE: (21)

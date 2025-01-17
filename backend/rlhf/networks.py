@@ -32,13 +32,16 @@ class EstimatedRewardNetwork(nn.Module):
         :return: Tensor representing the estimated reward as predicted by the network.
         """
         # Concatenate states and actions
-        x = torch.cat([action, observation], 1)
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        reward = self.fc3(x)
-        return reward
+        try:
 
-
+            x = torch.cat([action, observation], 1)
+            x = F.relu(self.fc1(x))
+            x = F.relu(self.fc2(x))
+            reward = self.fc3(x)
+            return reward
+        except Exception as e:
+            print(f"Action shape: {action.shape}, Observation shape: {observation.shape}")
+            print(e)
 
 
 # Q-Network
@@ -80,16 +83,18 @@ class Actor(nn.Module):
 
     # state -> mean, log-standard deviation
     def forward(self, x):
-        x = F.relu(self.fc1(x)) # first layer - ReLU
-        x = F.relu(self.fc2(x)) # second layer - ReLU
-        mean = self.fc_mean(x) # calculate mean
-        log_std = self.fc_logstd(x)                                                 # log-standard deviation
+        xD = x
+        resultfc1 = F.relu(self.fc1(x)) # first layer - ReLU # some tensors become zero, because they are too small in x?
+        resultfc2 = F.relu(self.fc2(resultfc1)) # second layer - ReLU
+        mean = self.fc_mean(resultfc2) # calculate mean
+        log_std = self.fc_logstd(resultfc2)                                         # log-standard deviation
         log_std = torch.tanh(log_std)                                               # restrict to [-1, 1]
         log_std = LOG_STD_MIN + 0.5 * (LOG_STD_MAX - LOG_STD_MIN) * (log_std + 1)   # scale to [MIN, MAX]
         return mean, log_std
 
     # state -> action, log-probability, mean
     def get_action(self, x):
+        _assignment = x
         mean, log_std = self(x) # forward -> mean, log-standard deviation
         std = log_std.exp() # convert log-standard deviation -> standard deviation
         normal = torch.distributions.Normal(mean, std) # Gaussian distribution

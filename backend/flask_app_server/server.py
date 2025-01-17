@@ -108,7 +108,7 @@ if __name__ == "__main__":
 
     rb = CustomReplayBuffer.initialize(envs, args.buffer_size, device)
 
-    sampler = TrajectorySampler(rb)
+    sampler = TrajectorySampler(rb,device)
 
     int_rew_calc = IntrinsicRewardCalculator(k=5)
 
@@ -135,6 +135,7 @@ if __name__ == "__main__":
     # Run the Flask server
     training_thread.start()
     if not args.synthetic_feedback: socketio.run(app, host="0.0.0.0", port=5000, debug=False, allow_unsafe_werkzeug=True)
+    training_thread.join()
     # If debug is true, the app will render the first batch twice
 
     # TODO: Needs documentation

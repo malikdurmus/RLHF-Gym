@@ -3,9 +3,21 @@ import torch
 from stable_baselines3.common.buffers import ReplayBuffer
 from collections import namedtuple
 from gym import spaces
+from dataclasses import dataclass
 from typing import Union, NamedTuple
 
-TrajectorySamples = namedtuple("TrajectorySamples", ["states", "actions", "rewards"])
+@dataclass
+class TrajectorySamples:
+    states: torch.Tensor
+    actions: torch.Tensor
+    rewards: torch.Tensor
+
+    def to(self, device: torch.device):
+        """Move all tensors to the given device."""
+        self.states = self.states.to(device)
+        self.actions = self.actions.to(device)
+        if self.rewards is not None:
+            self.rewards = self.rewards.to(device)
 
 # Override to include true_rewards
 class ReplayBufferSamples(NamedTuple):
@@ -94,8 +106,9 @@ class PreferenceBuffer:
 
 
 class TrajectorySampler:
-    def __init__(self, rb):
+    def __init__(self, rb, device):
         self.rb = rb
+        self.device = device
 
     # Single trajectory
     def uniform_trajectory(self, traj_length, time_window, synthetic_feedback):
@@ -120,10 +133,12 @@ class TrajectorySampler:
 
         # name tensors for better access
         trajectory = TrajectorySamples(
-            states=states if states.ndim > 1 else states.unsqueeze(-1),
+            states= states if states.ndim > 1 else states.unsqueeze(-1),
             actions=actions if actions.ndim > 1 else actions.unsqueeze(-1),
             rewards=rewards,
         )
+
+        trajectory.to(device=self.device) #since this is an immutable tuple, the tensors have to be recreated everytime, which is not good TODO: better doc herer dont commit
 
         return trajectory
         # TrajectorySamples(states=tensor([[States1], [States2], ..., [States_n]]),

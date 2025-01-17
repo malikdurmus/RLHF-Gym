@@ -23,7 +23,7 @@ class Args:
     """will record videos every `record_every_th_episode` episodes"""
 
     # Algorithm specific arguments
-    env_id: str = "Humanoid-v5"
+    env_id: str = "Walker2d-v5"
     """the environment id of the task"""
     total_timesteps: int = 1000000
     """total timesteps of the experiments"""
@@ -35,7 +35,7 @@ class Args:
     """target smoothing coefficient (default: 0.005)"""
     batch_size: int = 100
     """the batch size of sample from the replay memory"""
-    reward_learning_starts: int = 1000 #5e3
+    reward_learning_starts: int = 500 #5e3
     """timestep to start learning"""
     reward_model_lr: float = 1e-3
     """the learning rate of the reward model optimizer"""
@@ -51,15 +51,15 @@ class Args:
     """Entropy regularization coefficient."""
     autotune: bool = True
     """automatic tuning of the entropy coefficient"""
-    feedback_frequency: int = 200
+    feedback_frequency: int = 100
     """how often we ask for feedback"""
     query_size: int = 10
     """how much feedback each iteration"""
-    query_length: int = 101   ## Torch Nan error when over 500 when Hopper, when walker 2d same error by 100 (deterministic, happens every time)
+    query_length: int = 15 #try with 300 later  ## Torch Nan error when over 500 when Hopper, when walker 2d same error by 100 (deterministic, happens every time)
     """length of trajectories"""
     pref_batch_size: int = 50  # Unused arg
     """the batch size of sample from the preference memory"""
-    synthetic_feedback: bool = False
+    synthetic_feedback: bool = True
     pretrain_timesteps: int = 1000
     """how many steps for random exploration"""
 
