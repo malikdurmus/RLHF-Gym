@@ -51,17 +51,18 @@ class Args:
     """Entropy regularization coefficient."""
     autotune: bool = True
     """automatic tuning of the entropy coefficient"""
-    feedback_frequency: int = 100
+    feedback_frequency: int = 400
     """how often we ask for feedback"""
     query_size: int = 10
     """how much feedback each iteration"""
-    query_length: int = 15 #try with 300 later  ## Torch Nan error when over 500 when Hopper, when walker 2d same error by 100 (deterministic, happens every time)
+    query_length: int = 300 #try with 300 later  ## Torch Nan error when over 500 when Hopper, when walker 2d same error by 100 (deterministic, happens every time)
     """length of trajectories"""
-    pref_batch_size: int = 50  # Unused arg
+    pref_batch_size: int = 50  # Unused arg # TODO: remove later, unused
     """the batch size of sample from the preference memory"""
     synthetic_feedback: bool = True
     pretrain_timesteps: int = 1000
     """how many steps for random exploration"""
+    batch_processing: bool = True # TODO: remove later, not needed
 
 
     # Eval Args

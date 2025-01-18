@@ -14,16 +14,16 @@ class EstimatedRewardNetwork(nn.Module):
     Neural network for reward estimation
     """
     #Neural network for reward estimation
-    def __init__(self, env: MujocoEnv):
+    def __init__(self, env: MujocoEnv,batch_processing_rewnet):
         """
         :param env: Instance of MujocoEnv (strict), which provides the observation_space and action_space properties. These describe the dimensions of the environment's observations and actions. This parameter is used to define the input size for the first fully connected layer.
         """
         super().__init__()
         self.fc1 = nn.Linear( np.array(env.observation_space.shape).prod() + np.prod(env.action_space.shape),
-                    256) #observation_space and action space shape differ greatly among envs. we could define a function to overcome overfitting/underfitting
+                    256) #TODO: observation_space and action space shape differ greatly among envs. we could define a function to overcome overfitting/underfitting after testing on training data but vs on validation or test data
         self.fc2 = nn.Linear(256, 256)
         self.fc3 = nn.Linear(256, 1)
-
+        self.batch_processing = batch_processing_rewnet
 
     def forward(self, action, observation):
         """
@@ -32,16 +32,20 @@ class EstimatedRewardNetwork(nn.Module):
         :return: Tensor representing the estimated reward as predicted by the network.
         """
         # Concatenate states and actions
-        try:
-
+        if self.batch_processing == True:
+            action = action.squeeze(1)  # resulting in shape [15, 6]
+            observation = observation.squeeze(1)  # shape [15, 18]
             x = torch.cat([action, observation], 1)
             x = F.relu(self.fc1(x))
             x = F.relu(self.fc2(x))
             reward = self.fc3(x)
-            return reward
-        except Exception as e:
-            print(f"Action shape: {action.shape}, Observation shape: {observation.shape}")
-            print(e)
+        else:
+            x = torch.cat([action, observation], 1)
+            x = F.relu(self.fc1(x))
+            x = F.relu(self.fc2(x))
+            reward = self.fc3(x)
+
+        return reward
 
 
 # Q-Network
@@ -108,10 +112,10 @@ class Actor(nn.Module):
         return action, log_prob, mean
 
 
-def initialize_networks(envs, device, policy_lr, q_lr):
+def initialize_networks(envs, device, policy_lr, q_lr,batch_processing_rewnet):
     actor = Actor(envs).to(device)
     # Reward network
-    reward_network = EstimatedRewardNetwork(envs).to(device)
+    reward_network = EstimatedRewardNetwork(envs,batch_processing_rewnet).to(device)
     # Q-Networks
     qf1 = SoftQNetwork(envs).to(device)
     qf2 = SoftQNetwork(envs).to(device)

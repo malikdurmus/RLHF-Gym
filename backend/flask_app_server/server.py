@@ -102,7 +102,7 @@ if __name__ == "__main__":
     envs = initialize_env(args.env_id, args.seed, args.capture_video, run_name, args.record_every_th_episode)
 
     actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer = (
-        initialize_networks(envs, device, args.policy_lr, args.q_lr))
+        initialize_networks(envs, device, args.policy_lr, args.q_lr,args.batch_processing)) # batch_processing to be removed
 
     preference_optimizer = PreferencePredictor(reward_network, reward_model_lr=args.reward_model_lr, device=device)
 
