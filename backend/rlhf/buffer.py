@@ -37,13 +37,12 @@ class CustomReplayBuffer(ReplayBuffer):
     # Override to also add true_rewards
     def add(self, obs, next_obs, action, reward, true_reward, done, infos):
         super().add(obs, next_obs, action, reward, done, infos)
-        self.true_rewards[self.pos] = np.array(true_reward)
 
     # Override to also sample true_rewards
     def sample(self, batch_size, env=None):
         # Generate random indices
         if self.full:
-            batch_inds = np.random.randint(0, self.buffer_size, size=batch_size)
+            batch_inds = (np.random.randint(1, self.buffer_size, size=batch_size) + self.pos) % self.buffer_size
         else:
             batch_inds = np.random.randint(0, self.pos, size=batch_size)
 

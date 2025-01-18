@@ -42,7 +42,10 @@ class PreferencePredictor:
                                                   observation=state)  # estimated probability, that the human will prefer action 1
             total_prob1 += prob_for_action # Tensor of shape {Tensor : {1,1}} , tested
 
-        predicted_prob = torch.exp(total_prob0) / (torch.exp(total_prob0) + torch.exp(total_prob1)) #probability, that the human will chose trajectory0 over trajectory1
+        max_prob = torch.max(total_prob0, total_prob1)
+        predicted_prob = torch.exp(total_prob0 - max_prob) / (
+                torch.exp(total_prob0 - max_prob) + torch.exp(total_prob1 - max_prob)
+        )
         return predicted_prob
 
     def _compute_loss(self, sample):
@@ -60,10 +63,10 @@ class PreferencePredictor:
             label_2 = 1 - label_1
 
             # calculate loss
-            loss_1 = label_1 * torch.log(predicted_prob)
-            loss_2 = label_2 * torch.log(1 - predicted_prob)
+            loss_1 = label_1 * torch.log(predicted_prob + 1e6)
+            loss_2 = label_2 * torch.log(1 - predicted_prob + 1e6)
 
-            entropy_loss = entropy_loss + -(loss_1 + loss_2)
+            entropy_loss = entropy_loss + -(loss_1 + loss_2 )
 
         return entropy_loss #loss for whole batch
 
