@@ -32,8 +32,13 @@ def handle_feedback(args, global_step, video_queue, stored_pairs, preference_buf
 
 def render_and_queue_trajectories(args,query, global_step, sampler, video_queue, stored_pairs):
 
-    trajectory1, trajectory2 = sampler.uniform_trajectory_pair(args.query_length,
-                                                               args.feedback_frequency, args.synthetic_feedback)
+    #trajectory1, trajectory2 = sampler.uniform_trajectory_pair(args.query_length,
+    #                                                           args.feedback_frequency, args.synthetic_feedback)
+    #
+    trajectory1, trajectory2 = sampler.ensemble_sampling(args.ensemble_query_size, args.uniform_query_size,
+                                            args.query_length, args.reward_frequency, args.feedback_mode, preference_optimizer)
+
+
     # Notify that rendering has started
     print(f"Requested rendering for query {query} at step {global_step}")
     video1_path = render_trajectory_gym(
@@ -51,9 +56,12 @@ def render_and_queue_trajectories(args,query, global_step, sampler, video_queue,
 
 def handle_synthetic_feedback(args, query, sampler,preference_buffer,global_step):
 
-    trajectory1, trajectory2 = sampler.uniform_trajectory_pair(args.query_length,
-                                                               args.feedback_frequency,
-                                                               args.synthetic_feedback)
+    #trajectory1, trajectory2 = sampler.uniform_trajectory_pair(args.query_length,
+    #                                                           args.feedback_frequency,
+    #                                                           args.synthetic_feedback)
+    trajectory1, trajectory2 = sampler.ensemble_sampling(args.ensemble_query_size, args.uniform_query_size,
+                                                         args.query_length, args.reward_frequency, args.feedback_mode, preference_optimizer)
+
 
     print(f"Requested rendering for query {query} at step {global_step} --synthetic")
     _ = render_trajectory_gym(
@@ -75,10 +83,11 @@ def handle_synthetic_feedback(args, query, sampler,preference_buffer,global_step
     preference_buffer.add((trajectory1, trajectory2), preference)
 
 
-def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer,
+def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer,
           preference_optimizer, args, writer, device, sampler,
           preference_buffer,video_queue,stored_pairs,feedback_event,int_rew_calc, notify, preference_mutex ):
     torch.autograd.set_detect_anomaly(True)
+
     # [Optional] automatic adjustment of the entropy coefficient
     if args.autotune:
         target_entropy = -torch.prod(torch.Tensor(envs.single_action_space.shape).to(device)).item()
@@ -98,9 +107,9 @@ def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_o
     for global_step in range(args.total_timesteps):
         ### REWARD LEARNING ###
         # PEBBLE: (7)
-        if global_step > args.reward_learning_starts:
+        if global_step >= args.reward_learning_starts:
             # (8)
-            if global_step % args.feedback_frequency == 0: #Is it a good idea to do sampling only with feedback query?
+            if global_step % args.feedback_frequency == 0:
 
                 # (9)
                 handle_feedback(args, global_step, video_queue, stored_pairs, preference_buffer,
@@ -110,15 +119,17 @@ def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_o
                 # (15)
                 with preference_mutex:
                     data = preference_buffer.sample(args.query_size)
-                    entropy_loss = preference_optimizer.train_reward_model(
-                        data)
+                    entropy_loss, ratio = preference_optimizer.train_reward_models(preference_buffer, args.ensemble_query_size)
+
                     preference_buffer.reset()
                     stored_pairs.clear()
                 # (16)
 
-                writer.add_scalar("losses/entropy_loss", entropy_loss.mean().item(), global_step)
+                #writer.add_scalar("losses/entropy_loss", entropy_loss.mean().item(), global_step)
+                writer.add_scalar("losses/entropy_loss", entropy_loss, global_step)
+                writer.add_scalar("losses/ratio", ratio, global_step)
                 # (18)
-                relabel_replay_buffer(rb, reward_network, device)
+                relabel_replay_buffer(rb, reward_networks, device)
                 # Clear Preference Buffer
 
 
@@ -132,7 +143,7 @@ def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_o
             int_rew_calc.add_state(obs)
         # actor chooses action
         else:
-            actions, _, _ = actor.get_action(torch.Tensor(obs).to(device)) #hier kp?
+            actions, _, _ = actor.get_action(torch.Tensor(obs).to(device))
             actions = actions.detach().cpu().numpy()
 
         # PEBBLE: (21)
@@ -147,8 +158,12 @@ def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_o
         else:
             action = torch.tensor(actions, device=device, dtype=torch.float32)
             state = torch.tensor(obs, device=device, dtype=torch.float32)
+            true_rewards = []
             with torch.no_grad():
-                true_rewards = reward_network.forward(action=action, observation=state).cpu().numpy() # TODO: is there a reason why we use forward here?
+                for reward_model in reward_networks:
+                    true_reward = reward_model.forward(action=action, observation=state) #TODO:
+                    true_rewards.append(true_reward.cpu().numpy())
+            true_rewards = np.mean(true_rewards, axis=0)
         episodic_true_rewards += true_rewards
 
 
@@ -250,10 +265,5 @@ def train(envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_o
                 if args.autotune:
                     writer.add_scalar("losses/alpha_loss", alpha_loss.item(), global_step)
 
-        # Once unsupervised exploration is finished, we overwrite the intrinsic reward with our model
-        if global_step == args.reward_learning_starts:
-            relabel_replay_buffer(rb, reward_network, device)
-
     envs.close()
     writer.close()
-

@@ -48,6 +48,8 @@ class EstimatedRewardNetwork(nn.Module):
         return reward
 
 
+
+
 # Q-Network
 class SoftQNetwork(nn.Module):
     # Neural network architecture
@@ -87,18 +89,16 @@ class Actor(nn.Module):
 
     # state -> mean, log-standard deviation
     def forward(self, x):
-        xD = x
-        resultfc1 = F.relu(self.fc1(x)) # first layer - ReLU # some tensors become zero, because they are too small in x?
-        resultfc2 = F.relu(self.fc2(resultfc1)) # second layer - ReLU
-        mean = self.fc_mean(resultfc2) # calculate mean
-        log_std = self.fc_logstd(resultfc2)                                         # log-standard deviation
+        x = F.relu(self.fc1(x)) # first layer - ReLU
+        x = F.relu(self.fc2(x)) # second layer - ReLU
+        mean = self.fc_mean(x) # calculate mean
+        log_std = self.fc_logstd(x)                                                 # log-standard deviation
         log_std = torch.tanh(log_std)                                               # restrict to [-1, 1]
         log_std = LOG_STD_MIN + 0.5 * (LOG_STD_MAX - LOG_STD_MIN) * (log_std + 1)   # scale to [MIN, MAX]
         return mean, log_std
 
     # state -> action, log-probability, mean
     def get_action(self, x):
-        _assignment = x
         mean, log_std = self(x) # forward -> mean, log-standard deviation
         std = log_std.exp() # convert log-standard deviation -> standard deviation
         normal = torch.distributions.Normal(mean, std) # Gaussian distribution
@@ -112,10 +112,10 @@ class Actor(nn.Module):
         return action, log_prob, mean
 
 
-def initialize_networks(envs, device, policy_lr, q_lr,batch_processing_rewnet):
+def initialize_networks(envs, device, policy_lr, q_lr,batch_processing_rewnet,num_models):
     actor = Actor(envs).to(device)
-    # Reward network
-    reward_network = EstimatedRewardNetwork(envs,batch_processing_rewnet).to(device)
+    # Reward networks
+    reward_networks = [EstimatedRewardNetwork(envs,batch_processing_rewnet).to(device) for _ in range(num_models)]
     # Q-Networks
     qf1 = SoftQNetwork(envs).to(device)
     qf2 = SoftQNetwork(envs).to(device)
@@ -129,4 +129,4 @@ def initialize_networks(envs, device, policy_lr, q_lr,batch_processing_rewnet):
     # Optimizer Actor (policy)
     actor_optimizer = optim.Adam(list(actor.parameters()), lr=policy_lr)
 
-    return actor, reward_network ,qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer
+    return actor, reward_networks ,qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer

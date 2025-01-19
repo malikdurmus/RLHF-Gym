@@ -7,6 +7,8 @@ class Args:
     """the name of this experiment"""
     seed: int = 1
     """seed of the experiment"""
+    num_models: int = 5
+    """how many reward-models to use"""
     torch_deterministic: bool = True
     """if toggled, `torch.backends.cudnn.deterministic=False`"""
     cuda: bool = True
@@ -33,9 +35,11 @@ class Args:
     """the discount factor gamma"""
     tau: float = 0.005
     """target smoothing coefficient (default: 0.005)"""
-    batch_size: int = 100
+    l2: float = 0.01
+    """regularization coefficient"""
+    batch_size: int = 256
     """the batch size of sample from the replay memory"""
-    reward_learning_starts: int = 500 #5e3
+    reward_learning_starts: int = 5e3
     """timestep to start learning"""
     reward_model_lr: float = 1e-3
     """the learning rate of the reward model optimizer"""
@@ -51,14 +55,16 @@ class Args:
     """Entropy regularization coefficient."""
     autotune: bool = True
     """automatic tuning of the entropy coefficient"""
-    feedback_frequency: int = 400
-    """how often we ask for feedback"""
-    query_size: int = 10
-    """how much feedback each iteration"""
-    query_length: int = 300 #try with 300 later  ## Torch Nan error when over 500 when Hopper, when walker 2d same error by 100 (deterministic, happens every time)
+    reward_frequency: int = 5000
+    """how often we ask for feedback / update the model"""
+    uniform_query_size: int = 100
+    """how much uniform feedback each iteration"""
+    ensemble_query_size: int = 60
+    """how much ensemble-based sampling each iteration (needs to be less than uniform)"""
+    query_length: int = 90
     """length of trajectories"""
-    pref_batch_size: int = 50  # Unused arg # TODO: remove later, unused
-    """the batch size of sample from the preference memory"""
+    #pref_batch_size: int = 20
+    #"""the batch size of sample from the preference memory"""
     synthetic_feedback: bool = True
     pretrain_timesteps: int = 1000
     """how many steps for random exploration"""
