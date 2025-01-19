@@ -7,6 +7,8 @@ class Args:
     """the name of this experiment"""
     seed: int = 1
     """seed of the experiment"""
+    num_models: int = 3 #
+    """how many reward-models to use (has to be minimum 1)"""
     torch_deterministic: bool = True
     """if toggled, `torch.backends.cudnn.deterministic=False`"""
     cuda: bool = True
@@ -17,15 +19,15 @@ class Args:
     """the wandb's project name"""
     wandb_entity: str = None
     """the entity (team) of wandb's project"""
-    capture_video: bool = False
+    capture_video: bool = True
     """whether to capture videos of the agent performances (check out `videos` folder)"""
     record_every_th_episode: int = 20
     """will record videos every `record_every_th_episode` episodes"""
 
     # Algorithm specific arguments
-    env_id: str = "Hopper-v5"
+    env_id: str = "Walker2d-v5"
     """the environment id of the task"""
-    total_timesteps: int = 1000000
+    total_timesteps: int = int(1e6)
     """total timesteps of the experiments"""
     buffer_size: int = int(1e6)
     """the replay memory buffer size"""
@@ -33,9 +35,11 @@ class Args:
     """the discount factor gamma"""
     tau: float = 0.005
     """target smoothing coefficient (default: 0.005)"""
+    l2: float = 0.01
+    """regularization coefficient"""
     batch_size: int = 256
     """the batch size of sample from the replay memory"""
-    reward_learning_starts: int = 5e3
+    reward_learning_starts: int = 5001
     """timestep to start learning"""
     reward_model_lr: float = 1e-3
     """the learning rate of the reward model optimizer"""
@@ -46,20 +50,33 @@ class Args:
     policy_frequency: int = 2
     """the frequency of training policy (delayed)"""
     target_network_frequency: int = 1  # Denis Yarats' implementation delays this by 2.
-    """the frequency of updates for the target nerworks"""
+    """the frequency of updates for the target networks"""
     alpha: float = 0.2
     """Entropy regularization coefficient."""
     autotune: bool = True
     """automatic tuning of the entropy coefficient"""
-    reward_frequency: int = 4000
+    feedback_frequency: int = 5000
     """how often we ask for feedback / update the model"""
-    query_size: int = 90
-    """how much feedback each iteration"""
-    query_length: int = 25
+    uniform_query_size: int = 20
+    """how much uniform feedback each iteration"""
+    ensemble_query_size: int = 19
+    """how much ensemble-based sampling each iteration (needs to be less than uniform)"""
+    query_size: int = uniform_query_size
+    query_length: int = 200
     """length of trajectories"""
     #pref_batch_size: int = 20
     #"""the batch size of sample from the preference memory"""
-    pretrain_timesteps: int = 1000
+    synthetic_feedback: bool = True
+    pretrain_timesteps: int = 2000 #TODO: 0 is not okay
     """how many steps for random exploration"""
-    feedback_mode: str = "synthetic"
-    """the feedback mode, either 'synthetic' for synthetic feedback or 'human' for human feedback"""
+    batch_processing: bool = True # TODO: remove later, not needed
+
+
+    # Eval Args
+    eval_env_id: str = env_id
+    eval_max_steps: int = 10000
+    n_eval_episodes: int = 1000
+    #seed: int = 3 TODO: reasonable seeding
+
+# TODO: We need to add a function to ensure that all args are compatible
+# TODO: Needs better documentation, ambigious as is
