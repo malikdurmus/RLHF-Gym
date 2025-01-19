@@ -27,7 +27,6 @@ def make_env(env_id, seed, idx, capture_video, run_name, record_every_th_episode
 
     return thunk
 
-
 def initialize_env(env_id, seed, capture_video, run_name,record_every_th_episode):
     # Create environment
     envs = gym.vector.SyncVectorEnv([make_env(env_id, seed, 0, capture_video, run_name,record_every_th_episode)])

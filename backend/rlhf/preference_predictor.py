@@ -44,7 +44,7 @@ class PreferencePredictor:
             model_losses.append(model_loss.item())
 
             with torch.no_grad():
-                val_loss = self._compute_loss(reward_model, val_sample)
+                val_loss = self._compute_loss_batch(reward_model, val_sample)
                 val_losses.append(val_loss.item())
 
         # Average entropy loss over all models
@@ -63,13 +63,64 @@ class PreferencePredictor:
 
     def compute_predicted_probabilities(self, trajectories):
         predictions = [
-            self.compute_predicted_probability(reward_model, trajectories)
+            self._compute_predicted_probability_batch(reward_model, trajectories)
             for reward_model in self.reward_networks
         ]
         return predictions
 
 
-    # for each data in sample we will use the predict function. after that we will use the preference to calculate entropy loss
+
+
+    def _compute_loss_batch(self,reward_model, sample):
+        """
+        Compute the cumulative entropy loss for the given sample.
+        """
+        entropy_loss = torch.tensor(0.0, requires_grad=True)
+
+        for trajectory_pair, human_feedback_label in sample:
+            predicted_prob = self._compute_predicted_probability_batch(reward_model,trajectory_pair)
+
+            # label to tensor
+            label = torch.tensor(human_feedback_label, dtype=torch.float, device=self.device)
+
+            # clamp to to avoid log(0)
+            predicted_prob = torch.clamp(predicted_prob, min=1e-7, max=1 - 1e-7)
+
+            loss = -label * torch.log(predicted_prob) - (1 - label) * torch.log(1 - predicted_prob)
+            entropy_loss = entropy_loss + loss
+
+        return entropy_loss
+
+    def _compute_predicted_probability_batch(self,reward_model, trajectories):
+        """
+        Compute the predicted probability of human preference for trajectory0 over trajectory1.
+        """
+        trajectory0, trajectory1 = trajectories
+
+        if trajectory0.states.size(0) != trajectory1.states.size(0):
+            raise ValueError("Trajectory lengths do not match.")
+
+        trajectory0.to(self.device)
+        trajectory1.to(self.device)
+
+        rewards0 = reward_model(trajectory0.actions, trajectory0.states)
+        rewards1 = reward_model(trajectory1.actions, trajectory1.states)
+
+        total_reward0 = rewards0.sum()
+        total_reward1 = rewards1.sum()
+
+        # softmax
+        max_reward = torch.max(total_reward0, total_reward1)
+        predicted_prob = torch.exp(total_reward0 - max_reward) / (
+                torch.exp(total_reward0 - max_reward) + torch.exp(total_reward1 - max_reward)
+        )
+
+        return predicted_prob
+
+
+
+# Deprecated Methods, will remove those
+# for each data in sample we will use the predict function. after that we will use the preference to calculate entropy loss
     def _deprecated_predicted_probability(self,reward_model, trajectories):
         """
         :param trajectories: A tuple consisting of two trajectories, where each trajectory is an iterable of tuples. Each tuple represents (action, state) pairs from the trajectory.
@@ -131,48 +182,3 @@ class PreferencePredictor:
             entropy_loss = entropy_loss + -(loss_1 + loss_2 )
         res = entropy_loss
         return entropy_loss #loss for whole batch
-
-    def _compute_loss_batch(self,reward_model, sample):
-        """
-        Compute the cumulative entropy loss for the given sample.
-        """
-        entropy_loss = torch.tensor(0.0, requires_grad=True)
-
-        for trajectory_pair, human_feedback_label in sample:
-            predicted_prob = self._compute_predicted_probability_batch(reward_model,trajectory_pair)
-
-            # label to tensor
-            label = torch.tensor(human_feedback_label, dtype=torch.float, device=self.device)
-
-            # clamp to to avoid log(0)
-            predicted_prob = torch.clamp(predicted_prob, min=1e-7, max=1 - 1e-7)
-
-            loss = -label * torch.log(predicted_prob) - (1 - label) * torch.log(1 - predicted_prob)
-            entropy_loss = entropy_loss + loss
-
-
-    def _compute_predicted_probability_batch(self,reward_model, trajectories):
-        """
-        Compute the predicted probability of human preference for trajectory0 over trajectory1.
-        """
-        trajectory0, trajectory1 = trajectories
-
-        if trajectory0.states.size(0) != trajectory1.states.size(0):
-            raise ValueError("Trajectory lengths do not match.")
-
-        trajectory0.to(self.device)
-        trajectory1.to(self.device)
-
-        rewards0 = reward_model(trajectory0.actions, trajectory0.states)
-        rewards1 = reward_model(trajectory1.actions, trajectory1.states)
-
-        total_reward0 = rewards0.sum()
-        total_reward1 = rewards1.sum()
-
-        # softmax
-        max_reward = torch.max(total_reward0, total_reward1)
-        predicted_prob = torch.exp(total_reward0 - max_reward) / (
-                torch.exp(total_reward0 - max_reward) + torch.exp(total_reward1 - max_reward)
-        )
-
-        return predicted_prob

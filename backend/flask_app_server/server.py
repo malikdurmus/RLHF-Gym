@@ -36,7 +36,7 @@ preference_mutex = threading.Lock()
 
 def create_app():
     app = Flask(__name__)
-    app.config['SECRET_KEY'] = 'your_secret_key_here'
+    app.config['SECRET_KEY'] = 'your_secret_key_here' # TODO: remove later
     CORS(app)
     socketio = SocketIO(app, cors_allowed_origins="*")
 
@@ -91,7 +91,7 @@ if __name__ == "__main__":
 
     writer.add_text("hyperparameters", "|param|value|\n|-|-|\n%s" % ("\n".join([f"|{key}|{value}|" for key, value in vars(args).items()])))
 
-    #Seeding
+    # Seeding (for reproduction)
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -101,10 +101,13 @@ if __name__ == "__main__":
 
     envs = initialize_env(args.env_id, args.seed, args.capture_video, run_name, args.record_every_th_episode)
 
-    actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer = (
-        initialize_networks(envs, device, args.policy_lr, args.q_lr,args.batch_processing)) # batch_processing to be removed
+    actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer = (
+        initialize_networks(envs, device, args.policy_lr, args.q_lr,args.batch_processing,args.num_models)) # batch_processing to be removed
 
-    preference_optimizer = PreferencePredictor(reward_network, reward_model_lr=args.reward_model_lr, device=device)
+    preference_optimizer = PreferencePredictor(reward_networks, reward_model_lr=args.reward_model_lr, device=device, l2=args.l2)
+
+    # Initialize preference buffer (buffer.py)
+    preference_buffer = PreferenceBuffer(args.buffer_size)
 
     rb = CustomReplayBuffer.initialize(envs, args.buffer_size, device)
 
@@ -116,7 +119,7 @@ if __name__ == "__main__":
     training_thread = threading.Thread(
         target=train,
         args=(
-            envs, rb, actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_optimizer,
+            envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_optimizer,
             actor_optimizer, preference_optimizer, args, writer, device, sampler,
             preference_buffer, video_queue, stored_pairs, feedback_event,
             int_rew_calc, notify, preference_mutex
@@ -140,3 +143,5 @@ if __name__ == "__main__":
 
     # TODO: Needs documentation
     # TODO: The get_video_pairs endpoint shouldnt be consumed (disappear) before the frontend makes the post request # this can be handled either in frontend or backend
+    # TODO: after training is done set a variable training_done to true and then add a button to make a get request
+    # for a page thats served by jinja and evaluate env parameters on the screen and the agent video served after that?

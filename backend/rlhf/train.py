@@ -11,11 +11,12 @@ from backend.rlhf.render import render_trajectory_gym
 ## Helper Functions
 
 def handle_feedback(args, global_step, video_queue, stored_pairs, preference_buffer,
-                    feedback_event, sampler, notify):
+                    feedback_event, sampler, notify,trajectory_pairs):
 
     if not args.synthetic_feedback: # human feedback
         for query in range(args.query_size):
-            render_and_queue_trajectories(args,query, global_step, sampler, video_queue, stored_pairs)
+            trajectory_pairs = trajectory_pairs[query]
+            render_and_queue_trajectories(args,query, global_step, video_queue, stored_pairs,trajectory_pairs)
 
         if not video_queue.qsize() == args.query_size:
             raise Exception("queue has more/less entries")
@@ -27,17 +28,16 @@ def handle_feedback(args, global_step, video_queue, stored_pairs, preference_buf
         feedback_event.clear()  # Reset the event
     else:
         for query in range(args.query_size):
-            handle_synthetic_feedback(args, query, sampler,preference_buffer,global_step)
+            trajecor_pairs_now = trajectory_pairs[query]
+            handle_synthetic_feedback(args, query, sampler,preference_buffer,global_step,trajecor_pairs_now)
 
 
-def render_and_queue_trajectories(args,query, global_step, sampler, video_queue, stored_pairs):
+def render_and_queue_trajectories(args,query, global_step, video_queue, stored_pairs,trajectory_pairs):
 
     #trajectory1, trajectory2 = sampler.uniform_trajectory_pair(args.query_length,
     #                                                           args.feedback_frequency, args.synthetic_feedback)
     #
-    trajectory1, trajectory2 = sampler.ensemble_sampling(args.ensemble_query_size, args.uniform_query_size,
-                                            args.query_length, args.reward_frequency, args.feedback_mode, preference_optimizer)
-
+    trajectory1, trajectory2 = trajectory_pairs
 
     # Notify that rendering has started
     print(f"Requested rendering for query {query} at step {global_step}")
@@ -54,26 +54,22 @@ def render_and_queue_trajectories(args,query, global_step, sampler, video_queue,
         'trajectory2': trajectory2
     })
 
-def handle_synthetic_feedback(args, query, sampler,preference_buffer,global_step):
+def handle_synthetic_feedback(args, query, sampler,preference_buffer,global_step,trajectory_pairs):
 
     #trajectory1, trajectory2 = sampler.uniform_trajectory_pair(args.query_length,
     #                                                           args.feedback_frequency,
     #                                                           args.synthetic_feedback)
-    trajectory1, trajectory2 = sampler.ensemble_sampling(args.ensemble_query_size, args.uniform_query_size,
-                                                         args.query_length, args.reward_frequency, args.feedback_mode, preference_optimizer)
 
+    trajectory1, trajectory2 = trajectory_pairs
 
     print(f"Requested rendering for query {query} at step {global_step} --synthetic")
     _ = render_trajectory_gym(
         args.env_id, trajectory1, global_step, "trajectory1", query)
     _ = render_trajectory_gym(
         args.env_id, trajectory2, global_step, "trajectory2", query)
-    (trajectory1, trajectory2) = sampler.uniform_trajectory_pair(args.query_length,
-                                                                 args.feedback_frequency,args.synthetic_feedback)
-    print(f"Requested rendering for query {query} at step {global_step}")
 
     # (11)
-    if sampler.sum_rewards(trajectory1) > sampler.sum_rewards(trajectory2):
+    if sampler.sum_rewards(trajectory1) > sampler.sum_rewards(trajectory2): #TODO: no need to have sampler for this as arg
         preference = 1
     elif sampler.sum_rewards(trajectory1) < sampler.sum_rewards(trajectory2):
         preference = 0
@@ -86,6 +82,7 @@ def handle_synthetic_feedback(args, query, sampler,preference_buffer,global_step
 def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer,
           preference_optimizer, args, writer, device, sampler,
           preference_buffer,video_queue,stored_pairs,feedback_event,int_rew_calc, notify, preference_mutex ):
+
     torch.autograd.set_detect_anomaly(True)
 
     # [Optional] automatic adjustment of the entropy coefficient
@@ -110,10 +107,13 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
         if global_step >= args.reward_learning_starts:
             # (8)
             if global_step % args.feedback_frequency == 0:
+                trajectory_pairs = sampler.ensemble_sampling(args.ensemble_query_size, args.uniform_query_size,
+                                                                     args.query_length, args.feedback_frequency,
+                                                                     args.synthetic_feedback, preference_optimizer)
 
                 # (9)
                 handle_feedback(args, global_step, video_queue, stored_pairs, preference_buffer,
-                    feedback_event, sampler, notify)
+                    feedback_event, sampler, notify,trajectory_pairs)
 
                 # (14)
                 # (15)

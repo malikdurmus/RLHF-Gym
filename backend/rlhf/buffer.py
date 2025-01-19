@@ -178,12 +178,12 @@ class TrajectorySampler:
         return trajectories_batch
 
     # ensemble-based sampling
-    def ensemble_sampling(self,ensemble_size, uniform_size,traj_length, time_window, feedback_mode, preference_optimizer):
+    def ensemble_sampling(self,ensemble_size, uniform_size,traj_length, time_window, synthetic_feedback, preference_optimizer):
         # Create empty list for variance: ((traj1, traj2), variance)
         variance_list = []
         for _ in range(uniform_size):
             # sample one trajectory pair
-            traj_pair = self.uniform_trajectory_pair(traj_length, time_window, feedback_mode)
+            traj_pair = self.uniform_trajectory_pair(traj_length, time_window, synthetic_feedback)
 
             # pass traj to each network: for reward_model in reward_networks, networks calculate a reward
             predictions = preference_optimizer.compute_predicted_probabilities(traj_pair)
