@@ -15,8 +15,8 @@ def handle_feedback(args, global_step, video_queue, stored_pairs, preference_buf
 
     if not args.synthetic_feedback: # human feedback
         for query in range(args.query_size):
-            trajectory_pairs = trajectory_pairs[query]
-            render_and_queue_trajectories(args,query, global_step, video_queue, stored_pairs,trajectory_pairs)
+            trajectory_pair = trajectory_pairs[query]
+            render_and_queue_trajectories(args,query, global_step, video_queue, stored_pairs,trajectory_pair)
 
         if not video_queue.qsize() == args.query_size:
             raise Exception("queue has more/less entries")
@@ -28,16 +28,16 @@ def handle_feedback(args, global_step, video_queue, stored_pairs, preference_buf
         feedback_event.clear()  # Reset the event
     else:
         for query in range(args.query_size):
-            trajecor_pairs_now = trajectory_pairs[query]
-            handle_synthetic_feedback(args, query, sampler,preference_buffer,global_step,trajecor_pairs_now)
+            trajecor_pair= trajectory_pairs[query]
+            handle_synthetic_feedback(args, query, sampler,preference_buffer,global_step,trajecor_pair)
 
 
-def render_and_queue_trajectories(args,query, global_step, video_queue, stored_pairs,trajectory_pairs):
+def render_and_queue_trajectories(args,query, global_step, video_queue, stored_pairs,trajectory_pair):
 
     #trajectory1, trajectory2 = sampler.uniform_trajectory_pair(args.query_length,
     #                                                           args.feedback_frequency, args.synthetic_feedback)
     #
-    trajectory1, trajectory2 = trajectory_pairs
+    trajectory1, trajectory2 = trajectory_pair
 
     # Notify that rendering has started
     print(f"Requested rendering for query {query} at step {global_step}")
@@ -54,13 +54,13 @@ def render_and_queue_trajectories(args,query, global_step, video_queue, stored_p
         'trajectory2': trajectory2
     })
 
-def handle_synthetic_feedback(args, query, sampler,preference_buffer,global_step,trajectory_pairs):
+def handle_synthetic_feedback(args, query, sampler,preference_buffer,global_step,trajectory_pair):
 
     #trajectory1, trajectory2 = sampler.uniform_trajectory_pair(args.query_length,
     #                                                           args.feedback_frequency,
     #                                                           args.synthetic_feedback)
 
-    trajectory1, trajectory2 = trajectory_pairs
+    trajectory1, trajectory2 = trajectory_pair
 
     print(f"Requested rendering for query {query} at step {global_step} --synthetic")
     _ = render_trajectory_gym(

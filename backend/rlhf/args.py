@@ -7,8 +7,8 @@ class Args:
     """the name of this experiment"""
     seed: int = 1
     """seed of the experiment"""
-    num_models: int = 5
-    """how many reward-models to use"""
+    num_models: int = 3 #
+    """how many reward-models to use (has to be minimum 1)"""
     torch_deterministic: bool = True
     """if toggled, `torch.backends.cudnn.deterministic=False`"""
     cuda: bool = True
@@ -27,7 +27,7 @@ class Args:
     # Algorithm specific arguments
     env_id: str = "Walker2d-v5"
     """the environment id of the task"""
-    total_timesteps: int = 1000000
+    total_timesteps: int = int(1e6)
     """total timesteps of the experiments"""
     buffer_size: int = int(1e6)
     """the replay memory buffer size"""
@@ -39,7 +39,7 @@ class Args:
     """regularization coefficient"""
     batch_size: int = 256
     """the batch size of sample from the replay memory"""
-    reward_learning_starts: int = 200 #5e3
+    reward_learning_starts: int = 5001
     """timestep to start learning"""
     reward_model_lr: float = 1e-3
     """the learning rate of the reward model optimizer"""
@@ -55,19 +55,19 @@ class Args:
     """Entropy regularization coefficient."""
     autotune: bool = True
     """automatic tuning of the entropy coefficient"""
-    feedback_frequency: int = 200
+    feedback_frequency: int = 5000
     """how often we ask for feedback / update the model"""
-    uniform_query_size: int = 5
+    uniform_query_size: int = 20
     """how much uniform feedback each iteration"""
-    ensemble_query_size: int = 5
+    ensemble_query_size: int = 19
     """how much ensemble-based sampling each iteration (needs to be less than uniform)"""
     query_size: int = uniform_query_size
-    query_length: int = 90
+    query_length: int = 200
     """length of trajectories"""
     #pref_batch_size: int = 20
     #"""the batch size of sample from the preference memory"""
     synthetic_feedback: bool = True
-    pretrain_timesteps: int = 10 #TODO: 0 is not okay
+    pretrain_timesteps: int = 2000 #TODO: 0 is not okay
     """how many steps for random exploration"""
     batch_processing: bool = True # TODO: remove later, not needed
 
