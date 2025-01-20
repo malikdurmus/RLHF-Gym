@@ -57,17 +57,17 @@ class Args:
     """automatic tuning of the entropy coefficient"""
     feedback_frequency: int = 5000
     """how often we ask for feedback / update the model"""
-    uniform_query_size: int = 20
+    uniform_query_size: int = 30
     """how much uniform feedback each iteration"""
-    ensemble_query_size: int = 19
+    ensemble_query_size: int = 29
     """how much ensemble-based sampling each iteration (needs to be less than uniform)"""
-    query_size: int = uniform_query_size
+    query_size: int = ensemble_query_size # TODO: ensure uniform & ensemble are compatible
     query_length: int = 200
     """length of trajectories"""
     #pref_batch_size: int = 20
     #"""the batch size of sample from the preference memory"""
     synthetic_feedback: bool = True
-    pretrain_timesteps: int = 2000 #TODO: 0 is not okay
+    pretrain_timesteps: int = 5000 #TODO: 0 throws error
     """how many steps for random exploration"""
     batch_processing: bool = True # TODO: remove later, not needed
 
