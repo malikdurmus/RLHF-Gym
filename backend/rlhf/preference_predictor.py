@@ -21,7 +21,7 @@ class PreferencePredictor:
         ]
 
     def _update_optimizers(self):
-        self.optimizers = self._initialize_optimizers()
+        self.optimizers = self._initialize_optimizers() # TODO: check if you can change the l2 without reinitializing
 
 
     def train_reward_models(self, pb, sample_size):
@@ -47,11 +47,11 @@ class PreferencePredictor:
                 val_loss = self._compute_loss_batch(reward_model, val_sample)
                 val_losses.append(val_loss.item())
 
-        # Average entropy loss over all models
+        # Average entropy loss over all models # TODO: use mean function
         avg_entropy_loss = sum(model_losses) / len(model_losses)
         avg_overfit_loss = sum(val_losses) / len(val_losses)
 
-        ratio = avg_overfit_loss / avg_entropy_loss
+        ratio = avg_overfit_loss / avg_entropy_loss #TODO: add this to tensorboard to check how it behaves after surf
         if ratio < 1.1:
             self.l2 *= 1.1
             self._update_optimizers()

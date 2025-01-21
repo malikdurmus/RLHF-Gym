@@ -96,7 +96,7 @@ if __name__ == "__main__":
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
 
-    torch.backends.cudnn.deterministic = args.torch_deterministic
+    torch.backends.cudnn.deterministic = args.torch_deterministic # TODO: remove / change this before training it slows down the training
     device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
 
     envs = initialize_env(args.env_id, args.seed, args.capture_video, run_name, args.record_every_th_episode)

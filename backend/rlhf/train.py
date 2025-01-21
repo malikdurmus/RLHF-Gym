@@ -6,6 +6,8 @@ import time
 import numpy as np
 from backend.rlhf.buffer import relabel_replay_buffer
 from backend.rlhf.render import render_trajectory_gym
+from backend.rlhf.utils import semi_supervised_learning
+from backend.rlhf.utils.surf import surf
 
 
 ## Helper Functions
@@ -28,8 +30,8 @@ def handle_feedback(args, global_step, video_queue, stored_pairs, preference_buf
         feedback_event.clear()  # Reset the event
     else:
         for query in range(args.query_size):
-            trajecor_pair= trajectory_pairs[query]
-            handle_synthetic_feedback(args, query, sampler,preference_buffer,global_step,trajecor_pair)
+            trajectory_pair= trajectory_pairs[query]
+            handle_synthetic_feedback(args, query, sampler,preference_buffer,global_step,trajectory_pair)
 
 
 def render_and_queue_trajectories(args,query, global_step, video_queue, stored_pairs,trajectory_pair):
@@ -81,9 +83,9 @@ def handle_synthetic_feedback(args, query, sampler,preference_buffer,global_step
 
 def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer,
           preference_optimizer, args, writer, device, sampler,
-          preference_buffer,video_queue,stored_pairs,feedback_event,int_rew_calc, notify, preference_mutex ):
+          preference_buffer,video_queue,stored_pairs,feedback_event,int_rew_calc, notify, preference_mutex ): # TODO: we can use a class (object) to bundle actor, critics and their optimizers
 
-    torch.autograd.set_detect_anomaly(True)
+    #torch.autograd.set_detect_anomaly(True)
 
     # [Optional] automatic adjustment of the entropy coefficient
     if args.autotune:
@@ -109,18 +111,30 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
             if global_step % args.feedback_frequency == 0:
                 trajectory_pairs = sampler.ensemble_sampling(args.ensemble_query_size, args.uniform_query_size,
                                                                      args.query_length, args.feedback_frequency,
-                                                                     args.synthetic_feedback, preference_optimizer)
+                                                                     args.synthetic_feedback, preference_optimizer) # this also takes some time, try threading
+                # trajectory pairs list now has trajectories that are in descending order
+                # (9) # we have chosen the tra_pairs with the highest variance now we need 10 or 100 times ensemble_query_size traj pairs to label them
 
-                # (9)
-                handle_feedback(args, global_step, video_queue, stored_pairs, preference_buffer,
-                    feedback_event, sampler, notify,trajectory_pairs)
 
                 # (14)
                 # (15)
                 with preference_mutex:
-                    data = preference_buffer.sample(args.query_size)
-                    entropy_loss, ratio = preference_optimizer.train_reward_models(preference_buffer, args.ensemble_query_size)
+                    handle_feedback(args, global_step, video_queue, stored_pairs, preference_buffer,
+                                    feedback_event, sampler, notify, trajectory_pairs) # now preference buffer list is full of: ((tra1,tra2),preference)
+                    #data = preference_buffer.sample(args.query_size)
+                    # TODO: option 1: create a unlabeled preference buffer and update on it, that you clean and populate after every update
+                    #                  also keep 2 buffers seperate (makes it easy to ensure unlabaled data is used 1 time)
+                    #                  you can toggle it on and off for testing this way
+                    #        option 2: create unlabeled_pb use ssl then add it to the preference buffer and then update on preference buffer
+                    #                   you can still toggle it on and off for testing this way (you need to remove unlabeled after update)
+                    if args.surf:
+                        # do ssl and create unlabaled pb & crop the original_pb
+                        ssl_labeled_pb = surf(reward_networks,rb,preference_buffer)
 
+                        pass
+                    # TODO: do we need the sampling in train_reward_models now? we will use the whole preference buffer anyways
+                    entropy_loss, ratio = preference_optimizer.train_reward_models(preference_buffer, args.ensemble_query_size) # TODO: This should use all of the preference_buffer, remove ensemble query size
+                    # modify train reward models to
                     preference_buffer.reset()
                     stored_pairs.clear()
                 # (16)
@@ -129,7 +143,7 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
                 writer.add_scalar("losses/entropy_loss", entropy_loss, global_step)
                 writer.add_scalar("losses/ratio", ratio, global_step)
                 # (18)
-                relabel_replay_buffer(rb, reward_networks, device)
+                relabel_replay_buffer(rb, reward_networks, device) # relabel, this might be taking time? profile it -md
                 # Clear Preference Buffer
 
 

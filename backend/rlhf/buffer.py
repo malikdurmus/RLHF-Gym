@@ -201,7 +201,17 @@ class TrajectorySampler:
         # sort list in descending order
         sorted_variance = sorted(variance_list, key=lambda x: x[1], reverse=True)
 
-        return [element[0] for element in sorted_variance[:ensemble_size]]
+        top_variance_list = [element[0] for element in sorted_variance[:ensemble_size]]
+
+            # two options:
+            # wrong approach? (not in the paper) : using sorted_variance_list - top_variance_list (using the ones with the least variance)
+            # cons: 1) performance: unnecessary ensemble usage 2) bias: the ones with the lowest variance will be selected for unlabeled in this case
+            # option1: remove from rb  : remove the traj_pair that you sampled for ensemble from the replay buffer to ensure that you do not treat it as unlabeled data that should be labeled (because real human feedback will label it)
+            #           and do uniform somewhere else (you have to ensure rb doesnt get empty after a while) in each step that happens: rb.size = rb.size - uniform_size
+            #           pros: performance, efficient you dont need to sample again cons: bias:
+            # do the labeling
+
+        return top_variance_list
 
 
     def sum_rewards(self, traj):

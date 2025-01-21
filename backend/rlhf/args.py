@@ -29,7 +29,7 @@ class Args:
     """the environment id of the task"""
     total_timesteps: int = int(1e6)
     """total timesteps of the experiments"""
-    buffer_size: int = int(1e6)
+    buffer_size: int = int(1e6) #rb and preference buffer size # TODO:  overflow when we have query size 100 and we are at 100.000th step?
     """the replay memory buffer size"""
     gamma: float = 0.99
     """the discount factor gamma"""
@@ -39,7 +39,7 @@ class Args:
     """regularization coefficient"""
     batch_size: int = 256
     """the batch size of sample from the replay memory"""
-    reward_learning_starts: int = 5001
+    reward_learning_starts: int = 100
     """timestep to start learning"""
     reward_model_lr: float = 1e-3
     """the learning rate of the reward model optimizer"""
@@ -55,22 +55,22 @@ class Args:
     """Entropy regularization coefficient."""
     autotune: bool = True
     """automatic tuning of the entropy coefficient"""
-    feedback_frequency: int = 5000
+    feedback_frequency: int = 200
     """how often we ask for feedback / update the model"""
-    uniform_query_size: int = 30
+    uniform_query_size: int = 500 #this has to be much larger than ensemble. this amount is sampled. lets say 100. ensemble sampling takes first 50 with highest variance
     """how much uniform feedback each iteration"""
-    ensemble_query_size: int = 29
+    ensemble_query_size: int = uniform_query_size // 100
     """how much ensemble-based sampling each iteration (needs to be less than uniform)"""
     query_size: int = ensemble_query_size # TODO: ensure uniform & ensemble are compatible
-    query_length: int = 200
+    query_length: int = 20 #length of segment should be 50
     """length of trajectories"""
     #pref_batch_size: int = 20
     #"""the batch size of sample from the preference memory"""
     synthetic_feedback: bool = True
-    pretrain_timesteps: int = 5000 #TODO: 0 throws error
+    pretrain_timesteps: int = 20 #TODO: 0 throws error
     """how many steps for random exploration"""
     batch_processing: bool = True # TODO: remove later, not needed
-
+    surf: bool = False
 
     # Eval Args
     eval_env_id: str = env_id
