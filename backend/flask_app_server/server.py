@@ -22,11 +22,12 @@ from backend.rlhf.preference_predictor import PreferencePredictor
 from backend.rlhf.train import train
 from backend.rlhf.utils.evaluate import evaluate_agent
 
-script_dir = os.path.dirname(__file__)
-parent_directory = os.path.abspath(os.path.join(script_dir, '..','..'))
-VIDEO_DIRECTORY = os.path.join(parent_directory, 'videos')
-
 args = tyro.cli(Args)
+
+script_dir = os.path.dirname(__file__)
+run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
+# parent_directory = os.path.abspath(os.path.join(script_dir, '..','..')) # not very elegant
+VIDEO_DIRECTORY = os.path.join(f"videos/{run_name}")
 
 video_queue = queue.Queue()
 feedback_event = Event()
@@ -52,7 +53,7 @@ def create_app():
             video_pairs.append({'id': pair_id, 'video1': video1_path, 'video2': video2_path})
         return jsonify({'video_pairs': video_pairs})
 
-    @app.route('/videos/<filename>')
+    @app.route(f'/videos/{run_name}/<filename>')
     def serve_video(filename):
         return send_from_directory(VIDEO_DIRECTORY, filename)
 
@@ -83,11 +84,10 @@ if __name__ == "__main__":
     os.makedirs(VIDEO_DIRECTORY, exist_ok=True)
 
     # RLHF setup
-    parent_directory = os.path.abspath(os.path.join(os.getcwd(), '..', '..'))
-    run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
-    run_path = os.path.join(parent_directory, "runs", run_name)
+    # parent_directory = os.path.abspath(os.path.join(os.getcwd(), '..', '..'))
+    #run_path = os.path.join(parent_directory, "runs", run_name)
 
-    writer = SummaryWriter(run_path)
+    writer = SummaryWriter(f"runs/{run_name}")
 
     writer.add_text("hyperparameters", "|param|value|\n|-|-|\n%s" % ("\n".join([f"|{key}|{value}|" for key, value in vars(args).items()])))
 
@@ -95,24 +95,31 @@ if __name__ == "__main__":
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
-
     torch.backends.cudnn.deterministic = args.torch_deterministic
+
+    # Choose hardware
     device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
 
+    # Initialize environment (environment.py)
     envs = initialize_env(args.env_id, args.seed, args.capture_video, run_name, args.record_every_th_episode)
 
+    # Initialize networks (networks.py)
     actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer = (
         initialize_networks(envs, device, args.policy_lr, args.q_lr,args.batch_processing,args.num_models)) # batch_processing to be removed
 
+    #Initialize preference predictor (preference_predictor.py)
     preference_optimizer = PreferencePredictor(reward_networks, reward_model_lr=args.reward_model_lr, device=device, l2=args.l2)
 
     # Initialize preference buffer (buffer.py)
-    preference_buffer = PreferenceBuffer(args.buffer_size)
+    # preference_buffer = PreferenceBuffer(args.buffer_size) # QUESTION Do we need to initialize twice?
 
+    # Initialize replay buffer (buffer.py)
     rb = CustomReplayBuffer.initialize(envs, args.buffer_size, device)
 
+    # Initialize sampler (buffer.py)
     sampler = TrajectorySampler(rb,device)
 
+    # Initialize intrinsic reward calculator
     int_rew_calc = IntrinsicRewardCalculator(k=5)
 
     # Start training in a separate thread

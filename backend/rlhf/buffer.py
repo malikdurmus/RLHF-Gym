@@ -178,7 +178,7 @@ class TrajectorySampler:
         return trajectories_batch
 
     # ensemble-based sampling
-    def ensemble_sampling(self,ensemble_size, uniform_size,traj_length, time_window, synthetic_feedback, preference_optimizer):
+    def ensemble_sampling(self,ensemble_size, uniform_size, traj_length, time_window, synthetic_feedback, preference_optimizer):
         # Create empty list for variance: ((traj1, traj2), variance)
         variance_list = []
         for _ in range(uniform_size):
@@ -202,10 +202,6 @@ class TrajectorySampler:
         sorted_variance = sorted(variance_list, key=lambda x: x[1], reverse=True)
 
         return [element[0] for element in sorted_variance[:ensemble_size]]
-
-
-    def sum_rewards(self, traj):
-        return traj.rewards.sum().item()
 
 
 def relabel_replay_buffer(rb, reward_models, device):

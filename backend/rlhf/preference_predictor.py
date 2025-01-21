@@ -24,14 +24,14 @@ class PreferencePredictor:
         self.optimizers = self._initialize_optimizers()
 
 
-    def train_reward_models(self, pb, sample_size):
+    def train_reward_models(self, pb, batch_size):
         model_losses = []
         val_losses = []
 
         for reward_model, optimizer in zip(self.reward_networks, self.optimizers):
             # Individual sampling
-            sample = pb.sample(sample_size, replace=True)
-            val_sample = pb.sample(int(sample_size / 2.718), replace=False)
+            sample = pb.sample(batch_size, replace=True)
+            val_sample = pb.sample(int(batch_size / 2.718), replace=False)
 
             # Compute loss for this model
             model_loss = self._compute_loss_batch(reward_model, sample)

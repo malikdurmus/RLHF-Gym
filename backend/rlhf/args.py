@@ -25,7 +25,7 @@ class Args:
     """will record videos every `record_every_th_episode` episodes"""
 
     # Algorithm specific arguments
-    env_id: str = "Walker2d-v5"
+    env_id: str = "Hopper-v5"
     """the environment id of the task"""
     total_timesteps: int = int(1e6)
     """total timesteps of the experiments"""
@@ -39,7 +39,7 @@ class Args:
     """regularization coefficient"""
     batch_size: int = 256
     """the batch size of sample from the replay memory"""
-    reward_learning_starts: int = 5001
+    reward_learning_starts: int = 1000
     """timestep to start learning"""
     reward_model_lr: float = 1e-3
     """the learning rate of the reward model optimizer"""
@@ -55,19 +55,21 @@ class Args:
     """Entropy regularization coefficient."""
     autotune: bool = True
     """automatic tuning of the entropy coefficient"""
-    feedback_frequency: int = 5000
-    """how often we ask for feedback / update the model"""
-    uniform_query_size: int = 30
+    feedback_frequency: int = 1000
+    """how often we ask for feedback / update the model (needs to be less or equal to reward_learning_starts)""" # TODO fix this
+    uniform_query_size: int = 60
     """how much uniform feedback each iteration"""
-    ensemble_query_size: int = 29
-    """how much ensemble-based sampling each iteration (needs to be less than uniform)"""
-    query_size: int = ensemble_query_size # TODO: ensure uniform & ensemble are compatible
-    query_length: int = 200
+    ensemble_query_size: int = 40
+    """how much ensemble-based sampling each iteration (needs to be less or equal to uniform [equal = inefficient uniform sampling])"""
+    traj_length: int = 90
     """length of trajectories"""
-    #pref_batch_size: int = 20
-    #"""the batch size of sample from the preference memory"""
+    pref_batch_size: int = 30
+    """the batch size of sample from the preference memory"""
     synthetic_feedback: bool = True
-    pretrain_timesteps: int = 5000 #TODO: 0 throws error
+    """Toggle synthetic/human feedback"""
+    ensemble_sampling: bool = True
+    """Toggle ensemble/uniform-based sampling"""
+    pretrain_timesteps: int = 500 #TODO: 0 throws error
     """how many steps for random exploration"""
     batch_processing: bool = True # TODO: remove later, not needed
 
@@ -79,4 +81,4 @@ class Args:
     #seed: int = 3 TODO: reasonable seeding
 
 # TODO: We need to add a function to ensure that all args are compatible
-# TODO: Needs better documentation, ambigious as is
+# TODO: Needs better structure and documentation, ambigious as is
