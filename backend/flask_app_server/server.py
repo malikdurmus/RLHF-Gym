@@ -22,18 +22,6 @@ from backend.rlhf.preference_predictor import PreferencePredictor
 from backend.rlhf.train import train
 from backend.rlhf.utils.evaluate import evaluate_agent
 
-args = tyro.cli(Args)
-
-script_dir = os.path.dirname(__file__)
-run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
-# parent_directory = os.path.abspath(os.path.join(script_dir, '..','..')) # not very elegant
-VIDEO_DIRECTORY = os.path.join(f"videos/{run_name}")
-
-video_queue = queue.Queue()
-feedback_event = Event()
-preference_buffer = PreferenceBuffer(args.buffer_size)
-stored_pairs = []
-preference_mutex = threading.Lock()
 
 def create_app():
     app = Flask(__name__)
@@ -79,9 +67,20 @@ def create_app():
     return app, socketio, notify_new_video_pairs
 
 if __name__ == "__main__":
-    app, socketio, notify = create_app()
-    logging.basicConfig(level=logging.DEBUG)
-    os.makedirs(VIDEO_DIRECTORY, exist_ok=True)
+
+    args = tyro.cli(Args)
+    run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
+    VIDEO_DIRECTORY = os.path.join(f"videos/{run_name}")
+    preference_mutex = threading.Lock()
+
+    if not args.synthetic_feedback: # human feedback
+        app, socketio, notify = create_app()
+        logging.basicConfig(level=logging.DEBUG)
+        os.makedirs(VIDEO_DIRECTORY, exist_ok=True)
+        video_queue = queue.Queue()
+        feedback_event = Event()
+        stored_pairs = []
+
 
     # RLHF setup
     # parent_directory = os.path.abspath(os.path.join(os.getcwd(), '..', '..'))
@@ -111,10 +110,10 @@ if __name__ == "__main__":
     preference_optimizer = PreferencePredictor(reward_networks, reward_model_lr=args.reward_model_lr, device=device, l2=args.l2)
 
     # Initialize preference buffer (buffer.py)
-    # preference_buffer = PreferenceBuffer(args.buffer_size) # QUESTION Do we need to initialize twice?
+    preference_buffer = PreferenceBuffer(args.pref_buffer_size)
 
     # Initialize replay buffer (buffer.py)
-    rb = CustomReplayBuffer.initialize(envs, args.buffer_size, device)
+    rb = CustomReplayBuffer.initialize(envs, args.replay_buffer_size, device)
 
     # Initialize sampler (buffer.py)
     sampler = TrajectorySampler(rb,device)

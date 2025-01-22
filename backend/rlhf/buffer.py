@@ -1,32 +1,20 @@
 import numpy as np
 import torch
 from stable_baselines3.common.buffers import ReplayBuffer
-from collections import namedtuple
 from gym import spaces
 from dataclasses import dataclass
 from typing import Union, NamedTuple
 
-@dataclass
-class TrajectorySamples:
-    states: torch.Tensor
-    actions: torch.Tensor
-    rewards: torch.Tensor
 
-    def to(self, device: torch.device):
-        """Move all tensors to the given device."""
-        self.states = self.states.to(device)
-        self.actions = self.actions.to(device)
-        if self.rewards is not None:
-            self.rewards = self.rewards.to(device)
-
-# Override to include true_rewards
+### REPLAY BUFFER ###
+# Override to include model_rewards
 class ReplayBufferSamples(NamedTuple):
     observations: torch.Tensor
     actions: torch.Tensor
     next_observations: torch.Tensor
     dones: torch.Tensor
-    rewards: torch.Tensor
-    true_rewards: torch.Tensor
+    env_rewards: torch.Tensor
+    model_rewards: torch.Tensor
 
 class CustomReplayBuffer(ReplayBuffer):
     def __init__(
@@ -43,14 +31,16 @@ class CustomReplayBuffer(ReplayBuffer):
         super().__init__(buffer_size, observation_space, action_space, device, n_envs, optimize_memory_usage,
                          handle_timeout_termination)
 
-        # Include storage of true_rewards
-        self.true_rewards = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
+        # Include storage of model_rewards
+        self.model_rewards = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
 
-    # Override to also add true_rewards
-    def add(self, obs, next_obs, action, reward, true_reward, done, infos):
-        super().add(obs, next_obs, action, reward, done, infos)
+    # Override to also add model_rewards
+    def add(self, obs, next_obs, action, env_reward, model_reward, done, infos):
+        super().add(obs, next_obs, action, env_reward, done, infos)
+        # return to correct pos (self.pos += 1 in super().add) # TODO handle if rb full
+        self.model_rewards[self.pos - 1, :] = model_reward
 
-    # Override to also sample true_rewards
+    # Override to also sample model_rewards
     def sample(self, batch_size, env=None):
         # Generate random indices
         if self.full:
@@ -58,19 +48,19 @@ class CustomReplayBuffer(ReplayBuffer):
         else:
             batch_inds = np.random.randint(0, self.pos, size=batch_size)
 
-        # Collect data (except true_rewards)
+        # Collect data (except model_rewards)
         data = self._get_samples(batch_inds, env)
 
-        # Collect true_rewards
-        true_rewards = torch.tensor(self.true_rewards[batch_inds], device=self.device)
+        # Collect model_rewards
+        model_rewards = torch.tensor(self.model_rewards[batch_inds], device=self.device)
 
         return ReplayBufferSamples(
             observations=data.observations,
             actions=data.actions,
             next_observations=data.next_observations,
             dones=data.dones,
-            rewards=data.rewards,
-            true_rewards=true_rewards,
+            env_rewards=data.rewards,
+            model_rewards=model_rewards,
         )
 
     @classmethod
@@ -84,7 +74,28 @@ class CustomReplayBuffer(ReplayBuffer):
             handle_timeout_termination=False,
         )
 
+    def relabel(self, reward_models, device):
+        num_entries = self.buffer_size if self.full else self.pos
 
+        for idx in range(num_entries):
+            # Extract stored transition
+            action = torch.tensor(self.actions[idx], device=device, dtype=torch.float32)
+            state = torch.tensor(self.observations[idx], device=device, dtype=torch.float32)
+
+            # Compute the new reward using the reward models' mean
+            rewards = []
+            with torch.no_grad():
+                for reward_model in reward_models:
+                    reward = reward_model.forward(action=action, observation=state)
+                    rewards.append(reward.cpu().numpy())
+
+            # Compute mean reward
+            mean_reward = np.mean(rewards, axis=0)
+
+            self.model_rewards[idx] = mean_reward
+
+
+### PREFERENCE BUFFER ###
 class PreferenceBuffer:
     def __init__(self, buffer_size):
         self.buffer = []
@@ -101,9 +112,27 @@ class PreferenceBuffer:
         indices = np.random.choice(len(self.buffer), size=min(batch_size, len(self.buffer)), replace=replace)
         return [self.buffer[i] for i in indices]
 
-    def reset(self):
+    def __len__(self):
+        return len(self.buffer)
+
+    def reset(self):    # not used anymore
         self.buffer.clear()
 
+
+
+### TRAJECTORY SAMPLER ###
+@dataclass
+class TrajectorySamples:
+    states: torch.Tensor
+    actions: torch.Tensor
+    env_rewards: torch.Tensor
+
+    def to(self, device: torch.device):
+        """Move all tensors to the given device."""
+        self.states = self.states.to(device)
+        self.actions = self.actions.to(device)
+        if self.env_rewards is not None:
+            self.env_rewards = self.env_rewards.to(device)
 
 class TrajectorySampler:
     def __init__(self, rb, device):
@@ -121,21 +150,21 @@ class TrajectorySampler:
         start_index = np.random.randint(min_start_index, max_start_index)
         end_index = start_index + traj_length
 
-        # extract states, actions, rewards
+        # extract states, actions, env_rewards
         states = torch.tensor(self.rb.observations[start_index:end_index])
         actions = torch.tensor(self.rb.actions[start_index:end_index])
 
         if synthetic_feedback:
-            rewards = torch.tensor(self.rb.rewards[start_index:end_index])
-            rewards = rewards if rewards.ndim > 1 else rewards.unsqueeze(-1)
+            env_rewards = torch.tensor(self.rb.env_rewards[start_index:end_index])
+            env_rewards = env_rewards if env_rewards.ndim > 1 else env_rewards.unsqueeze(-1)
         else:
-            rewards = None
+            env_rewards = None
 
         # name tensors for better access
         trajectory = TrajectorySamples(
-            states= states if states.ndim > 1 else states.unsqueeze(-1),
+            states=states if states.ndim > 1 else states.unsqueeze(-1),
             actions=actions if actions.ndim > 1 else actions.unsqueeze(-1),
-            rewards=rewards,
+            env_rewards=env_rewards,
         )
 
         trajectory.to(device=self.device) #since this is an immutable tuple, the tensors have to be recreated everytime, which is not good TODO: better doc herer dont commit
@@ -143,7 +172,7 @@ class TrajectorySampler:
         return trajectory
         # TrajectorySamples(states=tensor([[States1], [States2], ..., [States_n]]),
         # actions=tensor([[Actions1], [Actions2], ..., [Actions_n]]),
-        # rewards=tensor([[Reward1], [Reward2], ..., [Reward_n]]))
+        # env_rewards=tensor([[Reward1], [Reward2], ..., [Reward_n]]))
 
 
     # trajectory pair
@@ -202,24 +231,3 @@ class TrajectorySampler:
         sorted_variance = sorted(variance_list, key=lambda x: x[1], reverse=True)
 
         return [element[0] for element in sorted_variance[:ensemble_size]]
-
-
-def relabel_replay_buffer(rb, reward_models, device):
-    num_entries = rb.buffer_size if rb.full else rb.pos
-
-    for idx in range(num_entries):
-        # Extract stored transition
-        action = torch.tensor(rb.actions[idx], device=device, dtype=torch.float32)
-        state = torch.tensor(rb.observations[idx], device=device, dtype=torch.float32)
-
-        # Compute the new reward using the reward models' mean
-        rewards = []
-        with torch.no_grad():
-            for reward_model in reward_models:
-                reward = reward_model.forward(action=action, observation=state)
-                rewards.append(reward.cpu().numpy())
-
-        # Compute mean reward
-        mean_reward = np.mean(rewards, axis=0)
-
-        rb.true_rewards[idx] = mean_reward
