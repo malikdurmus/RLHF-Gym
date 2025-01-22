@@ -42,6 +42,8 @@ class Args:
     """the learning rate of the policy network optimizer"""
     q_lr: float = 1e-3
     """the learning rate of the Q network network optimizer"""
+    num_models: int = 3
+    """amount of reward models"""
 
     # Network training arguments
     policy_frequency: int = 2

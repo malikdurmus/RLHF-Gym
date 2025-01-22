@@ -155,7 +155,7 @@ class TrajectorySampler:
         actions = torch.tensor(self.rb.actions[start_index:end_index])
 
         if synthetic_feedback:
-            env_rewards = torch.tensor(self.rb.env_rewards[start_index:end_index])
+            env_rewards = torch.tensor(self.rb.rewards[start_index:end_index])
             env_rewards = env_rewards if env_rewards.ndim > 1 else env_rewards.unsqueeze(-1)
         else:
             env_rewards = None

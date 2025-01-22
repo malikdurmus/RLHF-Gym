@@ -25,6 +25,7 @@ def handle_feedback(args, global_step, video_queue, stored_pairs, preference_buf
         print("Waiting for user feedback...")
         feedback_event.wait()  # Wait until feedback is populated
         feedback_event.clear()  # Reset the event
+        stored_pairs.clear()
     else:
         for query in range(len(trajectory_pairs)):
             traj_pair = trajectory_pairs[query]
@@ -110,7 +111,6 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
                 ### REWARD MODEL TRAINING ###
                 with preference_mutex:
                     entropy_loss, ratio = preference_optimizer.train_reward_models(preference_buffer, args.pref_batch_size)
-                    stored_pairs.clear()
 
                 writer.add_scalar("losses/entropy_loss", entropy_loss, global_step)
                 writer.add_scalar("losses/ratio", ratio, global_step)
@@ -171,7 +171,7 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
         ### ACTOR-CRITIC TRAINING ###
         if global_step >= args.pretrain_timesteps:
             # sample random minibatch
-            data = rb.sample(args.batch_size)
+            data = rb.sample(args.replay_batch_size)
 
             ### CRITIC TRAINING ###
             with torch.no_grad():
