@@ -1,100 +1,82 @@
-# import time
-# import random
-# import numpy as np
-# import torch
-# import tyro
-# from torch.utils.tensorboard import SummaryWriter
-# from backend.rlhf.args import Args
-# from backend.rlhf.environment import initialize_env
-# from backend.rlhf.networks import initialize_networks
-# from backend.rlhf.train import train
-# from backend.rlhf.buffer import TrajectorySampler, PreferenceBuffer, initialize_rb, CustomReplayBuffer
-# from backend.rlhf.preference_predictor import PreferencePredictor
-# from backend.rlhf.intrinsic_reward import IntrinsicRewardCalculator
-#
-#
-# if __name__ == "__main__":
-#
-# ### SETUP ###
-#
-#     # Parse arguments (args.py)
-#     args = tyro.cli(Args)
-#
-#     # Unique run_name
-#     run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
-#
-#     # Save results
-#     writer = SummaryWriter(f"runs/{run_name}")
-#     writer.add_text(
-#         "hyperparameters",
-#         "|param|value|\n|-|-|\n%s" % ("\n".join([f"|{key}|{value}|" for key, value in vars(args).items()])),
-#     )
-#
-#     # Seeding (for reproduction)
-#     random.seed(args.seed)
-#     np.random.seed(args.seed)
-#     torch.manual_seed(args.seed)
-#     torch.backends.cudnn.deterministic = args.torch_deterministic
-#
-#     # Choose hardware
-#     device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
-#
-#     # Initialize environment (environment.py)
-#     envs = initialize_env(args.env_id, args.seed, args.capture_video, run_name, args.record_every_th_episode)
-#
-#     # Initialize networks (networks.py)
-#     actor, reward_network, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer = initialize_networks(
-#         envs, device, args.policy_lr, args.q_lr
-#     )
-#
-#     #Initialize pref predictor
-#     preference_optimizer = PreferencePredictor(reward_network, reward_model_lr=args.reward_model_lr, device=device)
-#
-#     # Initialize replay buffer (buffer.py)
-#     rb = CustomReplayBuffer.initialize(envs, args.buffer_size, device)
-#
-#     # Initialize preference buffer (buffer.py)
-#     preference_buffer = PreferenceBuffer(args.buffer_size, device)
-#
-#     # Initialize sampler (buffer.py)
-#     sampler = TrajectorySampler(rb)
-#
-#     # Initialize intrinsic reward calculator
-#     int_rew_calc = IntrinsicRewardCalculator(k=5)
-#
-#     # optional: track weight and biases
-#     if args.track:
-#         import wandb
-#
-#         wandb.init(
-#             project=args.wandb_project_name,
-#             entity=args.wandb_entity,
-#             sync_tensorboard=True,
-#             config=vars(args),
-#             name=run_name,
-#             monitor_gym=True,
-#             save_code=True,
-#         )
-#
-#     ### TRAINING ### (train.py)
-#
-#     # start training
-#     train(
-#         envs=envs,
-#         rb=rb,
-#         actor=actor,
-#         reward_network=reward_network,
-#         qf1=qf1,
-#         qf2=qf2,
-#         qf1_target=qf1_target,
-#         qf2_target=qf2_target,
-#         q_optimizer=q_optimizer,
-#         actor_optimizer=actor_optimizer,
-#         preference_optimizer=preference_optimizer,
-#         args=args,
-#         writer=writer,
-#         device=device,
-#         sampler=sampler,
-#         preference_buffer=preference_buffer,
-#         int_rew_calc=int_rew_calc,
-#     )
+import time
+import random
+import numpy as np
+import torch
+import tyro
+import threading
+from torch.utils.tensorboard import SummaryWriter
+from app import create_app
+from rlhf.args import Args
+from rlhf.environment import initialize_env
+from rlhf.networks import initialize_networks
+from rlhf.pebble import train
+from rlhf.buffer import TrajectorySampler, PreferenceBuffer, CustomReplayBuffer
+from rlhf.preference_predictor import PreferencePredictor
+from rlhf.intrinsic_reward import IntrinsicRewardCalculator
+
+
+
+
+if __name__ == "__main__":
+
+    args = tyro.cli(Args)
+    run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
+
+    # Initialize writer
+    writer = SummaryWriter(f"runs/{run_name}")
+
+    # Add hyperparameters to writer
+    writer.add_text("hyperparameters", "|param|value|\n|-|-|\n%s" % ("\n".join([f"|{key}|{value}|" for key, value in vars(args).items()])))
+
+    # Seeding (for reproduction)
+    random.seed(args.seed)
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    torch.backends.cudnn.deterministic = args.torch_deterministic
+
+    # Choose hardware
+    device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
+
+    # Initialize environment (environment.py)
+    envs = initialize_env(args.env_id, args.seed, args.capture_video, run_name, args.record_every_th_episode)
+
+    # Initialize networks (networks.py)
+    actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer = (
+        initialize_networks(envs, device, args.policy_lr, args.q_lr,args.batch_processing,args.num_models)) # batch_processing to be removed
+
+    #Initialize preference predictor (preference_predictor.py)
+    preference_optimizer = PreferencePredictor(reward_networks, reward_model_lr=args.reward_model_lr, device=device, l2=args.l2)
+
+    # Initialize preference buffer (buffer.py)
+    preference_buffer = PreferenceBuffer(args.pref_buffer_size)
+
+    # Initialize replay buffer (buffer.py)
+    rb = CustomReplayBuffer.initialize(envs, args.replay_buffer_size, device)
+
+    # Initialize sampler (buffer.py)
+    sampler = TrajectorySampler(rb,device)
+
+    # Initialize intrinsic reward calculator
+    int_rew_calc = IntrinsicRewardCalculator(k=5)
+
+    # TODO Rework (app is not needed in synthetic feedback, but train needs these args)
+    app, socketio, notify, video_queue, stored_pairs, feedback_event, preference_mutex = create_app(run_name, preference_buffer)
+
+    # Start train in a separate thread
+    training_thread = threading.Thread(
+        target=train,
+        args=(
+            envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_optimizer,
+            actor_optimizer, preference_optimizer, args, writer, device, sampler,
+            preference_buffer, video_queue, stored_pairs, feedback_event,
+            int_rew_calc, notify, preference_mutex, run_name
+        )
+    )
+
+    # Start training thread
+    training_thread.start()
+    # Start app if human feedback
+    if not args.synthetic_feedback: # human feedback
+        socketio.run(app, host="0.0.0.0", port=5000, debug=False, allow_unsafe_werkzeug=True)
+    # Terminate training thread
+    training_thread.join()

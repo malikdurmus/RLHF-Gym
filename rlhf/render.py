@@ -7,7 +7,7 @@ import numpy as np
 import mujoco
 import tyro
 from tqdm import tqdm
-from backend.rlhf.args import Args
+from rlhf.args import Args
 
 args = tyro.cli(Args)
 
@@ -21,7 +21,6 @@ DEFAULT_CAMERA_CONFIG = { #specific to hopper, might change for diff envs.TODO:l
     "elevation": -20.0,
 }
 script_dir = os.path.dirname(__file__)
-run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
 # parent_directory = os.path.abspath(os.path.join(script_dir, '..','..'))
 
 def _generate_images(env, observations):
@@ -46,7 +45,7 @@ def _generate_images(env, observations):
         images.append(env.render())
     return images
 
-def render_trajectory_gym(env_name, observations, global_step, trajectory_id, query_id,
+def render_trajectory_gym(env_name, observations, global_step, trajectory_id, query_id, run_name,
                           base_filename="gym_trajectory_step"):
     """
     Render a gym trajectory based on observations and save as a video file.
@@ -75,7 +74,6 @@ def render_trajectory_gym(env_name, observations, global_step, trajectory_id, qu
     return filename
 
 def dont_use_render_trajectory_gym(env_name, observations1,global_step,trajectory_id,query,filename="gym_trajectory_step"):
-    run_name = datetime.datetime.now().strftime("%Y%m%d_%H%M%S") # TODO unused
     begin = time.time()
     env = gym.make(env_name, render_mode="rgb_array")
     images = []
