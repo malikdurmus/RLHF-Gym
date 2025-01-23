@@ -1,3 +1,4 @@
+import os
 import time
 import random
 import numpy as np
@@ -7,20 +8,18 @@ import threading
 from torch.utils.tensorboard import SummaryWriter
 from app import create_app
 from rlhf.args import Args
-from rlhf.environment import initialize_env
-from rlhf.networks import initialize_networks
-from rlhf.pebble import train
-from rlhf.buffer import TrajectorySampler, PreferenceBuffer, CustomReplayBuffer
-from rlhf.preference_predictor import PreferencePredictor
-from rlhf.intrinsic_reward import IntrinsicRewardCalculator
-
-
-
+from rlhf.environment.utils import initialize_env
+from rlhf.networks.utils import initialize_networks
+from rlhf.training.pebble import train
+from rlhf.buffers import *
+from rlhf.training.reward_learning import PreferencePredictor
+from rlhf.training.intrinsic_reward import IntrinsicRewardCalculator
+from shared import video_queue, preference_mutex, stored_pairs, feedback_event
 
 if __name__ == "__main__":
-
     args = tyro.cli(Args)
     run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
+    os.makedirs(os.path.join(f"videos/{run_name}"), exist_ok=True)
 
     # Initialize writer
     writer = SummaryWriter(f"runs/{run_name}")
@@ -42,9 +41,9 @@ if __name__ == "__main__":
 
     # Initialize networks (networks.py)
     actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer = (
-        initialize_networks(envs, device, args.policy_lr, args.q_lr,args.batch_processing,args.num_models)) # batch_processing to be removed
+        initialize_networks(envs, device, args.policy_lr, args.q_lr, args.batch_processing, args.num_models)) # batch_processing to be removed
 
-    #Initialize preference predictor (preference_predictor.py)
+    # Initialize preference predictor (preference_predictor.py)
     preference_optimizer = PreferencePredictor(reward_networks, reward_model_lr=args.reward_model_lr, device=device, l2=args.l2)
 
     # Initialize preference buffer (buffer.py)
@@ -54,13 +53,16 @@ if __name__ == "__main__":
     rb = CustomReplayBuffer.initialize(envs, args.replay_buffer_size, device)
 
     # Initialize sampler (buffer.py)
-    sampler = TrajectorySampler(rb,device)
+    sampler = TrajectorySampler(rb, device)
 
     # Initialize intrinsic reward calculator
     int_rew_calc = IntrinsicRewardCalculator(k=5)
 
-    # TODO Rework (app is not needed in synthetic feedback, but train needs these args)
-    app, socketio, notify, video_queue, stored_pairs, feedback_event, preference_mutex = create_app(run_name, preference_buffer)
+    # Create app if human feedback is used
+    if not args.synthetic_feedback:
+        app, socketio, notify = create_app(run_name, preference_buffer, video_queue, stored_pairs, feedback_event, preference_mutex)
+    else:
+        app, socketio, notify = None, None, None
 
     # Start train in a separate thread
     training_thread = threading.Thread(
@@ -75,8 +77,10 @@ if __name__ == "__main__":
 
     # Start training thread
     training_thread.start()
+
     # Start app if human feedback
     if not args.synthetic_feedback: # human feedback
         socketio.run(app, host="0.0.0.0", port=5000, debug=False, allow_unsafe_werkzeug=True)
+
     # Terminate training thread
     training_thread.join()

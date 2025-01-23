@@ -1,75 +1,9 @@
-import uuid
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
 import time
 import numpy as np
-from rlhf.render import render_trajectory_gym
-
-
-## Helper Functions
-
-def handle_feedback(args, global_step, video_queue, stored_pairs, preference_buffer,
-                    feedback_event, notify, trajectory_pairs, run_name):
-
-    if not args.synthetic_feedback: # human feedback
-        for query in range(len(trajectory_pairs)):
-            trajectory_pair = trajectory_pairs[query]
-            render_and_queue_trajectories(args,query, global_step, video_queue, stored_pairs,trajectory_pair, run_name)
-
-        if not video_queue.qsize() == len(trajectory_pairs):
-            raise Exception("queue has more/less entries")
-        elif video_queue.qsize() == len(trajectory_pairs):
-            notify()
-
-        print("Waiting for user feedback...")
-        feedback_event.wait()  # Wait until feedback is populated
-        feedback_event.clear()  # Reset the event
-        stored_pairs.clear()
-    else:
-        for query in range(len(trajectory_pairs)):
-            traj_pair = trajectory_pairs[query]
-            handle_synthetic_feedback(preference_buffer,traj_pair)
-
-
-def render_and_queue_trajectories(args,query, global_step, video_queue, stored_pairs,trajectory_pair, run_name):
-
-    trajectory1, trajectory2 = trajectory_pair
-
-    # Notify that rendering has started
-    print(f"Requested rendering for query {query} at step {global_step}")
-    video1_path = render_trajectory_gym(
-        args.env_id, trajectory1, global_step, "trajectory1", query, run_name)
-    video2_path = render_trajectory_gym(
-        args.env_id, trajectory2, global_step, "trajectory2", query, run_name)
-
-    pair_id = str(uuid.uuid4())  # UUID generation
-    video_queue.put((pair_id, trajectory1, trajectory2, video1_path, video2_path))
-    stored_pairs.append({
-        'id': pair_id,
-        'trajectory1': trajectory1,
-        'trajectory2': trajectory2
-    })
-
-def handle_synthetic_feedback(preference_buffer,trajectory_pair):
-
-    trajectory1, trajectory2 = trajectory_pair
-
-    # print(f"Requested rendering for query {query} at step {global_step} --synthetic")
-    # render_trajectory_gym(args.env_id, trajectory1, global_step, "trajectory1", query) # not needed for synthetic feedback
-    # render_trajectory_gym(args.env_id, trajectory2, global_step, "trajectory2", query)
-
-    if sum_rewards(trajectory1) > sum_rewards(trajectory2):
-        preference = 1
-    elif sum_rewards(trajectory1) < sum_rewards(trajectory2):
-        preference = 0
-    else:
-        preference = 0.5
-    preference_buffer.add((trajectory1, trajectory2), preference)
-
-def sum_rewards(traj):
-    return traj.env_rewards.sum().item()
-
+from rlhf.training.feedback_handler import handle_feedback
 
 def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer,
           preference_optimizer, args, writer, device, sampler,
