@@ -4513,4 +4513,4 @@ mujoco = ["imageio", "mujoco"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<3.11"
-content-hash = "8d9492ae0b6fb27e3adcf30c69f45eb4dc9ba119ce40a7d7939c5d360ff0fc2e"
+content-hash = "5b65307193e697cfa8513c39b5d3e8b348a945ebe4ae6a3cc2f6b42918fef719"
