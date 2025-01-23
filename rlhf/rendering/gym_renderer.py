@@ -1,12 +1,14 @@
-import datetime
 import os
 import time
 import cv2
 import gymnasium as gym
 import numpy as np
 import mujoco
+import tyro
 from tqdm import tqdm
+from rlhf.args import Args
 
+args = tyro.cli(Args)
 
 DEFAULT_SIZE = 480
 width = DEFAULT_SIZE, #for all mujoco envs
@@ -18,7 +20,7 @@ DEFAULT_CAMERA_CONFIG = { #specific to hopper, might change for diff envs.TODO:l
     "elevation": -20.0,
 }
 script_dir = os.path.dirname(__file__)
-parent_directory = os.path.abspath(os.path.join(script_dir, '..','..'))
+# parent_directory = os.path.abspath(os.path.join(script_dir, '..','..'))
 
 def _generate_images(env, observations):
     """Generate images from a sequence of observations."""
@@ -42,7 +44,7 @@ def _generate_images(env, observations):
         images.append(env.render())
     return images
 
-def render_trajectory_gym(env_name, observations, global_step, trajectory_id, query_id,
+def render_trajectory_gym(env_name, observations, global_step, trajectory_id, query_id, run_name,
                           base_filename="gym_trajectory_step"):
     """
     Render a gym trajectory based on observations and save as a video file.
@@ -57,7 +59,7 @@ def render_trajectory_gym(env_name, observations, global_step, trajectory_id, qu
     env.close()
     query_str = f"query{query_id}"
     filename = f"{base_filename}_{global_step}_{query_str}_{trajectory_id}.mp4"
-    run_path = os.path.join(parent_directory, "videos", filename)
+    run_path = os.path.join(f"videos/{run_name}/{filename}")
 
     # Save video
     fourcc = cv2.VideoWriter_fourcc(*"mpv4")
@@ -71,7 +73,6 @@ def render_trajectory_gym(env_name, observations, global_step, trajectory_id, qu
     return filename
 
 def dont_use_render_trajectory_gym(env_name, observations1,global_step,trajectory_id,query,filename="gym_trajectory_step"):
-    run_name = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     begin = time.time()
     env = gym.make(env_name, render_mode="rgb_array")
     images = []

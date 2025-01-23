@@ -1,7 +1,6 @@
 import gymnasium as gym
 import numpy as np
 import torch
-import gymnasium as gym
 
 def evaluate_agent(eval_env_id, max_steps,  n_eval_episodes , actor_policy ,
         device, idx , capture_video, run_name, record_every_th_episode):

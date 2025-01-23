@@ -24,14 +24,17 @@ class PreferencePredictor:
         self.optimizers = self._initialize_optimizers()
 
 
-    def train_reward_models(self, pb, sample_size):
+    def train_reward_models(self, pb, batch_size):
         model_losses = []
         val_losses = []
+        # Preference buffer has fewer entries than the sample batch
+        if batch_size > len(pb):
+            batch_size = len(pb)
 
         for reward_model, optimizer in zip(self.reward_networks, self.optimizers):
-            # Individual sampling
-            sample = pb.sample(sample_size, replace=True)
-            val_sample = pb.sample(int(sample_size / 2.718), replace=False)
+            # Individual sampling # TODO The two samples shouldn't overlap
+            sample = pb.sample(batch_size, replace=True)
+            val_sample = pb.sample(int(batch_size / 2.718), replace=False)
 
             # Compute loss for this model
             model_loss = self._compute_loss_batch(reward_model, sample)
@@ -43,15 +46,20 @@ class PreferencePredictor:
 
             model_losses.append(model_loss.item())
 
+            # Use validation sample with trained reward model (to test for overfitting)
             with torch.no_grad():
                 val_loss = self._compute_loss_batch(reward_model, val_sample)
                 val_losses.append(val_loss.item())
 
-        # Average entropy loss over all models
+        # Average losses over all models
         avg_entropy_loss = sum(model_losses) / len(model_losses)
         avg_overfit_loss = sum(val_losses) / len(val_losses)
 
+        # Calculate ratio
         ratio = avg_overfit_loss / avg_entropy_loss
+
+        # Adjust coefficient to keep validation loss between 1.1 and 1.5
+        # TODO need to adjust how much the coefficient is changed (maybe use some function including ratio and target)
         if ratio < 1.1:
             self.l2 *= 1.1
             self._update_optimizers()
@@ -180,5 +188,4 @@ class PreferencePredictor:
             loss_2 = (1 - label_1) * torch.log(1 - predicted_prob)
 
             entropy_loss = entropy_loss + -(loss_1 + loss_2 )
-        res = entropy_loss
         return entropy_loss #loss for whole batch

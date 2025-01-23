@@ -3,6 +3,18 @@ const socket = io();
 let currentIndex = 0;
 let feedback = [];
 let videoPairs = [];
+let runName = "";
+
+async function fetchRunName() {
+  try {
+    const response = await fetch('/get_run_name');
+    const data = await response.json();
+    runName = data.global_run_name;
+    console.log("Run name fetched:", runName);
+  } catch (error) {
+    console.error('Error fetching run_name:', error);
+  }
+}
 
 async function fetchVideoPairs() {
   try {
@@ -24,10 +36,11 @@ async function fetchVideoPairs() {
 }
 
 function displayVideoPair(pair) {
-  document.getElementById('video1').src = `/videos/${pair.video1}`;
-  document.getElementById('video2').src = `/videos/${pair.video2}`;
+  document.getElementById('video1').src = `/videos/${runName}/${pair.video1}`;
+  document.getElementById('video2').src = `/videos/${runName}/${pair.video2}`;
   document.getElementById('status').innerText = `Pair ${currentIndex + 1} of ${videoPairs.length}`;
 }
+
 function setPreference(preference) {
   if (currentIndex >= videoPairs.length) return;
 
@@ -68,10 +81,7 @@ socket.on('new_video_pairs', (data) => {
   fetchVideoPairs();
 });
 
-window.onload = function () {
+window.onload = async function () {
+  await fetchRunName();
   fetchVideoPairs();
 };
-// this runs initially fiest time
-// TODO: need to ensure reloading doesnt raise errors in the train.py (it rose the following error once,
-//  but couldnt reproduce the error again) "queue has more/less entries"
-// TODO: submitted preference must be processed in the backend for rew net update
