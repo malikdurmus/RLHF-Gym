@@ -68,9 +68,9 @@ class Args:
     # Timestep arguments
     total_timesteps: int = int(1e6)
     """total timesteps of the experiments"""
-    pretrain_timesteps: int = 1000 #TODO: 0 throws error
+    pretrain_timesteps: int = 10 #TODO: 0 throws error
     """phase 1: how many steps for random exploration"""
-    unsupervised_timesteps: int = 5000
+    unsupervised_timesteps: int = 200
     """phase 2: unsupervised exploration"""
     """
     Remaining timesteps:
@@ -78,18 +78,24 @@ class Args:
     """
 
     # Feedback query arguments
-    synthetic_feedback: bool = False
+    synthetic_feedback: bool = True
     """Toggle synthetic/human feedback"""
     ensemble_sampling: bool = True
     """Toggle ensemble/uniform-based sampling"""
-    feedback_frequency: int = 5000
+    feedback_frequency: int = 200
     """how often we ask for feedback / update the model (needs to be less or equal to reward_learning_starts)""" # TODO fix this
     traj_length: int = 90
     """length of trajectories"""
-    uniform_query_size: int = 80
+    uniform_query_size: int = 6
     """how much uniform feedback each iteration"""
-    ensemble_query_size: int = 20
+    ensemble_query_size: int = 5
     """how much ensemble-based sampling each iteration (needs to be less or equal to uniform [equal = inefficient uniform sampling])"""
+
+    # SSL & TDA Arguments
+    surf: bool = True
+    min_crop_length: int = 20
+    max_crop_length: int = traj_length
+    confidence_threshold: float = 0.80
 
     # Evaluation arguments
     eval_env_id: str = env_id
@@ -102,3 +108,5 @@ class Args:
 
 # TODO: We need to add a function to ensure that all args are compatible
 # TODO: Needs better structure and documentation, ambigious as is
+
+# if surf=True, then both min length, max length must not be None max length must be < traj length

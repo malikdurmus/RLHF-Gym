@@ -23,7 +23,6 @@ class PreferencePredictor:
     def _update_optimizers(self):
         self.optimizers = self._initialize_optimizers()
 
-
     def train_reward_models(self, pb, batch_size):
         model_losses = []
         val_losses = []
@@ -32,7 +31,7 @@ class PreferencePredictor:
             batch_size = len(pb)
 
         for reward_model, optimizer in zip(self.reward_networks, self.optimizers):
-            # Individual sampling # TODO The two samples shouldn't overlap
+            # Individual sampling #
             sample = pb.sample(batch_size, replace=True)
             val_sample = pb.sample(int(batch_size / 2.718), replace=False)
 
@@ -50,6 +49,7 @@ class PreferencePredictor:
             with torch.no_grad():
                 val_loss = self._compute_loss_batch(reward_model, val_sample)
                 val_losses.append(val_loss.item())
+
 
         # Average losses over all models
         avg_entropy_loss = sum(model_losses) / len(model_losses)
@@ -69,9 +69,59 @@ class PreferencePredictor:
 
         return avg_entropy_loss, ratio
 
+    def train_reward_models_surf(self, augmented_preference_buffer, ssl_preference_buffer, batch_size):
+        """
+        Train reward models using two buffers:
+        - primary_buffer: Sampled.
+        - augmented_buffer: Used directly without sampling.
+        """
+        model_losses = []
+        val_losses = []
+
+        # If batch_size is not provided, set it to a default value
+        if batch_size is None:
+            batch_size = 32  # Default batch size
+
+        # Ensure batch_size does not exceed the primary buffer length
+        if batch_size > len(augmented_preference_buffer):
+            batch_size = len(augmented_preference_buffer)
+
+        for reward_model, optimizer in zip(self.reward_networks, self.optimizers):
+            # Sample from the primary buffer
+            primary_sample = augmented_preference_buffer.sample(batch_size, replace=True)
+            primary_val_sample = augmented_preference_buffer.sample(int(batch_size / 2.718), replace=False)
+
+            # Use the ssl buffer directly (no sampling)
+            ssl_sample = ssl_preference_buffer
+            ssl_val_sample = ssl_preference_buffer
+
+            # Combine the samples
+            combined_sample = ssl_sample.combine_samples(primary_sample)
+            combined_val_sample = ssl_val_sample.combine_samples(primary_val_sample)
+
+            # Compute loss for this model
+            model_loss = self._compute_loss_batch(reward_model, combined_sample)
+
+            # Training for this model
+            optimizer.zero_grad()
+            model_loss.backward()
+            optimizer.step()
+
+            model_losses.append(model_loss.item())
+
+            # Validation
+            with torch.no_grad():
+                val_loss = self._compute_loss_batch(reward_model, combined_val_sample)
+                val_losses.append(val_loss.item())
+
+        # Return some values (e.g., entropy_loss and ratio)
+        entropy_loss = sum(model_losses) / len(model_losses)
+        ratio = sum(val_losses) / len(val_losses)
+        return entropy_loss, ratio
+
     def compute_predicted_probabilities(self, trajectories):
         predictions = [
-            self._compute_predicted_probability_batch(reward_model, trajectories)
+            self.compute_predicted_probability_batch(reward_model, trajectories)
             for reward_model in self.reward_networks
         ]
         return predictions
@@ -86,7 +136,7 @@ class PreferencePredictor:
         entropy_loss = torch.tensor(0.0, requires_grad=True)
 
         for trajectory_pair, human_feedback_label in sample:
-            predicted_prob = self._compute_predicted_probability_batch(reward_model,trajectory_pair)
+            predicted_prob = self.compute_predicted_probability_batch(reward_model, trajectory_pair)
 
             # label to tensor
             label = torch.tensor(human_feedback_label, dtype=torch.float, device=self.device)
@@ -99,7 +149,7 @@ class PreferencePredictor:
 
         return entropy_loss
 
-    def _compute_predicted_probability_batch(self,reward_model, trajectories):
+    def compute_predicted_probability_batch(self, reward_model, trajectories):
         """
         Compute the predicted probability of human preference for trajectory0 over trajectory1.
         """
@@ -119,11 +169,34 @@ class PreferencePredictor:
 
         # softmax
         max_reward = torch.max(total_reward0, total_reward1)
-        predicted_prob = torch.exp(total_reward0 - max_reward) / (
+
+        predicted_prob = torch.exp(total_reward0 - max_reward) / ( # estimated probability, that the human will prefer action 0 over 1
                 torch.exp(total_reward0 - max_reward) + torch.exp(total_reward1 - max_reward)
         )
-
         return predicted_prob
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -189,3 +262,4 @@ class PreferencePredictor:
 
             entropy_loss = entropy_loss + -(loss_1 + loss_2 )
         return entropy_loss #loss for whole batch
+
