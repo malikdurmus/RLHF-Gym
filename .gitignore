@@ -2,7 +2,4 @@
 /runs
 /videos
 /.idea
-/rlhf-frontend/frontend-react/node_modules
-/rlhf-backend/rlhf/videos
-/rlhf-backend/rlhf/runs/
 *.pyc
