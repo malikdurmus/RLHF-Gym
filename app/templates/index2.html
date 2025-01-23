@@ -3,67 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flask App</title>
+    <title>Agent Training</title>
+    <!-- External CSS file for styling -->
     <link rel="stylesheet" href="../static/index2.css">
+    <!-- Socket.IO for real-time communication -->
     <script src="https://cdn.jsdelivr.net/npm/socket.io-client@4.6.0/dist/socket.io.min.js"></script>
+    <!-- External JavaScript file for functionality -->
     <script src="../static/script.js"></script>
 </head>
 <body>
-    <br>
-    <h1 class="main-title">RLHF Agent Training</h1>
-    <br>
-    <div class="explanation">
-        <p>
-            <b>
-            Below you see two different videos used to train a RLHF agent.<br>
-            Please carefully compare the agents' behaviors and select the agent with the better performance.<br>
-            If the behavior appears too similar, choose "Neutral".<br>
-            </b>
-        </p>
-    </div>
-
-    <br><br><br><br><br><br>
-
-    <div class="comparisonContainer">
-        <button class="mainOptions" onclick="setPreference(1)">
-            <div  id="mainOption1">
+    <!-- Modal showing the rules -->
+    <div class="explanationModal" id="explanationModal">
+        <div>
+            <!-- Modal close button -->
+            <button class="modalCloseButton" id="modalCloseButton">x</button>
+            <h1>Train a RLHF agent</h1>
+            <p>
                 <br>
-                <h1>Agent 1</h1>
-                <br><br>
-                  <video id="video1" width="320" height="240" controls autoplay></video>
-                <br><br><br><br>
-            </div>
-            <div class="loader" id="loader1"></div>
-        </button>
-
-        <button class="mainOptions" onclick="setPreference(0)">
-            <div id="mainOption2">
+                On this website, you see two different videos used to train a RLHF agent<br>
+                Please carefully compare the agents' behaviors.<br>
+                Afterwards, select the agent with the better performance.<br>
+                If the behavior appears too similar, choose "Neutral".<br>
                 <br>
-                <h1>Agent 2</h1>
-                <br><br>
-                  <video id="video2" width="320" height="240" controls autoplay></video>
-                <br><br><br><br>
-            </div>
-            <div class="loader" id="loader2"></div>
-        </button>
-    </div>
-
-    <br><br><br><br><br>
-
-    <button class="neutralOption" id="neutralOption" onclick="setPreference()">
-        <h3>Neutral</h3>
-    </button>
-
-    <div id="status"></div>
-
-    <br><br><br><br>
-    <hr>
-
-    <div class="sentence-container">
-        <div class="sentence">Softwareentwicklungspraktikum</div>
-        <div class="sentence">
+            </p>
         </div>
-        <div class="sentence">Group B</div>
+    </div>
+    <!-- Main content -->
+    <div class="mainContent" id="mainContent">
+        <br>
+        <!-- Title container with explanation button -->
+        <div class="titleExplanationContainer">
+            <h1 class="title">RLHF Agent Training</h1>
+            <button class="explanationButton" id="explanationButton" onclick="displayExplanationModal()">  Explanation  </button>
+        </div>
+        <br>
+        <br>
+        <!-- Container for notifying user about current status -->
+        <div class="statusContainer" id="status"></div>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <!-- Container to compare the agents -->
+        <div class="agentsContainer">
+            <!-- Button to choose first agent -->
+            <button class="agentOptions" onclick="setPreference(1), displayLoader()">
+                <div id="agentOption1">
+                    <br>
+                    <h1>Agent 1</h1>
+                    <br>
+                    <br>
+                    <!-- Video of the first agent -->
+                    <video class="videoElement" id="video1" width="320" height="240" controls autoplay></video>
+                    <br>
+                    <br>
+                    <br>
+                    <br>
+                </div>
+                <!-- Loader for first agent -->
+                <div class="loader1" id="loader1"></div>
+            </button>
+            <!-- Button to choose second agent -->
+            <button class="agentOptions" onclick="setPreference(0), displayLoader()">
+                <div id="agentOption2">
+                    <br>
+                    <h1>Agent 2</h1>
+                    <br>
+                    <br>
+                    <!-- Video of second agent -->
+                    <video class="videoElement" id="video2" width="320" height="240" controls autoplay></video>
+                    <br>
+                    <br>
+                    <br>
+                    <br>
+                </div>
+                <!-- Loader for second agent -->
+                <div class="loader2" id="loader2"></div>
+            </button>
+        </div>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <!-- Button to choose neutral option  -->
+        <button class="neutralOption" id="neutralOption" onclick="setPreference(), displayLoader()">
+            <h3>Neutral</h3>
+        </button>
+        <br>
+        <br>
+        <br>
+        <br>
+        <!-- Footer section with group information, seperated by a horizontal line from main content -->
+        <hr class="footer-line">
+        <div class="groupInformationContainer">
+            <div class="groupInformation">Softwareentwicklungspraktikum</div>
+            <div class="groupInformation">
+                Aleksander Mijatovic, Martin Plank, Thang Long Nguyen<br>
+                Tobias Huber & Yusuf Malik Durmus
+            </div>
+            <div class="groupInformation">Group B</div>
+        </div>
     </div>
 </body>
 </html>
+
