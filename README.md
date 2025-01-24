@@ -36,12 +36,12 @@ cd backend/flask_app_server
 # Starting with default values
 # Add arguments to change values
 poetry run server.py --total_timesteps 100000
-                     --feedback_mode "synthetic"
-                     --sampling_mode "ensemble"
+                     --synthetic_feedback True
+                     --ensemble_sampling False
 
 ```
 ## Feedback modes
-Running the program in "human feedback" mode sends a trajectory pair to the UI, after
+Running the program with synthetic_feedback = False, sends a trajectory pair to the UI.After
 giving feedback, wait until the new videos are rendered.
 
 ## Authors
