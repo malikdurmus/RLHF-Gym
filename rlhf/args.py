@@ -66,7 +66,7 @@ class Args:
     """the batch size of sample from the preference memory"""
 
     # Timestep arguments
-    total_timesteps: int = int(1e6)
+    total_timesteps: int = int(1e5)
     """total timesteps of the experiments"""
     pretrain_timesteps: int = 10 #TODO: 0 throws error
     """phase 1: how many steps for random exploration"""
@@ -86,16 +86,16 @@ class Args:
     """how often we ask for feedback / update the model (needs to be less or equal to reward_learning_starts)""" # TODO fix this
     traj_length: int = 90
     """length of trajectories"""
-    uniform_query_size: int = 6
+    uniform_query_size: int = 30
     """how much uniform feedback each iteration"""
-    ensemble_query_size: int = 5
+    ensemble_query_size: int = 10
     """how much ensemble-based sampling each iteration (needs to be less or equal to uniform [equal = inefficient uniform sampling])"""
 
     # SSL & TDA Arguments
     surf: bool = True
-    min_crop_length: int = 20
+    min_crop_length: int = 25
     max_crop_length: int = traj_length
-    confidence_threshold: float = 0.80
+    confidence_threshold: float = 0.90
 
     # Evaluation arguments
     eval_env_id: str = env_id

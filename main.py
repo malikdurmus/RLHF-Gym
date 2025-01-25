@@ -10,6 +10,7 @@ from app import create_app
 from rlhf.args import Args
 from rlhf.environment.utils import initialize_env
 from rlhf.networks.utils import initialize_networks
+from rlhf.rendering.gym_renderer import record_video
 from rlhf.training.pebble import train
 from rlhf.buffers import *
 from rlhf.training.reward_learning import PreferencePredictor
@@ -20,6 +21,8 @@ if __name__ == "__main__":
     args = tyro.cli(Args)
     run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
     os.makedirs(os.path.join(f"videos/{run_name}"), exist_ok=True)
+    os.makedirs(os.path.join(f"evaluation"), exist_ok=True)
+
 
     # Initialize writer
     writer = SummaryWriter(f"runs/{run_name}")
@@ -74,13 +77,22 @@ if __name__ == "__main__":
             int_rew_calc, notify, preference_mutex, run_name
         )
     )
-
-    # Start training thread
     training_thread.start()
+
+    training_thread.join()
+
+    # Start evaluation thread
+    evaluation_thread = threading.Thread(
+        target=record_video,
+        args=(args.env_id, args.seed, args.capture_video, "evaluation/", args.record_every_th_episode,
+              actor)
+    )
+    evaluation_thread.start()
 
     # Start app if human feedback
     if not args.synthetic_feedback: # human feedback
         socketio.run(app, host="0.0.0.0", port=5000, debug=False, allow_unsafe_werkzeug=True)
 
     # Terminate training thread
-    training_thread.join()
+
+    evaluation_thread.join()
