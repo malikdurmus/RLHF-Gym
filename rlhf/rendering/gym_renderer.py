@@ -4,9 +4,11 @@ import cv2
 import gymnasium as gym
 import numpy as np
 import mujoco
+import torch
 import tyro
 from tqdm import tqdm
 from rlhf.args import Args
+from rlhf.environment import initialize_env
 
 args = tyro.cli(Args)
 
@@ -25,7 +27,7 @@ script_dir = os.path.dirname(__file__)
 def _generate_images(env, observations):
     """Generate images from a sequence of observations."""
     images = []
-    for obs in observations.states : # len(observations.states)  = query_length  #tqdm(observations.states, desc="Processing Observations"):
+    for obs in tqdm(observations.states, desc="Processing Observations"): # len(observations.states)  = query_length  #
         try:
             obs = obs.squeeze().cpu().numpy()  #Obs has to be a cpu device type tensor
                                                 # ant and humanoid has some different variables than qpos and qvel, are they needed for rendering?
@@ -71,47 +73,6 @@ def render_trajectory_gym(env_name, observations, global_step, trajectory_id, qu
     print(f"Trajectory saved to {run_path}")
     print(f"Time taken for gym rendering: {time.time() - start_time:.2f} seconds")
     return filename
-
-def dont_use_render_trajectory_gym(env_name, observations1,global_step,trajectory_id,query,filename="gym_trajectory_step"):
-    begin = time.time()
-    env = gym.make(env_name, render_mode="rgb_array")
-    images = []
-    env.reset()
-
-    for obs in tqdm(observations1.states, desc="Processing Observations"):
-        try:
-            obs = obs.squeeze().numpy()
-            qpos = obs[:env.unwrapped.model.nq] # No need for explicit dynamic checking, this is already specified in env xml
-            qvel = obs[env.unwrapped.model.nq:] # same thing
-            env.unwrapped.set_state(qpos, qvel)   # hint type
-        except AttributeError as e:
-            print(f"Attribute Error: {e}")
-            print("State causing the problem:", obs)
-            env.reset()
-            continue
-        except Exception as e:
-            print(f"Some other error: {e}")
-            print("State causing the problem:", obs)
-            env.reset()
-            continue
-
-        img = env.render()
-        images.append(img)
-
-    env.close()
-    query = "query" + str(query)
-    filename = f"videos/{filename}_{global_step}_{query}_{trajectory_id}.mp4"
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Or try other codecs like 'XVID'
-    out = cv2.VideoWriter(filename, fourcc, 60.0, (480, 480))
-
-    for img in images:
-        out.write(img)
-    out.release()
-    print(f"Trajectory saved to {filename}")
-    end = time.time()
-    print("time it has taken for gym rendering",end-begin)
-
-
 
 def render_trajectory_mujoco_native(env_name, trajectory, file_video="trajectory_rendered_mujoco.mp4"):
     begin = time.time()
@@ -176,6 +137,36 @@ def render_trajectory_mujoco_native(env_name, trajectory, file_video="trajectory
     end = time.time()
     print("time it has taken for mujoco rendering", end - begin)
 
+def record_video(env_id,seed, capture_video, out_directory,record_every_th_episode, policy, fps=30):
+
+    """
+    Generate a replay video of the agent
+    :param env
+    :param policy: policy of our agent
+    :param out_directory
+    :param fps: how many frame per seconds (with taxi-v3 and frozenlake-v1 we use 1)
+    """
+    envs = initialize_env(env_id, seed, capture_video, out_directory, record_every_th_episode)
+    images = []
+    terminations = [False]
+    state, _ = envs.reset()
+    img = envs.render()
+    images.append(img)
+    while not terminations[0]:
+        # Take the action (index) that have the maximum expected future reward given that state
+        input_t= torch.Tensor(state).unsqueeze(0)
+        action, _, _ = policy.get_action(input_t)
+        action = action.detach().cpu().numpy().reshape(1, 3)
+        state, env_rewards, terminations, truncations, infos = envs.step(action)
+        # We directly put next_state = state for recording logic
+        img = envs.render()
+        images.append(img)
+    fourcc = cv2.VideoWriter_fourcc(*"mpv4")
+    out = cv2.VideoWriter(out_directory+"output_video.mp4", fourcc, 60.0, (480, 480))
+    for img in images:
+        out.write(img[0])
+    out.release()
+    print('done')
 
 
 
