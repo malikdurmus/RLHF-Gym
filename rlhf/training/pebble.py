@@ -86,9 +86,9 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
         if "episode" in infos:
             episode_info = infos["episode"]
             print(f"global_step={global_step}, episodic_return={episode_info['r'][0]}")
-            writer.add_scalar("charts/episodic_return", episode_info['r'][0], global_step)
+            writer.add_scalar("charts/episodic_env_return", episode_info['r'][0], global_step)
             writer.add_scalar("charts/episodic_length", episode_info['l'][0], global_step)
-            writer.add_scalar("charts/episodic_true_return", episodic_model_rewards, global_step)
+            writer.add_scalar("charts/episodic_model_return", episodic_model_rewards, global_step)
             episodic_model_rewards = 0
 
         real_next_obs = next_obs.copy()

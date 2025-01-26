@@ -78,17 +78,17 @@ class Args:
     """
 
     # Feedback query arguments
-    synthetic_feedback: bool = True
+    synthetic_feedback: bool = False
     """toggle synthetic/human feedback"""
     ensemble_sampling: bool = True
     """toggle ensemble/uniform-based sampling (if false, put num_models to 1)"""
-    feedback_frequency: int = 5000
+    feedback_frequency: int = 10000
     """how often we ask for feedback / update the model (needs to be less or equal to unsupervised_timesteps)""" # TODO fix this
-    traj_length: int = 60
+    traj_length: int = 90
     """length of trajectories"""
     uniform_query_size: int = 50
     """how much uniform feedback each iteration"""
-    ensemble_query_size: int = 20
+    ensemble_query_size: int = 15
     """how much ensemble-based sampling each iteration (needs to be less or equal to uniform [equal = inefficient uniform sampling])"""
 
     # Evaluation arguments
