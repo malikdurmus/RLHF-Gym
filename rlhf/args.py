@@ -34,16 +34,16 @@ class Args:
     """the discount factor gamma"""
     tau: float = 0.005
     """target smoothing coefficient (default: 0.005)"""
-    l2: float = 0.01
+    l2: float = 1e-3
     """regularization coefficient"""
-    reward_model_lr: float = 1e-3
+    num_models: int = 3
+    """amount of reward models"""
+    reward_model_lr: float = 3e-4
     """the learning rate of the reward model optimizer"""
     policy_lr: float = 3e-4
     """the learning rate of the policy network optimizer"""
     q_lr: float = 1e-3
     """the learning rate of the Q network network optimizer"""
-    num_models: int = 3
-    """amount of reward models"""
 
     # Network training arguments
     policy_frequency: int = 2
@@ -53,7 +53,7 @@ class Args:
     autotune: bool = True
     """automatic tuning of the entropy coefficient"""
     alpha: float = 0.2
-    """Entropy regularization coefficient."""
+    """entropy regularization coefficient"""
 
     # Buffer arguments
     replay_buffer_size: int = int(1e6)
@@ -62,15 +62,15 @@ class Args:
     """the batch size of sample from the replay memory"""
     pref_buffer_size: int = replay_buffer_size
     """the preference buffer size"""
-    pref_batch_size: int = 30
+    pref_batch_size: int = 64
     """the batch size of sample from the preference memory"""
 
     # Timestep arguments
     total_timesteps: int = int(1e6)
     """total timesteps of the experiments"""
-    pretrain_timesteps: int = 1000 #TODO: 0 throws error
+    pretrain_timesteps: int = 2000 #TODO: 0 throws error
     """phase 1: how many steps for random exploration"""
-    unsupervised_timesteps: int = 5000
+    unsupervised_timesteps: int = 10000
     """phase 2: unsupervised exploration"""
     """
     Remaining timesteps:
@@ -78,15 +78,15 @@ class Args:
     """
 
     # Feedback query arguments
-    synthetic_feedback: bool = False
-    """Toggle synthetic/human feedback"""
+    synthetic_feedback: bool = True
+    """toggle synthetic/human feedback"""
     ensemble_sampling: bool = True
-    """Toggle ensemble/uniform-based sampling"""
+    """toggle ensemble/uniform-based sampling (if false, put num_models to 1)"""
     feedback_frequency: int = 5000
-    """how often we ask for feedback / update the model (needs to be less or equal to reward_learning_starts)""" # TODO fix this
-    traj_length: int = 90
+    """how often we ask for feedback / update the model (needs to be less or equal to unsupervised_timesteps)""" # TODO fix this
+    traj_length: int = 60
     """length of trajectories"""
-    uniform_query_size: int = 80
+    uniform_query_size: int = 50
     """how much uniform feedback each iteration"""
     ensemble_query_size: int = 20
     """how much ensemble-based sampling each iteration (needs to be less or equal to uniform [equal = inefficient uniform sampling])"""

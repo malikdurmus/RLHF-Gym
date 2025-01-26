@@ -36,7 +36,8 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
                                                                      args.synthetic_feedback, preference_optimizer)
                 # uniform-sampling
                 else:
-                    trajectory_pairs = sampler.uniform_trajectory_pair(args.traj_length, args.feedback_frequency)
+                    trajectory_pairs = sampler.uniform_trajectory_pair_batch(args.traj_length, args.feedback_frequency,
+                                                                             args.uniform_query_size, args.synthetic_feedback)
 
                 # handle feedback
                 handle_feedback(args, global_step, video_queue, stored_pairs, preference_buffer,
