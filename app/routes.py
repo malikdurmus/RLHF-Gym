@@ -20,7 +20,7 @@ def init_routes(app, socketio, run_name, preference_buffer, video_queue, stored_
     # Return the current run name
     @app.route("/get_run_name", methods=["GET"])
     def get_run_name():
-        return jsonify({'global_run_name': run_name})
+        return jsonify({'run_name': run_name})
 
     # Serve the videos files from the specified run directory
     @app.route('/videos/<flask_run_name>/<filename>')
