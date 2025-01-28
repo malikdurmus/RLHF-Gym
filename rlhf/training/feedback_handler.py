@@ -48,12 +48,20 @@ def _handle_synthetic_feedback(preference_buffer, trajectory_pair):
 
     trajectory1, trajectory2 = trajectory_pair
 
-    if _sum_rewards(trajectory1) > _sum_rewards(trajectory2):
-        preference = 1
-    elif _sum_rewards(trajectory1) < _sum_rewards(trajectory2):
-        preference = 0
-    else:
+    rewards_1 = _sum_rewards(trajectory1)
+    rewards_2 = _sum_rewards(trajectory2)
+
+    # calculate dynamic threshold
+    larger_reward = max(abs(rewards_1), abs(rewards_2))
+    threshold = 0.1 * larger_reward
+
+    # if rewards only differ by 10 percent, preference is neutral
+    if abs(rewards_1 - rewards_2) <= threshold:
         preference = 0.5
+    elif _sum_rewards(trajectory1) > _sum_rewards(trajectory2):
+        preference = 1
+    else:
+        preference = 0
     preference_buffer.add((trajectory1, trajectory2), preference)
 
 def _sum_rewards(traj):

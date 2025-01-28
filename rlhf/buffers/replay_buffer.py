@@ -33,8 +33,7 @@ class CustomReplayBuffer(ReplayBuffer):
     # Override to also add model_rewards
     def add(self, obs, next_obs, action, env_reward, model_reward, done, infos):
         super().add(obs, next_obs, action, env_reward, done, infos)
-        # return to correct pos (self.pos += 1 in super().add) # TODO handle if rb full
-        self.model_rewards[self.pos - 1, :] = model_reward
+        self.model_rewards[(self.pos - 1) % self.buffer_size, :] = model_reward
 
     # Override to also sample model_rewards
     def sample(self, batch_size, env=None):

@@ -64,6 +64,19 @@ if __name__ == "__main__":
     else:
         app, socketio, notify = None, None, None
 
+    # optional weights and biases tracking
+    if args.track:
+        import wandb
+        wandb.init(
+            project=args.wandb_project_name,
+            entity=args.wandb_entity,
+            sync_tensorboard=True,
+            config=vars(args),
+            name=run_name,
+            monitor_gym=True,
+            save_code=True,
+        )
+
     # Start train in a separate thread
     training_thread = threading.Thread(
         target=train,

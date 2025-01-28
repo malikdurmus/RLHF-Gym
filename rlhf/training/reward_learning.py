@@ -108,9 +108,6 @@ class PreferencePredictor:
         if trajectory0.states.size(0) != trajectory1.states.size(0):
             raise ValueError("Trajectory lengths do not match.")
 
-        trajectory0.to(self.device)
-        trajectory1.to(self.device)
-
         rewards0 = reward_model(trajectory0.actions, trajectory0.states)
         rewards1 = reward_model(trajectory1.actions, trajectory1.states)
 
@@ -148,15 +145,11 @@ class PreferencePredictor:
         total_prob0 = 0
         total_prob1 = 0
         for state, action in zip(states0, actions0):
-            action = action.to(self.device)
-            state = state.to(self.device)
             prob_for_action = reward_model(action=action,
                                                   observation=state) # estimated probability, that the human will prefer action 0
             total_prob0 += prob_for_action
 
         for state, action in zip(states1, actions1):
-            action = action.to(self.device)
-            state = state.to(self.device)
             prob_for_action = reward_model(action=action,
                                                   observation=state)  # estimated probability, that the human will prefer action 1
             total_prob1 += prob_for_action # Tensor of shape {Tensor : {1,1}} , tested
@@ -178,8 +171,7 @@ class PreferencePredictor:
         for trajectory_pair, human_feedback_label in sample:
             predicted_prob = self._deprecated_predicted_probability(reward_model,trajectory_pair)
             # human feedback label to tensor conversion for processing
-            label_1 = torch.tensor(human_feedback_label, dtype=torch.float)
-            label_1 = label_1.to(self.device)
+            label_1 = torch.tensor(human_feedback_label, dtype=torch.float, device=self.device)
 
             predicted_prob = torch.clamp(predicted_prob, min=1e-7, max=1 - 1e-7)
 

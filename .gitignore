@@ -1,6 +1,7 @@
 /poetry.lock
 /runs
 /videos
+/wandb
 /.idea
 /rlhf-frontend/frontend-react/node_modules
 /rlhf-backend/rlhf/videos

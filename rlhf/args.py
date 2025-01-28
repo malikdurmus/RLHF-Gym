@@ -16,7 +16,7 @@ class Args:
     """if toggled, `torch.backends.cudnn.deterministic=False`"""
     cuda: bool = True
     """if toggled, cuda will be enabled by default"""
-    track: bool = False
+    track: bool = True
     """if toggled, this experiment will be tracked with Weights and Biases"""
     wandb_project_name: str = "RLHF"
     """the wandb's project name"""
@@ -78,17 +78,17 @@ class Args:
     """
 
     # Feedback query arguments
-    synthetic_feedback: bool = False
+    synthetic_feedback: bool = True
     """toggle synthetic/human feedback"""
     ensemble_sampling: bool = True
     """toggle ensemble/uniform-based sampling (if false, put num_models to 1)"""
     feedback_frequency: int = 10000
-    """how often we ask for feedback / update the model (needs to be less or equal to unsupervised_timesteps)""" # TODO fix this
+    """how often we ask for feedback / update the model"""
     traj_length: int = 90
     """length of trajectories"""
-    uniform_query_size: int = 50
+    uniform_query_size: int = 80
     """how much uniform feedback each iteration"""
-    ensemble_query_size: int = 15
+    ensemble_query_size: int = 30
     """how much ensemble-based sampling each iteration (needs to be less or equal to uniform [equal = inefficient uniform sampling])"""
 
     # Evaluation arguments

@@ -9,35 +9,41 @@ class TrajectorySamples:
     actions: torch.Tensor
     env_rewards: torch.Tensor
 
-    def to(self, device: torch.device):
-        """Move all tensors to the given device."""
-        self.states = self.states.to(device)
-        self.actions = self.actions.to(device)
-        if self.env_rewards is not None:
-            self.env_rewards = self.env_rewards.to(device)
-
 class TrajectorySampler:
     def __init__(self, rb, device):
         self.rb = rb
         self.device = device
 
-    # Single trajectory
     def uniform_trajectory(self, traj_length, time_window, synthetic_feedback):
-        if self.rb.size() < traj_length or self.rb.size() < time_window or time_window < traj_length:
+        """
+        Samples a uniformly random trajectory from the replay buffer.
+        :param traj_length: Length of the trajectory in steps. Must be less than or equal to the current buffer size.
+        :param time_window: Relevant range within the replay buffer to sample from. Defines the range between
+                               the most recent and earlier entries. Must be greater than `traj_length`.
+        :param synthetic_feedback: Flag to indicate whether to include synthetic feedback.
+                                       If True, includes `env_rewards` in the trajectory; otherwise excludes them.
+        :return: TrajectorySamples: A named tuple containing the sampled trajectory:
+                - `states` (torch.Tensor): States of the trajectory, shape `(traj_length, state_dim)`.
+                - `actions` (torch.Tensor): Actions of the trajectory, shape `(traj_length, action_dim)`.
+                - `env_rewards` (torch.Tensor or None): Rewards of the trajectory if `synthetic_feedback` is True, otherwise None.
+        :raises: ValueError: If the buffer size or time window is insufficient to sample the requested trajectory length.
+        """
+
+        if self.rb.size() < traj_length or time_window < traj_length:
             raise ValueError("Not enough data to sample, consider adjusting args")
 
-        # Random start index (exclude end of buffer)
-        min_start_index = self.rb.size() - time_window + 1
-        max_start_index = self.rb.size() - traj_length + 1
+        # random start index
+        min_start_index = (self.rb.pos - time_window) % self.rb.size()
+        max_start_index = (self.rb.pos - traj_length) % self.rb.size()
         start_index = np.random.randint(min_start_index, max_start_index)
         end_index = start_index + traj_length
 
         # extract states, actions, env_rewards
-        states = torch.tensor(self.rb.observations[start_index:end_index])
-        actions = torch.tensor(self.rb.actions[start_index:end_index])
+        states = torch.tensor(self.rb.observations[start_index:end_index], device=self.device)
+        actions = torch.tensor(self.rb.actions[start_index:end_index], device=self.device)
 
         if synthetic_feedback:
-            env_rewards = torch.tensor(self.rb.rewards[start_index:end_index])
+            env_rewards = torch.tensor(self.rb.rewards[start_index:end_index], device=self.device)
             env_rewards = env_rewards if env_rewards.ndim > 1 else env_rewards.unsqueeze(-1)
         else:
             env_rewards = None
@@ -49,12 +55,7 @@ class TrajectorySampler:
             env_rewards=env_rewards,
         )
 
-        trajectory.to(device=self.device) #since this is an immutable tuple, the tensors have to be recreated everytime, which is not good TODO: better doc herer dont commit
-
         return trajectory
-        # TrajectorySamples(states=tensor([[States1], [States2], ..., [States_n]]),
-        # actions=tensor([[Actions1], [Actions2], ..., [Actions_n]]),
-        # env_rewards=tensor([[Reward1], [Reward2], ..., [Reward_n]]))
 
 
     # trajectory pair
@@ -88,8 +89,24 @@ class TrajectorySampler:
 
         return trajectories_batch
 
-    # ensemble-based sampling
     def ensemble_sampling(self,ensemble_size, uniform_size, traj_length, time_window, synthetic_feedback, preference_optimizer):
+        """
+        Performs ensemble-based sampling by evaluating variance across an ensemble of predicted probabilities.
+
+        :param ensemble_size: Number of trajectory pairs to select with the highest variance.
+        :param uniform_size: Number of trajectory pairs to sample uniformly before selecting the top pairs.
+        :param traj_length: Length of the trajectory in steps. Must be less than or equal to the current buffer size.
+        :param time_window: Relevant range within the replay buffer to sample from. Defines the range between
+                            the most recent and earlier entries. Must be greater than `traj_length`.
+        :param synthetic_feedback: Flag to indicate whether to include synthetic feedback.
+                                    If True, includes `env_rewards` in the trajectory; otherwise excludes them.
+        :param preference_optimizer: A preference optimizer object that computes predicted probabilities
+                                    for each trajectory pair using an ensemble of reward models.
+        :return: A list of `TrajectorySamples` pairs, sorted by their ensemble variance in descending order.
+                  Contains up to `ensemble_size` pairs.
+        :raises: ValueError: If the buffer size or time window is insufficient to sample the requested trajectory length.
+        """
+
         # Create empty list for variance: ((traj1, traj2), variance)
         variance_list = []
         for _ in range(uniform_size):
