@@ -2,6 +2,7 @@ import os
 import time
 import cv2
 import gymnasium as gym
+import imageio
 import numpy as np
 import mujoco
 import torch
@@ -64,11 +65,9 @@ def render_trajectory_gym(env_name, observations, global_step, trajectory_id, qu
     run_path = os.path.join(f"videos/{run_name}/{filename}")
 
     # Save video
-    fourcc = cv2.VideoWriter_fourcc(*"mpv4")
-    out = cv2.VideoWriter(run_path, fourcc, 60.0, (480, 480))
-    for img in images:
-        out.write(img)
-    out.release()
+    with imageio.get_writer(run_path, fps=60) as writer:
+        for img in images:
+            writer.append_data(img)
 
     print(f"Trajectory saved to {run_path}")
     print(f"Time taken for gym rendering: {time.time() - start_time:.2f} seconds")

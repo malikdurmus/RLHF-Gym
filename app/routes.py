@@ -22,7 +22,7 @@ def init_routes(app, socketio, run_name, preference_buffer, video_queue, stored_
     @app.route('/videos/<flask_run_name>/<filename>')
     def serve_video(flask_run_name, filename):
         video_dir = os.path.join("../videos", flask_run_name)
-        return send_from_directory(video_dir, filename)
+        return send_from_directory(video_dir, filename, mimetype='video/mp4')
 
     @app.route('/submit_preferences', methods=['POST'])
     def submit_preferences():

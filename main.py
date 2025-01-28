@@ -79,7 +79,6 @@ if __name__ == "__main__":
     )
     training_thread.start()
 
-    training_thread.join()
 
     # Start evaluation thread
     evaluation_thread = threading.Thread(
@@ -87,12 +86,13 @@ if __name__ == "__main__":
         args=(args.env_id, args.seed, args.capture_video, "evaluation/", args.record_every_th_episode,
               actor)
     )
-    evaluation_thread.start()
+    #evaluation_thread.start()
 
     # Start app if human feedback
     if not args.synthetic_feedback: # human feedback
         socketio.run(app, host="0.0.0.0", port=5000, debug=False, allow_unsafe_werkzeug=True)
-
+    
     # Terminate training thread
+    training_thread.join()
 
-    evaluation_thread.join()
+    #evaluation_thread.join()

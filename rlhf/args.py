@@ -12,7 +12,7 @@ class Args:
     """seed of the experiment"""
 
     # ... arguments
-    torch_deterministic: bool = True
+    torch_deterministic: bool = False
     """if toggled, `torch.backends.cudnn.deterministic=False`"""
     cuda: bool = True
     """if toggled, cuda will be enabled by default"""
@@ -42,7 +42,7 @@ class Args:
     """the learning rate of the policy network optimizer"""
     q_lr: float = 1e-3
     """the learning rate of the Q network network optimizer"""
-    num_models: int = 3
+    num_models: int = 4
     """amount of reward models"""
 
     # Network training arguments
@@ -66,11 +66,11 @@ class Args:
     """the batch size of sample from the preference memory"""
 
     # Timestep arguments
-    total_timesteps: int = int(1e5)
+    total_timesteps: int = int(1e6)
     """total timesteps of the experiments"""
-    pretrain_timesteps: int = 10 #TODO: 0 throws error
+    pretrain_timesteps: int = 1000 #TODO: 0 throws error
     """phase 1: how many steps for random exploration"""
-    unsupervised_timesteps: int = 200
+    unsupervised_timesteps: int = 10000
     """phase 2: unsupervised exploration"""
     """
     Remaining timesteps:
@@ -78,24 +78,24 @@ class Args:
     """
 
     # Feedback query arguments
-    synthetic_feedback: bool = True
+    synthetic_feedback: bool = False
     """Toggle synthetic/human feedback"""
     ensemble_sampling: bool = True
     """Toggle ensemble/uniform-based sampling"""
-    feedback_frequency: int = 200
+    feedback_frequency: int = 5000
     """how often we ask for feedback / update the model (needs to be less or equal to reward_learning_starts)""" # TODO fix this
-    traj_length: int = 90
+    traj_length: int = 60
     """length of trajectories"""
-    uniform_query_size: int = 30
+    uniform_query_size: int = 5
     """how much uniform feedback each iteration"""
-    ensemble_query_size: int = 10
+    ensemble_query_size: int = 2
     """how much ensemble-based sampling each iteration (needs to be less or equal to uniform [equal = inefficient uniform sampling])"""
 
     # SSL & TDA Arguments
     surf: bool = True
-    min_crop_length: int = 25
-    max_crop_length: int = traj_length
-    confidence_threshold: float = 0.90
+    min_crop_length: int = 45
+    max_crop_length: int = 55
+    confidence_threshold: float = 0.99
 
     # Evaluation arguments
     eval_env_id: str = env_id
