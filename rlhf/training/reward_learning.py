@@ -4,6 +4,12 @@ import torch.optim as optim
 class PreferencePredictor:
 
     def __init__(self, reward_networks: list, reward_model_lr, device, l2):
+        """Constructor for the PreferencePredictor
+        :param reward_networks: a list of reward networks
+        :param reward_model_lr: reward network learn rate
+        :param device: "cuda" or "cpu"
+        :param l2: l2 parameter for overfitting handling
+        """
         self.reward_networks = reward_networks
         self.device = device
         self.l2 = l2
@@ -11,6 +17,10 @@ class PreferencePredictor:
         self.optimizers = self._initialize_optimizers()
 
     def _initialize_optimizers(self):
+        """Initialize optimizers for reward networks via List Comprehension
+        :param None
+        :return: A list with optimizers for each reward_network we have
+        """
         return [
             optim.Adam(
                 reward_network.parameters(),
@@ -21,10 +31,20 @@ class PreferencePredictor:
         ]
 
     def _update_optimizers(self):
+        """Update optimizers (Is used when overfitting occurs)
+        :param None
+        :return: None
+        """
         self.optimizers = self._initialize_optimizers()
 
 
     def train_reward_models(self, pb, batch_size):
+        """Train our reward networks
+        :param pb: PreferenceBuffer which we sample from
+        :param batch_size: We sample and train our reward network in batches (multiple preferences)
+        :return: avg_entropy_loss: the average entropy loss of our reward networks
+        :return: ratio: the ratio of our entropy loss from our validation sample and model entropy loss
+        """
         model_losses = []
         val_losses = []
         # Preference buffer has fewer entries than the sample batch
@@ -34,7 +54,7 @@ class PreferencePredictor:
         for reward_model, optimizer in zip(self.reward_networks, self.optimizers):
             # Individual sampling # TODO The two samples shouldn't overlap
             sample = pb.sample(batch_size, replace=True)
-            val_sample = pb.sample(int(batch_size / 2.718), replace=False)
+            val_sample = pb.sample(int(batch_size / 2.718), replace=False) # Validation sample
 
             # Compute loss for this model
             model_loss = self._compute_loss_batch(reward_model, sample)
@@ -70,6 +90,11 @@ class PreferencePredictor:
         return avg_entropy_loss, ratio
 
     def compute_predicted_probabilities(self, trajectories):
+        """Compute the predicted probability of human preference for trajectory0 over trajectory1.
+        :param trajectories: a trajectory tuple (traj1,traj2)
+        :return: predictions: a list of predicted probabilities that trajectory0 is chosen over trajectory1
+                 (calculated by the networks) for a trajectory tuple
+        """
         predictions = [
             self._compute_predicted_probability_batch(reward_model, trajectories)
             for reward_model in self.reward_networks
@@ -80,8 +105,11 @@ class PreferencePredictor:
 
 
     def _compute_loss_batch(self,reward_model, sample):
-        """
-        Compute the cumulative entropy loss for the given sample.
+        """Compute the cumulative entropy loss for the given sample
+        :param reward_model: the reward model for which we want to calculate an entropy loss
+        :param sample: a sample(with size batch_size) taken out of the Preference buffer Form: [((traj1,traj2),pref)...]
+        :return: entropy_loss entropy loss we calculate for that sample
+                 (entropy loss=difference between label and predicted prob)
         """
         entropy_loss = torch.tensor(0.0, requires_grad=True)
 
@@ -100,8 +128,10 @@ class PreferencePredictor:
         return entropy_loss
 
     def _compute_predicted_probability_batch(self,reward_model, trajectories):
-        """
-        Compute the predicted probability of human preference for trajectory0 over trajectory1.
+        """Compute the predicted probability of human preference for trajectory0 over trajectory1.
+        :param reward_model: reward network which calculates its prediction
+        :param trajectories: a trajectory pair (the traj pair of our sample)
+        :return: the predicted probability(of our network) that traj0 is favored over traj1
         """
         trajectory0, trajectory1 = trajectories
 
@@ -124,6 +154,8 @@ class PreferencePredictor:
         )
 
         return predicted_prob
+
+
 
 
 
