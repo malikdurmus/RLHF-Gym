@@ -23,6 +23,12 @@ class TrajectorySampler:
 
     # Single trajectory
     def uniform_trajectory(self, traj_length, time_window, synthetic_feedback):
+        """Sample a single trajectory
+        :param traj_length:
+        :param time_window:
+        :param synthetic_feedback:
+        :return:
+        """
         if self.rb.size() < traj_length or self.rb.size() < time_window or time_window < traj_length:
             raise ValueError("Not enough data to sample, consider adjusting args")
 

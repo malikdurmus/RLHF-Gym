@@ -2,7 +2,6 @@ import torch
 import torch.optim as optim
 
 class PreferencePredictor:
-
     def __init__(self, reward_networks: list, reward_model_lr, device, l2):
         """Constructor for the PreferencePredictor
         :param reward_networks: a list of reward networks
@@ -17,7 +16,7 @@ class PreferencePredictor:
         self.optimizers = self._initialize_optimizers()
 
     def _initialize_optimizers(self):
-        """Initialize optimizers for reward networks via List Comprehension
+        """Initialize optimizers for reward networks
         :param None
         :return: A list with optimizers for each reward_network we have
         """
@@ -39,9 +38,9 @@ class PreferencePredictor:
 
 
     def train_reward_models(self, pb, batch_size):
-        """Train our reward networks
+        """Train our reward networks with calculated average of entropy losses over networks
         :param pb: PreferenceBuffer which we sample from
-        :param batch_size: We sample and train our reward network in batches (multiple preferences)
+        :param (int) batch_size: We sample and train our reward network in batches (multiple preferences)
         :return: avg_entropy_loss: the average entropy loss of our reward networks
         :return: ratio: the ratio of our entropy loss from our validation sample and model entropy loss
         """
@@ -90,7 +89,7 @@ class PreferencePredictor:
         return avg_entropy_loss, ratio
 
     def compute_predicted_probabilities(self, trajectories):
-        """Compute the predicted probability of human preference for trajectory0 over trajectory1.
+        """Compute the predicted probability of human preference for trajectory0 over trajectory1. (Over all networks)
         :param trajectories: a trajectory tuple (traj1,traj2)
         :return: predictions: a list of predicted probabilities that trajectory0 is chosen over trajectory1
                  (calculated by the networks) for a trajectory tuple

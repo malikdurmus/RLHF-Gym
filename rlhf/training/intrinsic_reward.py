@@ -6,9 +6,17 @@ class IntrinsicRewardCalculator:
         self.k = k
 
     def add_state(self, state):
+        """Add a state to our intrinsic reward calculator
+        :param state: state of our agent
+        :return: None
+        """
         self.states.append(state)
 
     def compute_intrinsic_reward(self, state):
+        """Calculate an intrinsic reward with Euclidian Distance
+        :param state: state of our agent
+        :return: reward: intrinsic reward
+        """
         # Convert to NumPy-Array
         states_array = np.vstack(self.states)
 
