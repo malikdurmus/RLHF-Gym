@@ -93,6 +93,13 @@ class TrajectorySampler:
             # pass traj to each network: for reward_model in reward_networks, networks calculate a reward
             predictions = preference_optimizer.compute_predicted_probabilities(traj_pair)
 
+            # predictions already a tensor, calculate variance with predictions.var()
+            # convert result back to python value with tensor.item()
+            variance = predictions.var().item()
+
+            variance_list.append((traj_pair, variance))
+
+            """
             predicted_prob_list = []
             for predicted_prob  in predictions:
                 # TODO maybe keep calculations on the gpu with tensor.var() (Thang Long)
@@ -102,6 +109,8 @@ class TrajectorySampler:
 
             # Calculate the variance
             variance_list.append((traj_pair, np.var(predicted_prob_list)))
+            """
+
 
         # sort list in descending order
         sorted_variance = sorted(variance_list, key=lambda x: x[1], reverse=True)
