@@ -106,7 +106,7 @@ class TrajectorySampler:
             predictions = preference_optimizer.compute_predicted_probabilities(traj_pair)
 
             predicted_prob_list = []
-            for predicted_prob  in predictions:
+            for predicted_prob  in predictions: #TODO Remove for loop, don't use cpu for predicted_prop
                 # TODO maybe keep calculations on the gpu with tensor.var()
                 predicted_prob = predicted_prob.detach().cpu().numpy()
                 # append variance to a list

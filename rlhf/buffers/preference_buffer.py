@@ -8,7 +8,7 @@ class PreferenceBuffer:
     def add(self, trajectories, preference):
         """Function to add trajectory pair + preference
         :param trajectories: trajectory pair
-        :param preference: preference between trajectory 0 and trajectory 0 Form: e.g [1,0] for traj0
+        :param preference: preference between trajectory 0 and trajectory 1 Form: e.g 0 for traj1
         :return: None
         """
         if len(trajectories) != 2:
@@ -21,7 +21,7 @@ class PreferenceBuffer:
         """Sample randomly out of Preference buffer
         :param batch_size: how many pairs + preferences we are sampling
         :param replace: =False means that we don't sample the same items
-        :return: a trajectory pair and the corresponding preference
+        :return: a list with trajectory pairs and the corresponding preference
         """
         indices = np.random.choice(len(self.buffer), size=min(batch_size, len(self.buffer)), replace=replace)
         return [self.buffer[i] for i in indices]

@@ -40,7 +40,7 @@ class PreferencePredictor:
     def train_reward_models(self, pb, batch_size):
         """Train our reward networks with calculated average of entropy losses over networks
         :param pb: PreferenceBuffer which we sample from
-        :param (int) batch_size: We sample and train our reward network in batches (multiple preferences)
+        :param batch_size: number of preferences
         :return: avg_entropy_loss: the average entropy loss of our reward networks
         :return: ratio: the ratio of our entropy loss from our validation sample and model entropy loss
         """
@@ -92,7 +92,7 @@ class PreferencePredictor:
         """Compute the predicted probability of human preference for trajectory0 over trajectory1. (Over all networks)
         :param trajectories: a trajectory tuple (traj1,traj2)
         :return: predictions: a list of predicted probabilities that trajectory0 is chosen over trajectory1
-                 (calculated by the networks) for a trajectory tuple
+                 (calculated by each of our networks) for a trajectory tuple
         """
         predictions = [
             self._compute_predicted_probability_batch(reward_model, trajectories)
