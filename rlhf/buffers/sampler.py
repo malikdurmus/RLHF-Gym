@@ -118,7 +118,7 @@ class TrajectorySampler:
 
             predicted_prob_list = []
             for predicted_prob  in predictions:
-                # TODO maybe keep calculations on the gpu with tensor.var()
+                # TODO maybe keep calculations on the gpu with tensor.var() (Thang Long)
                 predicted_prob = predicted_prob.detach().cpu().numpy()
                 # append variance to a list
                 predicted_prob_list.append(predicted_prob)

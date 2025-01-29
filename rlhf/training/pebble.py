@@ -77,7 +77,7 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
             model_rewards = []
             with torch.no_grad():
                 for reward_model in reward_networks:
-                    model_reward = reward_model.forward(action=action, observation=state) #TODO:
+                    model_reward = reward_model.forward(action=action, observation=state)
                     model_rewards.append(model_reward.cpu().numpy())
             model_rewards = np.mean(model_rewards, axis=0)
         episodic_model_rewards += model_rewards
@@ -103,6 +103,7 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
         obs = next_obs
 
 
+        # TODO Move actor-critic training to actor.py/critic.py respectively
         ### ACTOR-CRITIC TRAINING ###
         if global_step >= args.pretrain_timesteps:
             # sample random minibatch
