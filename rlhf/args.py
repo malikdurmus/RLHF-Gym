@@ -36,10 +36,8 @@ class Args:
     wandb_entity: str = None
 
 
-    capture_video: bool = True  # TODO do we still need this? see environment.py
+    capture_video: bool = True  # TODO do we still need this? see environment.py @malik
     """whether to capture videos of the agent performances (check out `videos` folder)"""
-    record_every_th_episode: int = 20   # TODO do we still need this?
-    """will record videos every `record_every_th_episode` episodes"""
 
     ###-----------------------------
     ### Algorithm specific arguments
@@ -111,7 +109,7 @@ class Args:
     """
 
     total_timesteps: int = int(1e6)
-    pretraining_timesteps: int = 1000 #TODO: 0 throws error
+    pretraining_timesteps: int = 1000 #TODO: 0 throws error (ich kümmer mich drum -Tobi)
     unsupervised_timesteps: int = 5000
 
     # -------------------------
@@ -129,16 +127,12 @@ class Args:
 
     synthetic_feedback: bool = False
     ensemble_sampling: bool = True
-
-    # TODO fix 'feedback_frequency'
     feedback_frequency: int = 5000
-    #how often we ask for feedback / update the model (needs to be less or equal to reward_learning_starts)"""
-
     trajectory_length: int = 90
     uniform_query_size: int = 80
     ensemble_query_size: int = 20
 
-    # TODO Remove?
+    # TODO Remove? @malik
     """
     # Evaluation arguments
     eval_env_id: str = env_id
@@ -149,5 +143,4 @@ class Args:
     batch_processing: bool = True # TODO: remove later, not needed
     """
 
-
- # TODO: We need to add a function to ensure that all args are compatible
+    # TODO check variable names in other files @Martin
