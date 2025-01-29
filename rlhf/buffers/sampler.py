@@ -9,13 +9,6 @@ class TrajectorySamples:
     actions: torch.Tensor
     env_rewards: torch.Tensor
 
-    def to(self, device: torch.device):
-        """Move all tensors to the given device."""
-        self.states = self.states.to(device)
-        self.actions = self.actions.to(device)
-        if self.env_rewards is not None:
-            self.env_rewards = self.env_rewards.to(device)
-
 class TrajectorySampler:
     def __init__(self, rb, device):
         self.rb = rb
@@ -49,7 +42,8 @@ class TrajectorySampler:
             env_rewards=env_rewards,
         )
 
-        trajectory.to(device=self.device) #since this is an immutable tuple, the tensors have to be recreated everytime, which is not good TODO: better doc herer dont commit
+        trajectory.to(device=self.device) #since this is an immutable tuple, the tensors have to be recreated everytime,
+                                            # which is not good TODO: better doc here dont commit, SOLVED, see branch fix/video-fix
 
         return trajectory
         # TrajectorySamples(states=tensor([[States1], [States2], ..., [States_n]]),
@@ -101,7 +95,7 @@ class TrajectorySampler:
 
             predicted_prob_list = []
             for predicted_prob  in predictions:
-                # TODO maybe keep calculations on the gpu with tensor.var()
+                # TODO maybe keep calculations on the gpu with tensor.var() (Thang Long)
                 predicted_prob = predicted_prob.detach().cpu().numpy()
                 # append variance to a list
                 predicted_prob_list.append(predicted_prob)

@@ -32,7 +32,7 @@ class PreferencePredictor:
             batch_size = len(pb)
 
         for reward_model, optimizer in zip(self.reward_networks, self.optimizers):
-            # Individual sampling # TODO The two samples shouldn't overlap
+            # Individual sampling # TODO The two samples shouldn't overlap (Aleks)
             sample = pb.sample(batch_size, replace=True)
             val_sample = pb.sample(int(batch_size / 2.718), replace=False)
 
@@ -59,7 +59,6 @@ class PreferencePredictor:
         ratio = avg_overfit_loss / avg_entropy_loss
 
         # Adjust coefficient to keep validation loss between 1.1 and 1.5
-        # TODO need to adjust how much the coefficient is changed (maybe use some function including ratio and target)
         if ratio < 1.1:
             self.l2 *= 1.1
             self._update_optimizers()
@@ -124,68 +123,3 @@ class PreferencePredictor:
         )
 
         return predicted_prob
-
-
-
-# Deprecated Methods, will remove those
-# for each data in sample we will use the predict function. after that we will use the preference to calculate entropy loss
-    def _deprecated_predicted_probability(self,reward_model, trajectories):
-        """
-        :param trajectories: A tuple consisting of two trajectories, where each trajectory is an iterable of tuples. Each tuple represents (action, state) pairs from the trajectory.
-        :return: A scalar value representing the predicted probability that the human will choose the first trajectory over the second. Returns None if the trajectories have mismatched lengths.
-        """
-        # trajectories is a tuple that consist of two trajectories (torch tensors)
-        # Here I consider a trajectory to be an iterable type of tuples like: [(action1,state1),(action3,state2), (action0,state3) ...]
-        # We can change this later on
-        trajectory0, trajectory1 = trajectories[0], trajectories[1]
-
-        states0, actions0 = trajectory0.states, trajectory0.actions
-        states1, actions1 = trajectory1.states, trajectory1.actions
-
-        if len(states0) != len(states1) or len(actions0) != len(actions1):
-            raise ValueError("Trajectory lengths do not match")
-
-        total_prob0 = 0
-        total_prob1 = 0
-        for state, action in zip(states0, actions0):
-            action = action.to(self.device)
-            state = state.to(self.device)
-            prob_for_action = reward_model(action=action,
-                                                  observation=state) # estimated probability, that the human will prefer action 0
-            total_prob0 += prob_for_action
-
-        for state, action in zip(states1, actions1):
-            action = action.to(self.device)
-            state = state.to(self.device)
-            prob_for_action = reward_model(action=action,
-                                                  observation=state)  # estimated probability, that the human will prefer action 1
-            total_prob1 += prob_for_action # Tensor of shape {Tensor : {1,1}} , tested
-
-        max_prob = torch.max(total_prob0, total_prob1)
-        predicted_prob = torch.exp(total_prob0 - max_prob) / (
-                torch.exp(total_prob0 - max_prob) + torch.exp(total_prob1 - max_prob)
-        )
-        return predicted_prob
-
-    def _deprecated_compute_loss(self, reward_model,sample):
-        """
-        :param sample: A list of lists where each inner list contains:
-               - A tuple (trajectory1, trajectory2) (both trajectories)
-               - An integer representing human feedback (0 or 1)
-        :return: The cumulative entropy loss computed across all trajectory pairs in the sample.
-        """
-        entropy_loss = torch.tensor(0.0, requires_grad=True)
-        for trajectory_pair, human_feedback_label in sample:
-            predicted_prob = self._deprecated_predicted_probability(reward_model,trajectory_pair)
-            # human feedback label to tensor conversion for processing
-            label_1 = torch.tensor(human_feedback_label, dtype=torch.float)
-            label_1 = label_1.to(self.device)
-
-            predicted_prob = torch.clamp(predicted_prob, min=1e-7, max=1 - 1e-7)
-
-            # calculate loss
-            loss_1 = label_1 * torch.log(predicted_prob)
-            loss_2 = (1 - label_1) * torch.log(1 - predicted_prob)
-
-            entropy_loss = entropy_loss + -(loss_1 + loss_2 )
-        return entropy_loss #loss for whole batch
