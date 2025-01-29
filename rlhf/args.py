@@ -1,104 +1,153 @@
 from dataclasses import dataclass
 
-# Passed arguments
 @dataclass
 class Args:
-    # General arguments
-    exp_name: str = "rlhf"
-    """the name of this experiment"""
-    env_id: str = "Hopper-v5"
-    """the environment id of the task"""
-    seed: int = 1
-    """seed of the experiment"""
 
-    # ... arguments
-    torch_deterministic: bool = True
-    """if toggled, `torch.backends.cudnn.deterministic=False`"""
-    cuda: bool = True
-    """if toggled, cuda will be enabled by default"""
-    track: bool = False
-    """if toggled, this experiment will be tracked with Weights and Biases"""
-    wandb_project_name: str = "RLHF"
-    """the wandb's project name"""
+    # -------------------------
+    # General arguments
+    # -------------------------
+
+    """
+    exp_name (str): experiment name
+    env_id (str): environment ID
+    seed (int): experiment seed for reproducibility
+    """
+
+    exp_name: str = "RLHF Agent Training"
+    env_id: str = "Hopper-v5"
+    seed: int = 1
+
+    # -------------------------
+    # CUDA and WandB arguments
+    # -------------------------
+
+    """
+    is_torch_deterministic (str): whether to ensure deterministic behavior by setting `torch.backends.cudnn.deterministic=False` 
+    enable_cuda (bool): whether to enable CUDA support by default
+    wandb_track (bool): whether to enable WandB tracking by default
+    wandb_project_name (str): WandB project name 
+    wandb_entity (str): WandB entity name (None = default user account)   
+    """
+
+    is_torch_deterministic: bool = True
+    enable_cuda: bool = True
+    wandb_track: bool = False
+    wandb_project_name: str = "RLHF Agent Training"
     wandb_entity: str = None
-    """the entity (team) of wandb's project"""
+
+
     capture_video: bool = True  # TODO do we still need this? see environment.py
     """whether to capture videos of the agent performances (check out `videos` folder)"""
     record_every_th_episode: int = 20   # TODO do we still need this?
     """will record videos every `record_every_th_episode` episodes"""
 
+    ###-----------------------------
+    ### Algorithm specific arguments
+    ###-----------------------------
 
-    ### Algorithm specific arguments ###
+    # -------------------------
     # Network arguments
+    # -------------------------
+
+    """
+    gamma (float): discount factor
+    target_smoothing_coefficient (float): target smoothing coefficient
+    l2_regularization_coefficient (float): L2 regularization coefficient
+    reward_model_lr (float): learning rate of the reward model optimizer
+    policy_lr (float): learning rate of the policy model optimizer
+    q_network_lr (float): learning rate of the Q network optimizer
+    reward_models (int): number of reward models used in the experiment
+    """
+
     gamma: float = 0.99
-    """the discount factor gamma"""
-    tau: float = 0.005
-    """target smoothing coefficient (default: 0.005)"""
-    l2: float = 0.01
-    """regularization coefficient"""
+    target_smoothing_coefficient: float = 0.005
+    l2_regularization_coefficient: float = 0.01
     reward_model_lr: float = 1e-3
-    """the learning rate of the reward model optimizer"""
     policy_lr: float = 3e-4
-    """the learning rate of the policy network optimizer"""
-    q_lr: float = 1e-3
-    """the learning rate of the Q network network optimizer"""
-    num_models: int = 3
-    """amount of reward models"""
+    q_network_lr: float = 1e-3
+    reward_models: int = 3
 
+    # -------------------------
     # Network training arguments
-    policy_frequency: int = 2
-    """the frequency of training policy (delayed)"""
-    target_network_frequency: int = 1  # Denis Yarats' implementation delays this by 2.
-    """the frequency of updates for the target networks"""
-    autotune: bool = True
-    """automatic tuning of the entropy coefficient"""
-    alpha: float = 0.2
-    """Entropy regularization coefficient."""
+    # -------------------------
 
+    """
+    policy_update_frequency (int): frequency at which the policy network is updated
+    target_network_update_frequency (int): frequency at which the target network is updated
+    (Due to implementation of Denis Yarats' delay by two steps)
+    automatic_entropy_coefficient_tuning (bool): whether to use automatic entropy coefficient tuning
+    entropy_regularization_coefficient (float): entropy regularization coefficient
+    """
+
+    policy_update_frequency: int = 2
+    target_network_update_frequency: int = 1
+    automatic_entropy_coefficient_tuning: bool = True
+    entropy_regularization_coefficient: float = 0.2
+
+    # -------------------------
     # Buffer arguments
+    # -------------------------
+
+    """
+    replay_buffer_size (int): size of the replay buffer
+    replay_batch_size (int): batch size for sampling from the replay buffer
+    preference_buffer_size (int): size of the preference buffer
+    preference_batch_size (int): batch size for sampling from the preference buffer
+    """
+
     replay_buffer_size: int = int(1e6)
-    """the replay memory buffer size"""
     replay_batch_size: int = 256
-    """the batch size of sample from the replay memory"""
-    pref_buffer_size: int = replay_buffer_size
-    """the preference buffer size"""
-    pref_batch_size: int = 30
-    """the batch size of sample from the preference memory"""
+    preference_buffer_size: int = replay_buffer_size
+    preference_batch_size: int = 30
 
+    # -------------------------
     # Timestep arguments
+    # -------------------------
+
+    """
+    total_timesteps (int): total number of timesteps for the experiment
+    pretraining_timesteps (int): number of timesteps for random exploration (phase 1)
+    unsupervised_timesteps (int): number of timesteps for unsupervised exploration (phase 2)
+    """
+
     total_timesteps: int = int(1e6)
-    """total timesteps of the experiments"""
-    pretrain_timesteps: int = 1000 #TODO: 0 throws error
-    """phase 1: how many steps for random exploration"""
+    pretraining_timesteps: int = 1000 #TODO: 0 throws error
     unsupervised_timesteps: int = 5000
-    """phase 2: unsupervised exploration"""
-    """
-    Remaining timesteps:
-    phase 3: reward learning
-    """
 
+    # -------------------------
     # Feedback query arguments
-    synthetic_feedback: bool = False
-    """Toggle synthetic/human feedback"""
-    ensemble_sampling: bool = True
-    """Toggle ensemble/uniform-based sampling"""
-    feedback_frequency: int = 5000
-    """how often we ask for feedback / update the model (needs to be less or equal to reward_learning_starts)""" # TODO fix this
-    traj_length: int = 90
-    """length of trajectories"""
-    uniform_query_size: int = 80
-    """how much uniform feedback each iteration"""
-    ensemble_query_size: int = 20
-    """how much ensemble-based sampling each iteration (needs to be less or equal to uniform [equal = inefficient uniform sampling])"""
+    # -------------------------
 
+    """   
+    synthetic_feedback (bool): whether to use synthetic or human feedback
+    ensemble_sampling (bool): whether to use ensemble-based or uniform-based sampling
+    feedback_frequency: how often feedback is requested 
+    trajectory_length (int): trajectory length during each feedback iteration
+    uniform_query_size (int): number of feedback samples requested uniformly during each feedback iteration
+    ensemble_query_size (int): number of ensemble-based feedback samples requested during each feedback iteration
+    """
+
+    synthetic_feedback: bool = False
+    ensemble_sampling: bool = True
+
+    # TODO fix 'feedback_frequency'
+    feedback_frequency: int = 5000
+    #how often we ask for feedback / update the model (needs to be less or equal to reward_learning_starts)"""
+
+    trajectory_length: int = 90
+    uniform_query_size: int = 80
+    ensemble_query_size: int = 20
+
+    # TODO Remove?
+    """
     # Evaluation arguments
     eval_env_id: str = env_id
     eval_max_steps: int = 10000
     n_eval_episodes: int = 1000
     eval_seed : int = 3
-
+    ###
     batch_processing: bool = True # TODO: remove later, not needed
+    """
 
 
-# TODO: We need to add a function to ensure that all args are compatible
-# TODO: Needs better structure and documentation, ambigious as is
+ # TODO: We need to add a function to ensure that all args are compatible
