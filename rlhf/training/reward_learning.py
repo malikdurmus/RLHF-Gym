@@ -32,9 +32,8 @@ class PreferencePredictor:
             batch_size = len(pb)
 
         for reward_model, optimizer in zip(self.reward_networks, self.optimizers):
-            # Individual sampling # TODO The two samples shouldn't overlap (Aleks)
-            sample = pb.sample(batch_size, replace=True)
-            val_sample = pb.sample(int(batch_size / 2.718), replace=False)
+            # Individual sampling
+            sample, val_sample = pb.sample_with_validation_sample(batch_size, replace=True)
 
             # Compute loss for this model
             model_loss = self._compute_loss_batch(reward_model, sample)
