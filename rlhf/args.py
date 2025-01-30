@@ -104,12 +104,12 @@ class Args:
 
     """
     total_timesteps (int): total number of timesteps for the experiment
-    pretraining_timesteps (int): number of timesteps for random exploration (phase 1)
-    unsupervised_timesteps (int): number of timesteps for unsupervised exploration (phase 2)
+    pretraining_timesteps (int): number of timesteps for random exploration (phase 0.1)
+    unsupervised_timesteps (int): number of timesteps for unsupervised exploration (phase 0.2)
     """
 
     total_timesteps: int = int(1e6)
-    pretrain_timesteps: int = 2000 #rename? #TODO: 0 throws error (ich kümmer mich drum -Tobi)
+    pretrain_timesteps: int = 2000 #rename?
     unsupervised_timesteps: int = 10000
 
     # -------------------------
@@ -127,10 +127,10 @@ class Args:
 
     synthetic_feedback: bool = False
     ensemble_sampling: bool = True
-    feedback_frequency: int = 5000
+    feedback_frequency: int = 2500
     traj_length: int = 90  #rename?
-    uniform_query_size: int = 80
-    ensemble_query_size: int = 20
+    uniform_query_size: int = 8
+    ensemble_query_size: int = 4
 
     # TODO Remove all of the below? @malik
     batch_processing: bool = True  # TODO: remove later, not needed

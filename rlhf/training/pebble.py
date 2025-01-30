@@ -26,7 +26,7 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
     ### PEBBLE ALGO ###
     for global_step in range(args.total_timesteps):
         ### REWARD LEARNING ###
-        if global_step >= args.unsupervised_timesteps:
+        if global_step >= args.unsupervised_timesteps and global_step != 0:
             ### FEEDBACK QUERY ###
             if global_step % args.feedback_frequency == 0 or global_step == args.unsupervised_timesteps:
                 # ensemble-sampling
@@ -67,8 +67,8 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
         # execute action
         next_obs, env_rewards, terminations, truncations, infos = envs.step(actions)
 
-        # in exploration phase, calculate intrinsic reward
-        if args.pretrain_timesteps <= global_step < args.unsupervised_timesteps:
+        # in remaining exploration phase, calculate intrinsic reward
+        if args.pretrain_timesteps <= global_step <= args.unsupervised_timesteps:
             model_rewards = int_rew_calc.compute_intrinsic_reward(obs)
         # in reward learning phase, calculate reward based on reward model
         else:

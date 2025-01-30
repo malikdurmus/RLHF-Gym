@@ -114,17 +114,12 @@ class TrajectorySampler:
             traj_pair = self.uniform_trajectory_pair(traj_length, time_window, synthetic_feedback)
 
             # pass traj to each network: for reward_model in reward_networks, networks calculate a reward
-            predictions = preference_optimizer.compute_predicted_probabilities(traj_pair)
+            predictions = torch.stack(preference_optimizer.compute_predicted_probabilities(traj_pair))
 
-            predicted_prob_list = []
-            for predicted_prob  in predictions:
-                # TODO maybe keep calculations on the gpu with tensor.var() (Thang Long)
-                predicted_prob = predicted_prob.detach().cpu().numpy()
-                # append variance to a list
-                predicted_prob_list.append(predicted_prob)
-
-            # Calculate the variance
-            variance_list.append((traj_pair, np.var(predicted_prob_list)))
+            # predictions already a list of tensors, calculate variance with predictions.var()
+            # convert result back to python value with tensor.item()
+            variance = predictions.var().item()
+            variance_list.append((traj_pair, variance))
 
         # sort list in descending order
         sorted_variance = sorted(variance_list, key=lambda x: x[1], reverse=True)
