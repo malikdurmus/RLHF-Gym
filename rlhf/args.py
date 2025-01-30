@@ -13,7 +13,7 @@ class Args:
     seed (int): experiment seed for reproducibility
     """
 
-    exp_name: str = "RLHF Agent Training"
+    exp_name: str = "RLHF_agent"
     env_id: str = "Hopper-v5"
     seed: int = 1
 
@@ -58,12 +58,12 @@ class Args:
     """
 
     gamma: float = 0.99
-    target_smoothing_coefficient: float = 0.005 #rename?
-    l2: float = 0.01 #rename?
+    tau: float = 0.005 #rename?
+    l2: float = 0.01  # rename?
     num_models: int = 3 #rename?
     reward_model_lr: float = 3e-4
     policy_lr: float = 3e-4
-    q__lr: float = 1e-3 #rename?
+    q_lr: float = 1e-3 #rename?
 
     # -------------------------
     # Network training arguments
@@ -132,7 +132,8 @@ class Args:
     uniform_query_size: int = 80
     ensemble_query_size: int = 20
 
-    # TODO Remove? @malik
+    # TODO Remove all of the below? @malik
+    batch_processing: bool = True  # TODO: remove later, not needed
     """
     # Evaluation arguments
     eval_env_id: str = env_id
@@ -140,7 +141,6 @@ class Args:
     n_eval_episodes: int = 1000
     eval_seed : int = 3
     ###
-    batch_processing: bool = True # TODO: remove later, not needed
     """
 
     # TODO rename project-wide @Martin

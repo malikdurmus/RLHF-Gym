@@ -6,7 +6,7 @@ def init_routes(app, socketio, run_name, preference_buffer, video_queue, stored_
     @app.route("/", methods=["GET"])
     # Serve the HTML landing page
     def serve_landing_page():
-        return send_from_directory(TEMPLATES_DIR, "index2.html")
+        return send_from_directory("templates", "index2.html")
 
     # Fetch available video pairs from the video queue
     @app.route('/get_video_pairs', methods=["GET"])

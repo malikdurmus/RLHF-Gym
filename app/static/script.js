@@ -50,7 +50,6 @@ async function fetchVideoPairs() {
       loaded = true;
     } else {
       updateStatus("Info: No video pairs available at the moment. Waiting for new pairs...");
-      displayLoader();
     }
   } catch (error) {
     console.error('Error fetching video pairs:', error);
@@ -153,4 +152,4 @@ async function displayLoader() {
 }
 
 
-
+// TODO Fix loaders (Martin)
