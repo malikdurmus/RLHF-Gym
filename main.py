@@ -31,23 +31,23 @@ if __name__ == "__main__":
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
-    torch.backends.cudnn.deterministic = args.torch_deterministic
+    torch.backends.cudnn.deterministic = args.is_torch_deterministic
 
     # Choose hardware
-    device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() and args.enable_cuda else "cpu")
 
     # Initialize environment (environment.py)
     envs = initialize_env(args.env_id, args.seed, args.capture_video, run_name)
 
     # Initialize networks (networks.py)
     actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer = (
-        initialize_networks(envs, device, args.policy_lr, args.q_lr, args.batch_processing, args.num_models)) # batch_processing to be removed
+        initialize_networks(envs, device, args.policy_lr, args.q_network_lr, args.batch_processing, args.reward_models)) # batch_processing to be removed
 
     # Initialize preference predictor (preference_predictor.py)
     preference_optimizer = PreferencePredictor(reward_networks, reward_model_lr=args.reward_model_lr, device=device, l2=args.l2)
 
     # Initialize preference buffer (buffer.py)
-    preference_buffer = PreferenceBuffer(args.pref_buffer_size)
+    preference_buffer = PreferenceBuffer(args.preference_buffer_size)
 
     # Initialize replay buffer (buffer.py)
     rb = CustomReplayBuffer.initialize(envs, args.replay_buffer_size, device)

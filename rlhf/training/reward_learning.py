@@ -3,10 +3,10 @@ import torch.optim as optim
 
 class PreferencePredictor:
 
-    def __init__(self, reward_networks: list, reward_model_lr, device, l2):
+    def __init__(self, reward_networks: list, reward_model_lr, device, l2_regularization_coefficient):
         self.reward_networks = reward_networks
         self.device = device
-        self.l2 = l2
+        self.l2 = l2_regularization_coefficient
         self.reward_model_lr = reward_model_lr
         self.optimizers = self._initialize_optimizers()
 

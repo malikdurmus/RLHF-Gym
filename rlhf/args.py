@@ -109,7 +109,7 @@ class Args:
     """
 
     total_timesteps: int = int(1e6)
-    pretraining_timesteps: int = 1000 #TODO: 0 throws error (ich kümmer mich drum -Tobi)
+    pretraining_timesteps: int = 1000 #TODO: 0 throws error @tobi
     unsupervised_timesteps: int = 5000
 
     # -------------------------
@@ -132,15 +132,16 @@ class Args:
     uniform_query_size: int = 80
     ensemble_query_size: int = 20
 
+
+
+
+
     # TODO Remove? @malik
-    """
     # Evaluation arguments
     eval_env_id: str = env_id
     eval_max_steps: int = 10000
     n_eval_episodes: int = 1000
     eval_seed : int = 3
-    ###
-    batch_processing: bool = True # TODO: remove later, not needed
-    """
 
-    # TODO check variable names in other files @Martin
+
+    batch_processing: bool = True  # TODO: remove later, not needed @malik

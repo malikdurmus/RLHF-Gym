@@ -15,15 +15,15 @@ class TrajectorySampler:
         self.device = device
 
     # Single trajectory
-    def uniform_trajectory(self, traj_length, time_window, synthetic_feedback):
-        if self.rb.size() < traj_length or self.rb.size() < time_window or time_window < traj_length:
+    def uniform_trajectory(self, trajectory_length, time_window, synthetic_feedback):
+        if self.rb.size() < trajectory_length or self.rb.size() < time_window or time_window < trajectory_length:
             raise ValueError("Not enough data to sample, consider adjusting args")
 
         # Random start index (exclude end of buffer)
         min_start_index = self.rb.size() - time_window + 1
-        max_start_index = self.rb.size() - traj_length + 1
+        max_start_index = self.rb.size() - trajectory_length + 1
         start_index = np.random.randint(min_start_index, max_start_index)
-        end_index = start_index + traj_length
+        end_index = start_index + trajectory_length
 
         # extract states, actions, env_rewards
         states = torch.tensor(self.rb.observations[start_index:end_index])
@@ -52,19 +52,19 @@ class TrajectorySampler:
 
 
     # trajectory pair
-    def uniform_trajectory_pair(self, traj_length, time_window, synthetic_feedback):
-        trajectory1 = self.uniform_trajectory(traj_length, time_window, synthetic_feedback)
-        trajectory2 = self.uniform_trajectory(traj_length, time_window, synthetic_feedback)
+    def uniform_trajectory_pair(self, trajectory_length, time_window, synthetic_feedback):
+        trajectory1 = self.uniform_trajectory(trajectory_length, time_window, synthetic_feedback)
+        trajectory2 = self.uniform_trajectory(trajectory_length, time_window, synthetic_feedback)
 
         return trajectory1, trajectory2
 
 
     # batch of trajectories
-    def uniform_trajectory_batch(self, traj_length, time_window, batch_size, synthetic_feedback):
+    def uniform_trajectory_batch(self, trajectory_length, time_window, batch_size, synthetic_feedback):
         trajectories_batch = []
 
         for _ in range(batch_size):
-            trajectory = self.uniform_trajectory(traj_length, time_window, synthetic_feedback)
+            trajectory = self.uniform_trajectory(trajectory_length, time_window, synthetic_feedback)
 
             trajectories_batch.append(trajectory)
 
@@ -72,23 +72,23 @@ class TrajectorySampler:
 
 
     # batch of trajectory pairs
-    def uniform_trajectory_pair_batch(self, traj_length, time_window, batch_size, synthetic_feedback):
+    def uniform_trajectory_pair_batch(self, trajectory_length, time_window, batch_size, synthetic_feedback):
         trajectories_batch = []
 
         for _ in range(batch_size):
-            (trajectory1, trajectory2) = self.uniform_trajectory_pair(traj_length, time_window, synthetic_feedback)
+            (trajectory1, trajectory2) = self.uniform_trajectory_pair(trajectory_length, time_window, synthetic_feedback)
 
             trajectories_batch.append((trajectory1, trajectory2))
 
         return trajectories_batch
 
     # ensemble-based sampling
-    def ensemble_sampling(self,ensemble_size, uniform_size, traj_length, time_window, synthetic_feedback, preference_optimizer):
+    def ensemble_sampling(self, ensemble_size, uniform_size, trajectory_length, time_window, synthetic_feedback, preference_optimizer):
         # Create empty list for variance: ((traj1, traj2), variance)
         variance_list = []
         for _ in range(uniform_size):
             # sample one trajectory pair
-            traj_pair = self.uniform_trajectory_pair(traj_length, time_window, synthetic_feedback)
+            traj_pair = self.uniform_trajectory_pair(trajectory_length, time_window, synthetic_feedback)
 
             # pass traj to each network: for reward_model in reward_networks, networks calculate a reward
             predictions = preference_optimizer.compute_predicted_probabilities(traj_pair)

@@ -11,7 +11,7 @@ def evaluate_agent(eval_env_id, max_steps,  n_eval_episodes , actor_policy ,
 
     episode_rewards = []
     for episode in range(n_eval_episodes):
-        obs = env.reset() #TODO:
+        obs = env.reset()
         step = 0
         done = False
         total_rewards_ep = 0

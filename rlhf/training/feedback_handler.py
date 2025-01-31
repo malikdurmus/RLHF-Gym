@@ -21,12 +21,11 @@ def handle_feedback(args, global_step, video_queue, stored_pairs, preference_buf
         stored_pairs.clear()
     else:
         for query in range(len(trajectory_pairs)):
-            traj_pair = trajectory_pairs[query]
-            _handle_synthetic_feedback(preference_buffer, traj_pair)
+            trajectory_pair = trajectory_pairs[query]
+            _handle_synthetic_feedback(preference_buffer, trajectory_pair)
 
 
 def _render_and_queue_trajectories(args, query, global_step, video_queue, stored_pairs, trajectory_pair, run_name):
-
     trajectory1, trajectory2 = trajectory_pair
 
     # Notify that rendering has started
@@ -45,7 +44,6 @@ def _render_and_queue_trajectories(args, query, global_step, video_queue, stored
     })
 
 def _handle_synthetic_feedback(preference_buffer, trajectory_pair):
-
     trajectory1, trajectory2 = trajectory_pair
 
     if _sum_rewards(trajectory1) > _sum_rewards(trajectory2):
