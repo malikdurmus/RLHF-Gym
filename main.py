@@ -21,7 +21,7 @@ if __name__ == "__main__":
     args = tyro.cli(Args)
     run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
     os.makedirs(os.path.join(f"videos/{run_name}"), exist_ok=True)
-    os.makedirs(os.path.join(f"evaluation"), exist_ok=True)
+    os.makedirs(os.path.join(f"evaluation/{run_name}"), exist_ok=True)
 
 
     # Initialize writer
@@ -67,32 +67,43 @@ if __name__ == "__main__":
     else:
         app, socketio, notify = None, None, None
 
-    # Start train in a separate thread
-    training_thread = threading.Thread(
-        target=train,
-        args=(
+
+    # Create a function to run the Flask app in a separate thread
+    def run_flask_app():
+        if not args.synthetic_feedback:  # human feedback
+            socketio.run(app, host="0.0.0.0", port=5000, debug=False, allow_unsafe_werkzeug=True)
+
+
+    # Create an event to signal when training is done
+    training_done_event = threading.Event()
+    # Start training thread
+    def train_thread_func():
+        train(
             envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_optimizer,
             actor_optimizer, preference_optimizer, args, writer, device, sampler,
             preference_buffer, video_queue, stored_pairs, feedback_event,
             int_rew_calc, notify, preference_mutex, run_name
         )
-    )
+        # Signal that training is done
+        training_done_event.set()
+
+
+    training_thread = threading.Thread(target=train_thread_func)
     training_thread.start()
 
+    # Start Flask app in a separate thread
+    flask_thread = threading.Thread(target=run_flask_app)
+    flask_thread.start()
 
-    # Start evaluation thread
-    evaluation_thread = threading.Thread(
-        target=record_video,
-        args=(args.env_id, args.seed, args.capture_video, "evaluation/", args.record_every_th_episode,
-              actor)
-    )
-    #evaluation_thread.start()
-
-    # Start app if human feedback
-    if not args.synthetic_feedback: # human feedback
-        socketio.run(app, host="0.0.0.0", port=5000, debug=False, allow_unsafe_werkzeug=True)
-    
-    # Terminate training thread
+    # Wait for the training thread to finish before starting the evaluation
     training_thread.join()
 
-    #evaluation_thread.join()
+    # Once training is done, start the evaluation thread
+    evaluation_thread = threading.Thread(
+        target=record_video,
+        args=(args.env_id, args.seed, args.capture_video, f"evaluation/{run_name}", args.record_every_th_episode, device, actor)
+    )
+    evaluation_thread.start()
+
+    # Wait for evaluation thread to finish
+    evaluation_thread.join()
