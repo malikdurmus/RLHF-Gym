@@ -4,7 +4,9 @@ from rlhf.rendering.gym_renderer import render_trajectory_gym
 
 def handle_feedback(args, global_step, video_queue, stored_pairs, preference_buffer,
                     feedback_event, notify, trajectory_pairs, run_name):
-
+    """
+    Handle human and synthetic feedback
+    """
     if not args.synthetic_feedback: # human feedback
         for query in range(len(trajectory_pairs)):
             trajectory_pair = trajectory_pairs[query]

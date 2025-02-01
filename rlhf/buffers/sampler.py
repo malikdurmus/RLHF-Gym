@@ -5,6 +5,9 @@ from dataclasses import dataclass
 ### TRAJECTORY SAMPLER ###
 @dataclass
 class TrajectorySamples:
+    """
+    A dataclass that contains environment states, actions, rewards and saves them as tensors
+    """
     states: torch.Tensor
     actions: torch.Tensor
     env_rewards: torch.Tensor
@@ -24,10 +27,10 @@ class TrajectorySampler:
     # Single trajectory
     def uniform_trajectory(self, traj_length, time_window, synthetic_feedback):
         """Sample a single trajectory
-        :param traj_length:
-        :param time_window:
-        :param synthetic_feedback:
-        :return:
+        :param traj_length: length of trajectory
+        :param time_window: the time window in which we sample the trajectory
+        :param synthetic_feedback: boolean if we use synthetic feedback (is not used)
+        :return: a trajectory with dataclass "TrajectorySamples" (has states, actions, env_rewards in tensor form)
         """
         if self.rb.size() < traj_length or self.rb.size() < time_window or time_window < traj_length:
             raise ValueError("Not enough data to sample, consider adjusting args")
@@ -65,6 +68,9 @@ class TrajectorySampler:
 
     # trajectory pair
     def uniform_trajectory_pair(self, traj_length, time_window, synthetic_feedback):
+        """
+        Sample a trajectory pair for comparing purposes
+        """
         trajectory1 = self.uniform_trajectory(traj_length, time_window, synthetic_feedback)
         trajectory2 = self.uniform_trajectory(traj_length, time_window, synthetic_feedback)
 
@@ -96,6 +102,18 @@ class TrajectorySampler:
 
     # ensemble-based sampling
     def ensemble_sampling(self,ensemble_size, uniform_size, traj_length, time_window, synthetic_feedback, preference_optimizer):
+        """This function aims to use multiple reward networks to calculate a variance for trajectory pairs
+        :param ensemble_size: size of our ensemble (reward networks)
+        :param uniform_size: the range of trajectories we sample
+        :param traj_length: length of our trajectory
+        :param time_window: the time window in which we sample the trajectory
+        :param synthetic_feedback: boolean if we use synthetic feedback
+        :param preference_optimizer: optimizer that uses the reward networks to calculate a predicted probability
+               for each trajectory pair we have. The variance of all predictions for a specific pair is calculated
+               and added to our variance list
+        :return: A variance list in descending order of the variance, one element has a trajectory pair
+                 and a corresponding variance
+        """
         # Create empty list for variance: ((traj1, traj2), variance)
         variance_list = []
         for _ in range(uniform_size):

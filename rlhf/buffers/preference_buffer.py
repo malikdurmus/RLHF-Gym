@@ -8,7 +8,7 @@ class PreferenceBuffer:
     def add(self, trajectories, preference):
         """Function to add trajectory pair + preference
         :param trajectories: trajectory pair
-        :param preference: preference between trajectory 0 and trajectory 1 Form: e.g 0 for traj1
+        :param preference: preference between trajectory 0 and trajectory 1 Form: e.g is 1 if traj0 is preferred
         :return: None
         """
         if len(trajectories) != 2:
