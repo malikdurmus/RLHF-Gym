@@ -103,7 +103,7 @@ if __name__ == "__main__":
         target=record_video,
         args=(args.env_id, args.seed, args.capture_video, f"evaluation/{run_name}", args.record_every_th_episode, device, actor)
     )
-    evaluation_thread.start()
+    #evaluation_thread.start()
 
     # Wait for evaluation thread to finish
-    evaluation_thread.join()
+    #evaluation_thread.join()
