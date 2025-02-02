@@ -44,7 +44,7 @@ if __name__ == "__main__":
 
     # Initialize networks (networks.py)
     actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer = (
-        initialize_networks(envs, device, args.policy_lr, args.q_lr, args.batch_processing, args.num_models)) # batch_processing to be removed
+        initialize_networks(envs, device, args.policy_lr, args.q_lr, args.num_models))
 
     # Initialize preference predictor (preference_predictor.py)
     preference_optimizer = PreferencePredictor(reward_networks, reward_model_lr=args.reward_model_lr, device=device, l2=args.l2)

@@ -103,9 +103,6 @@ class Args:
     n_eval_episodes: int = 1000
     eval_seed : int = 3
 
-    batch_processing: bool = True # TODO: remove later, not needed
-
-
 # TODO: We need to add a function to ensure that all args are compatible
 # TODO: Needs better structure and documentation, ambigious as is
 
