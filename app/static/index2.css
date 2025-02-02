@@ -152,7 +152,7 @@
 /* Settings for each individual agent option */
 .agentOptions {
   width: 49%;
-  min-height: 400px;
+  min-height: 220px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -209,8 +209,8 @@
 
 /* Video elements settings */
 .videoElement {
-   min-width: 320px;
-   min-height: 240px;
+   max-width: 100%;
+   height: auto;
 }
 
 /* Group information container settings */
@@ -226,3 +226,6 @@
     margin: 0 10px;
     padding: 15px;
 }
+
+
+/* TODO Fix box size (Martin)

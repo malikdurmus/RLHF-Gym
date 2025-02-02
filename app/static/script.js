@@ -43,18 +43,17 @@ async function fetchVideoPairs() {
 
     // Check if the JSON response contains a video pair and then update global videoPairs variable
     if (data.video_pairs && data.video_pairs.length > 0) {
-      loaded = true;
       videoPairs = data.video_pairs;
       currentIndex = 0;
       displayVideoPair(videoPairs[currentIndex]);
       updateStatus("Info: New video pairs have been loaded.");
+      loaded = true;
     } else {
       updateStatus("Info: No video pairs available at the moment. Waiting for new pairs...");
     }
   } catch (error) {
     console.error('Error fetching video pairs:', error);
     updateStatus("Info: Failed to fetch video pairs.");
-    displayLoader();
   }
 }
 
@@ -80,7 +79,6 @@ function setPreference(preference) {
   } else {
     updateStatus("Info: All pairs completed. Submitting feedback...");
     submitFeedback();
-    displayLoader();
   }
 }
 
@@ -95,7 +93,6 @@ async function submitFeedback() {
       body: JSON.stringify({ preferences: feedback })  // Sending the feedback in the request body
     });
     updateStatus("Info: Feedback submitted. Now waiting for new video pairs...");
-    displayLoader();
 
     // Resetting the feedback, video pairs and index after submission
     feedback = [];
