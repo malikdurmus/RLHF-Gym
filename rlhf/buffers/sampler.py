@@ -9,7 +9,7 @@ class TrajectorySamples:
     states: torch.Tensor
     actions: torch.Tensor
     env_rewards: torch.Tensor
-    infos: list[dict[str, Any]]
+    infos: Any
 
     def to(self, device: torch.device):
         """Move all tensors to the given device."""

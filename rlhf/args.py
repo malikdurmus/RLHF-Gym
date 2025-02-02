@@ -22,10 +22,7 @@ class Args:
     """the wandb's project name"""
     wandb_entity: str = None
     """the entity (team) of wandb's project"""
-    capture_video: bool = True  # TODO do we still need this? see environment.py
-    """whether to capture videos of the agent performances (check out `videos` folder)"""
-    record_every_th_episode: int = 20   # TODO do we still need this?
-    """will record videos every `record_every_th_episode` episodes"""
+
 
 
     ### Algorithm specific arguments ###
@@ -102,9 +99,6 @@ class Args:
     eval_max_steps: int = 10000
     n_eval_episodes: int = 1000
     eval_seed : int = 3
-
-    batch_processing: bool = True # TODO: remove later, not needed
-
 
 # TODO: We need to add a function to ensure that all args are compatible
 # TODO: Needs better structure and documentation, ambigious as is

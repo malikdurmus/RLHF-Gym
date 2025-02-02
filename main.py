@@ -40,11 +40,11 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
 
     # Initialize environment (environment.py)
-    envs = initialize_env(args.env_id, args.seed, args.capture_video, run_name, args.record_every_th_episode)
+    envs = initialize_env(args.env_id, args.seed, run_name)
 
     # Initialize networks (networks.py)
     actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer = (
-        initialize_networks(envs, device, args.policy_lr, args.q_lr, args.batch_processing, args.num_models)) # batch_processing to be removed
+        initialize_networks(envs, device, args.policy_lr, args.q_lr, args.num_models))
 
     # Initialize preference predictor (preference_predictor.py)
     preference_optimizer = PreferencePredictor(reward_networks, reward_model_lr=args.reward_model_lr, device=device, l2=args.l2)
@@ -101,7 +101,7 @@ if __name__ == "__main__":
     # Once training is done, start the evaluation thread
     evaluation_thread = threading.Thread(
         target=record_video,
-        args=(args.env_id, args.seed, args.capture_video, f"evaluation/{run_name}", args.record_every_th_episode, device, actor)
+        args=(args.env_id, args.seed, f"evaluation/{run_name}", device, actor)
     )
     #evaluation_thread.start()
 
