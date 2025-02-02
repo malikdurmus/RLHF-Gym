@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 from dataclasses import dataclass
+from typing import Any
 
 ### TRAJECTORY SAMPLER ###
 @dataclass
@@ -8,6 +9,7 @@ class TrajectorySamples:
     states: torch.Tensor
     actions: torch.Tensor
     env_rewards: torch.Tensor
+    infos: list[dict[str, Any]]
 
     def to(self, device: torch.device):
         """Move all tensors to the given device."""
@@ -35,6 +37,7 @@ class TrajectorySampler:
         # extract states, actions, env_rewards
         states = torch.tensor(self.rb.observations[start_index:end_index])
         actions = torch.tensor(self.rb.actions[start_index:end_index])
+        infos = self.rb.infos[start_index:end_index]
 
         if synthetic_feedback:
             env_rewards = torch.tensor(self.rb.rewards[start_index:end_index])
@@ -42,11 +45,12 @@ class TrajectorySampler:
         else:
             env_rewards = None
 
-        # name tensors for better access
+        # naming for better access
         trajectory = TrajectorySamples(
             states=states if states.ndim > 1 else states.unsqueeze(-1),
             actions=actions if actions.ndim > 1 else actions.unsqueeze(-1),
             env_rewards=env_rewards,
+            infos=infos,
         )
 
         trajectory.to(device=self.device) #since this is an immutable tuple, the tensors have to be recreated everytime, which is not good TODO: better doc herer dont commit
