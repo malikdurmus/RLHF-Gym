@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
-from gym.envs.mujoco import MujocoEnv
 
 
 class EstimatedRewardNetwork(nn.Module):
@@ -10,7 +9,7 @@ class EstimatedRewardNetwork(nn.Module):
     Neural network for reward estimation
     """
     #Neural network for reward estimation
-    def __init__(self, env: MujocoEnv,batch_processing_rewnet):
+    def __init__(self, env,batch_processing_rewnet):
         """
         :param env: Instance of MujocoEnv (strict), which provides the observation_space and action_space properties. These describe the dimensions of the environment's observations and actions. This parameter is used to define the input size for the first fully connected layer.
         """

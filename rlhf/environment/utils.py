@@ -6,7 +6,7 @@ def make_env(env_id, seed, idx, capture_video, run_name, record_every_th_episode
     def thunk():
         if capture_video and idx == 0:
             # TODO can we always use this, if this is needed for rendering?
-            env = gym.make(env_id, render_mode="rgb_array",terminate_when_unhealthy=True,exclude_current_positions_from_observation=False)
+            env = gym.make(env_id, render_mode="rgb_array",exclude_current_positions_from_observation=False)
 
         else:
             env = gym.make(env_id)
