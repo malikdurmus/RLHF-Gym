@@ -10,13 +10,13 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
           preference_buffer,video_queue,stored_pairs,feedback_event,int_rew_calc, notify, preference_mutex, run_name):
 
     # [Optional] automatic adjustment of the entropy coefficient
-    if args.autotune:
+    if args.automatic_entropy_coefficient_tuning:
         target_entropy = -torch.prod(torch.Tensor(envs.single_action_space.shape).to(device)).item()
         log_alpha = torch.zeros(1, requires_grad=True, device=device)
         alpha = log_alpha.exp().item()
-        a_optimizer = optim.Adam([log_alpha], lr=args.q_lr)
+        a_optimizer = optim.Adam([log_alpha], lr=args.q_network_lr)
     else:
-        alpha = args.alpha
+        alpha = args.entropy_regularization_coefficient
 
     start_time = time.time()
     obs, _ = envs.reset(seed=args.seed)
@@ -32,11 +32,11 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
                 # ensemble-sampling
                 if args.ensemble_sampling:
                     trajectory_pairs = sampler.ensemble_sampling(args.ensemble_query_size, args.uniform_query_size,
-                                                                     args.traj_length, args.feedback_frequency,
-                                                                     args.synthetic_feedback, preference_optimizer)
+                                                                 args.trajectory_length, args.feedback_frequency,
+                                                                 args.synthetic_feedback, preference_optimizer)
                 # uniform-sampling
                 else:
-                    trajectory_pairs = sampler.uniform_trajectory_pair_batch(args.traj_length, args.feedback_frequency,
+                    trajectory_pairs = sampler.uniform_trajectory_pair_batch(args.trajectory_length, args.feedback_frequency,
                                                                              args.uniform_query_size, args.synthetic_feedback)
 
                 # handle feedback
@@ -45,7 +45,7 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
 
                 ### REWARD MODEL TRAINING ###
                 with preference_mutex:
-                    entropy_loss, ratio = preference_optimizer.train_reward_models(preference_buffer, args.pref_batch_size)
+                    entropy_loss, ratio = preference_optimizer.train_reward_models(preference_buffer, args.preference_batch_size)
 
                 writer.add_scalar("losses/entropy_loss", entropy_loss, global_step)
                 writer.add_scalar("losses/ratio", ratio, global_step)
@@ -56,7 +56,7 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
 
         ### ACTION ###
         # choose random action
-        if global_step < args.pretrain_timesteps:
+        if global_step < args.pretraining_timesteps:
             actions = np.array([envs.single_action_space.sample() for _ in range(envs.num_envs)])
             int_rew_calc.add_state(obs)
         # policy/actor chooses action
@@ -68,7 +68,7 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
         next_obs, env_rewards, terminations, truncations, infos = envs.step(actions)
 
         # in remaining exploration phase, calculate intrinsic reward
-        if args.pretrain_timesteps <= global_step <= args.unsupervised_timesteps:
+        if args.pretraining_timesteps <= global_step <= args.unsupervised_timesteps:
             model_rewards = int_rew_calc.compute_intrinsic_reward(obs)
         # in reward learning phase, calculate reward based on reward model
         else:
@@ -105,7 +105,7 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
 
         # TODO Move actor-critic training to actor.py/critic.py respectively
         ### ACTOR-CRITIC TRAINING ###
-        if global_step >= args.pretrain_timesteps:
+        if global_step >= args.pretraining_timesteps:
             # sample random minibatch
             data = rb.sample(args.replay_batch_size)
 
@@ -130,9 +130,9 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
             q_optimizer.step()
 
             ### ACTOR TRAINING ###
-            if global_step % args.policy_frequency == 0:  # TD 3 Delayed update support
+            if global_step % args.policy_update_frequency == 0:  # TD 3 Delayed update support
                 for _ in range(
-                        args.policy_frequency
+                        args.policy_update_frequency
                 ):  # compensate for the delay by doing 'actor_update_interval' instead of 1
                     pi, log_pi, _ = actor.get_action(data.observations)
                     qf1_pi = qf1(data.observations, pi)
@@ -146,7 +146,7 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
                     actor_optimizer.step()
 
                     # Update entropy coefficient
-                    if args.autotune:
+                    if args.automatic_entropy_coefficient_tuning:
                         with torch.no_grad():
                             _, log_pi, _ = actor.get_action(data.observations)
                         alpha_loss = (-log_alpha.exp() * (log_pi + target_entropy)).mean()
@@ -157,11 +157,11 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
                         alpha = log_alpha.exp().item()
 
             # Update target network
-            if global_step % args.target_network_frequency == 0:
+            if global_step % args.target_network_update_frequency == 0:
                 for param, target_param in zip(qf1.parameters(), qf1_target.parameters()):
-                    target_param.data.copy_(args.tau * param.data + (1 - args.tau) * target_param.data)
+                    target_param.data.copy_(args.target_smoothing_coefficient * param.data + (1 - args.target_smoothing_coefficient) * target_param.data)
                 for param, target_param in zip(qf2.parameters(), qf2_target.parameters()):
-                    target_param.data.copy_(args.tau * param.data + (1 - args.tau) * target_param.data)
+                    target_param.data.copy_(args.target_smoothing_coefficient * param.data + (1 - args.target_smoothing_coefficient) * target_param.data)
 
 
             # Logging with Tensorflow
@@ -175,7 +175,7 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
                 writer.add_scalar("losses/alpha", alpha, global_step)
                 print("SPS:", int(global_step / (time.time() - start_time)))
                 writer.add_scalar("charts/SPS", int(global_step / (time.time() - start_time)), global_step)
-                if args.autotune:
+                if args.automatic_entropy_coefficient_tuning:
                     writer.add_scalar("losses/alpha_loss", alpha_loss.item(), global_step)
 
     envs.close()

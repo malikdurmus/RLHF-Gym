@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 from dataclasses import dataclass
-from typing import Any
+from typing import List, Dict, Any
 
 ### TRAJECTORY SAMPLER ###
 @dataclass
@@ -9,7 +9,7 @@ class TrajectorySamples:
     states: torch.Tensor
     actions: torch.Tensor
     env_rewards: torch.Tensor
-    infos: list[dict[str, Any]]
+    infos: List[Dict[str, Any]]
 
 class TrajectorySampler:
     def __init__(self, rb, device):
@@ -28,6 +28,7 @@ class TrajectorySampler:
                 - `states` (torch.Tensor): States of the trajectory, shape `(traj_length, state_dim)`.
                 - `actions` (torch.Tensor): Actions of the trajectory, shape `(traj_length, action_dim)`.
                 - `env_rewards` (torch.Tensor or None): Rewards of the trajectory if `synthetic_feedback` is True, otherwise None.
+                TODO add infos
         :raises: ValueError: If the buffer size or time window is insufficient to sample the requested trajectory length.
         """
 
@@ -36,7 +37,7 @@ class TrajectorySampler:
 
         # random start index
         min_start_index = (self.rb.pos - time_window) % self.rb.size()
-        max_start_index = (self.rb.pos - traj_length) % self.rb.size()
+        max_start_index = (self.rb.pos - traj) % self.rb.size()
         start_index = np.random.randint(min_start_index, max_start_index)
         end_index = start_index + traj_length
 

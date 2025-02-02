@@ -29,9 +29,9 @@ class Args:
     wandb_entity (str): WandB entity name (None = default user account)   
     """
 
-    torch_deterministic: bool = True #rename?
-    cuda: bool = True # rename?
-    track: bool = False #rename?
+    is_torch_deterministic: bool = True
+    enable_cuda: bool = True
+    wandb_track: bool = False
     wandb_project_name: str = "RLHF Agent Training"
     wandb_entity: str = None
 
@@ -58,12 +58,12 @@ class Args:
     """
 
     gamma: float = 0.99
-    tau: float = 0.005 #rename?
-    l2: float = 0.01  # rename?
-    num_models: int = 3 #rename?
-    reward_model_lr: float = 3e-4
+    target_smoothing_coefficient: float = 0.005
+    l2_regularization_coefficient: float = 0.01
+    reward_model_lr: float = 1e-3
     policy_lr: float = 3e-4
-    q_lr: float = 1e-3 #rename?
+    q_network_lr: float = 1e-3
+    reward_models: int = 3
 
     # -------------------------
     # Network training arguments
@@ -77,10 +77,10 @@ class Args:
     entropy_regularization_coefficient (float): entropy regularization coefficient
     """
 
-    policy_frequency: int = 2 #rename?
-    target_network_frequency: int = 1 #rename?
-    autotune: bool = True #rename?
-    alpha: float = 0.2 #rename?
+    policy_update_frequency: int = 2
+    target_network_update_frequency: int = 1
+    automatic_entropy_coefficient_tuning: bool = True
+    entropy_regularization_coefficient: float = 0.2
 
     # -------------------------
     # Buffer arguments
@@ -95,8 +95,8 @@ class Args:
 
     replay_buffer_size: int = int(1e6)
     replay_batch_size: int = 256
-    pref_buffer_size: int = replay_buffer_size #rename?
-    pref_batch_size: int = 64 #rename?
+    preference_buffer_size: int = replay_buffer_size
+    preference_batch_size: int = 30
 
     # -------------------------
     # Timestep arguments
@@ -104,12 +104,12 @@ class Args:
 
     """
     total_timesteps (int): total number of timesteps for the experiment
-    pretraining_timesteps (int): number of timesteps for random exploration (phase 0.1)
-    unsupervised_timesteps (int): number of timesteps for unsupervised exploration (phase 0.2)
+    pretraining_timesteps (int): number of timesteps for random exploration (phase 1)
+    unsupervised_timesteps (int): number of timesteps for unsupervised exploration (phase 2)
     """
 
     total_timesteps: int = int(1e6)
-    pretrain_timesteps: int = 2000 #rename?
+    pretrain_timesteps: int = 2000
     unsupervised_timesteps: int = 10000
 
     # -------------------------
@@ -127,14 +127,15 @@ class Args:
 
     synthetic_feedback: bool = False
     ensemble_sampling: bool = True
-    feedback_frequency: int = 2500
-    traj_length: int = 90  #rename?
-    uniform_query_size: int = 8
-    ensemble_query_size: int = 4
+    feedback_frequency: int = 5000
+    trajectory_length: int = 90
+    uniform_query_size: int = 80
+    ensemble_query_size: int = 20
 
-    # TODO Remove all of the below? @malik
+    # TODO Remove? @malik
     batch_processing: bool = True  # TODO: remove later, not needed
     """
+    # TODO Remove? @malik
     # Evaluation arguments
     eval_env_id: str = env_id
     eval_max_steps: int = 10000
@@ -142,5 +143,3 @@ class Args:
     eval_seed : int = 3
     ###
     """
-
-    # TODO rename project-wide @Martin

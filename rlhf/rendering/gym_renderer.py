@@ -148,15 +148,7 @@ def render_trajectory_mujoco_native(env_name, trajectory, file_video="trajectory
         d.qvel = state[m.nq:]
         mujoco.mj_step(m, d)
 
-        mujoco.mjv_updateScene( # Essential
-            m,
-            d,
-            mjv_vopt,
-            mjv_pert,
-            mjv_cam,
-            mujoco.mjtCatBit.mjCAT_ALL,
-            mjv_scene,
-        )
+        mujoco.mjv_updateScene(m, d, mjv_vopt, mjv_pert, mjv_cam,mujoco.mjtCatBit.mjCAT_ALL, mjv_scene)
         mujoco.mjr_render(viewport, mjv_scene, con)
 
         rgb_arr = np.zeros(3 * viewport.width * viewport.height, dtype=np.uint8)
