@@ -10,9 +10,19 @@ class PreferenceBuffer:
             self.buffer.pop(0)
         self.buffer.append([trajectories, preference])
 
-    def sample(self, batch_size, replace=False):
+    def sample_with_validation_sample(self, batch_size, replace):
         indices = np.random.choice(len(self.buffer), size=min(batch_size, len(self.buffer)), replace=replace)
-        return [self.buffer[i] for i in indices]
+        np.random.shuffle(indices)
+
+        split_idx = int(len(indices) * (1 - 1/np.e))
+
+        train_indices = indices[:split_idx]
+        val_indices = indices[split_idx:]
+
+        train_samples = [self.buffer[i] for i in train_indices]
+        val_samples = [self.buffer[i] for i in val_indices]
+
+        return train_samples, val_samples
 
     def __len__(self):
         return len(self.buffer)
