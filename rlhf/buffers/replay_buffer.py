@@ -13,6 +13,9 @@ class ReplayBufferSamples(NamedTuple):
     model_rewards: torch.Tensor
 
 class CustomReplayBuffer(ReplayBuffer):
+    """
+    A Custom Replaybuffer that is extended with an additional variable: model_rewards
+    """
     def __init__(
             self,
             buffer_size: int,
@@ -32,6 +35,9 @@ class CustomReplayBuffer(ReplayBuffer):
 
     # Override to also add model_rewards
     def add(self, obs, next_obs, action, env_reward, model_reward, done, infos):
+        """
+        Add the environment observations(obs, next_obs ...) and additionally a model_reward given by our reward network
+        """
         super().add(obs, next_obs, action, env_reward, done, infos)
         # return to correct pos (self.pos += 1 in super().add) # TODO handle if rb full
         self.model_rewards[self.pos - 1, :] = model_reward
@@ -71,6 +77,11 @@ class CustomReplayBuffer(ReplayBuffer):
         )
 
     def relabel(self, reward_models, device):
+        """Relabel the ReplayBuffer with rewards given by the average of our reward networks
+        :param reward_models: a list with our reward networks
+        :param device: "cuda" or "cpu"
+        :return: None
+        """
         num_entries = self.buffer_size if self.full else self.pos
 
         for idx in range(num_entries):
