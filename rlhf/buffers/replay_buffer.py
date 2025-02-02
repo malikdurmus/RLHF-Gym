@@ -30,10 +30,14 @@ class CustomReplayBuffer(ReplayBuffer):
         # Include storage of model_rewards
         self.model_rewards = np.zeros((self.buffer_size, self.n_envs), dtype=np.float32)
 
-    # Override to also add model_rewards
+        # Include storge of infos
+        self.infos = [None] * self.buffer_size
+
+    # Override to also add model_rewards and infos
     def add(self, obs, next_obs, action, env_reward, model_reward, done, infos):
         super().add(obs, next_obs, action, env_reward, done, infos)
         self.model_rewards[(self.pos - 1) % self.buffer_size, :] = model_reward
+        self.infos[(self.pos - 1) % self.buffer_size] = infos
 
     # Override to also sample model_rewards
     def sample(self, batch_size, env=None):
