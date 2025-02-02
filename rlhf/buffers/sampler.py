@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 from dataclasses import dataclass
-from Typing import Any
+from typing import Any
 
 ### TRAJECTORY SAMPLER ###
 @dataclass

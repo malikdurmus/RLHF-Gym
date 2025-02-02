@@ -13,7 +13,7 @@ class Args:
     seed (int): experiment seed for reproducibility
     """
 
-    exp_name: str = "RLHF_agent"
+    exp_name: str = "RLHF_Agent"
     env_id: str = "Hopper-v5"
     seed: int = 1
 
