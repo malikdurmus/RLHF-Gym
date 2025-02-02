@@ -66,7 +66,7 @@ if __name__ == "__main__":
         app, socketio, notify = None, None, None
 
     # optional weights and biases tracking
-    if args.track:
+    if args.wandb_track:
         import wandb
         wandb.init(
             project=args.wandb_project_name,

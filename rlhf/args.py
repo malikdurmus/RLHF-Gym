@@ -109,8 +109,8 @@ class Args:
     """
 
     total_timesteps: int = int(1e6)
-    pretrain_timesteps: int = 2000
-    unsupervised_timesteps: int = 10000
+    pretraining_timesteps: int = 2000
+    unsupervised_timesteps: int = 5000
 
     # -------------------------
     # Feedback query arguments

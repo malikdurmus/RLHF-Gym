@@ -37,7 +37,7 @@ class TrajectorySampler:
 
         # random start index
         min_start_index = (self.rb.pos - time_window) % self.rb.size()
-        max_start_index = (self.rb.pos - traj) % self.rb.size()
+        max_start_index = (self.rb.pos - traj_length) % self.rb.size()
         start_index = np.random.randint(min_start_index, max_start_index)
         end_index = start_index + traj_length
 
