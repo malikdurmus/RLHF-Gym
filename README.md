@@ -7,7 +7,8 @@ environments.
 For the base of our algorithm we used SAC, an off-policy algorithm
 implemented and found in the [CleanRL](https://github.com/vwxyzjn/cleanrl) Deep Reinforcement library.
 
-TODO: (Demo Video)
+
+![Demo GIF](demo_gif.gif)
 ## Features
 + Solve MuJoCo environmental tasks
 + Different sampling methods: ensemble based or uniform based
@@ -27,24 +28,25 @@ cd sep-groupb
 
 # Install dependencies with poetry
 poetry install
+
+# If you have multiple python versions you can use the poetry virtual environment that runs python3.10
+poetry env use python
 ```
 ## Running the program in the terminal:
 ```bash
-# CD into server.py folder and start the program
-cd backend/flask_app_server
-
 # Starting with default values
 # Add arguments to change values
-poetry run server.py --total_timesteps 100000
-                     --synthetic_feedback True
-                     --ensemble_sampling False
+poetry run main.py --total_timesteps 10000
+#Default
+# synthetic feedback is set to False, ensemble_sampling ist set to True                     
 
 ```
 ## Feedback modes
 Running the program with synthetic_feedback = False, sends a trajectory pair to the UI. After
-giving feedback, wait until the new videos are rendered.
+giving feedback, wait until the new videos are rendered. In order to switch modes, head over to the
+\rlhf folder and configure it in args.py.
 
-## Authors
+## Credits
 This project was developed by: 
 - Aleksandar Mijatovic
 - Martin Plank
