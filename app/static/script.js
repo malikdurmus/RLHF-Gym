@@ -2,7 +2,6 @@ const socket = io(); // Socket connection to the server
 let currentIndex = 0; // current video pair index
 let feedback = []; // stores the user feedback
 let videoPairs = []; // stores the video pairs
-let loaded = false; // indicates whether the video pairs have been loaded
 let status;  // stores current status message
 let runName = ""; // stores current run name
 
@@ -43,10 +42,9 @@ async function fetchVideoPairs() {
 
     // Check if the JSON response contains a video pair and then update global videoPairs variable
     if (data.video_pairs && data.video_pairs.length > 0) {
-      loaded = true;
       videoPairs = data.video_pairs;
       currentIndex = 0;
-      displayVideoPair(videoPairs[currentIndex]);
+      displayVideoPair(videoPairs[currentIndex]); // Display video pair with the current index
       updateStatus("Info: New video pairs have been loaded.");
     } else {
       updateStatus("Info: No video pairs available at the moment. Waiting for new pairs...");
@@ -61,10 +59,24 @@ async function fetchVideoPairs() {
 
 // Display the video pair and set sources to the video elements of the current pair
 function displayVideoPair(pair) {
-  document.getElementById('video1').src = `/videos/${runName}/${pair.video1}`;
-  document.getElementById('video2').src = `/videos/${runName}/${pair.video2}`;
-  // Show the current index and total number of pairs
-  updateStatus(`Pair ${currentIndex + 1} of ${videoPairs.length}`);
+
+  const video1 = document.getElementById('video1');
+  const video2 = document.getElementById('video2');
+  video1.src = `/videos/${runName}/${pair.video1}`;
+  video2.src = `/videos/${runName}/${pair.video2}`;
+
+  // Resolve when both videos are loaded
+  const videosLoaded = Promise.all([
+  new Promise((resolve) => { video1.onloadeddata = resolve; }),
+  new Promise((resolve) => { video2.onloadeddata = resolve; })
+  ]);
+
+  // Wait for both videos to load
+  Promise.all([videosLoaded]).then(() => {
+    hideLoader(); // Hide loader if both videos are loaded
+    // Show the current index and total number of pairs
+    updateStatus(`Pair ${currentIndex + 1} of ${videoPairs.length}`);
+  });
 }
 
 // Set user's preference for the current video pair
@@ -75,6 +87,7 @@ function setPreference(preference) {
   feedback.push({ id: pair.id, preference });  // Store video pair ID and the user's preference
 
   currentIndex++; // Move to the next video pair
+
   // Display the next video pair if there are more pairs
   if (currentIndex < videoPairs.length) {
     displayVideoPair(videoPairs[currentIndex]);
@@ -96,12 +109,12 @@ async function submitFeedback() {
       body: JSON.stringify({ preferences: feedback })  // Sending the feedback in the request body
     });
     updateStatus("Info: Feedback submitted. Now waiting for new video pairs...");
-    displayLoader();
 
     // Resetting the feedback, video pairs and index after submission
     feedback = [];
     videoPairs = [];
     currentIndex = 0;
+    displayLoader();
   } catch (error) {
     console.error('Error submitting feedback:', error);
     updateStatus("Info: Failed to submit feedback.");
@@ -132,8 +145,8 @@ function displayExplanationModal() {
     });
 }
 
-// Display loaders once an option is selected until the videos are loaded
-async function displayLoader() {
+// Display loaders until the videos are loaded
+function displayLoader() {
   const agentOption1 = document.getElementById('agentOption1');
   const agentOption2 = document.getElementById('agentOption2');
   const neutralOption = document.getElementById('neutralOption');
@@ -145,16 +158,19 @@ async function displayLoader() {
   neutralOption.style.display = 'none';
   loader1.style.display = 'block';
   loader2.style.display = 'block';
-
-  if (loaded === true) {
-    agentOption1.style.display = 'block';
-    agentOption2.style.display = 'block';
-    neutralOption.style.display = 'block';
-    loader1.style.display = 'none';
-    loader2.style.display = 'none';
-  }
 }
 
+// Hide loaders when the videos are loaded
+function hideLoader() {
+  const agentOption1 = document.getElementById('agentOption1');
+  const agentOption2 = document.getElementById('agentOption2');
+  const neutralOption = document.getElementById('neutralOption');
+  const loader1 = document.getElementById('loader1');
+  const loader2 = document.getElementById('loader2');
 
-
-
+  loader1.style.display = 'none';
+  loader2.style.display = 'none';
+  agentOption1.style.display = 'block';
+  agentOption2.style.display = 'block';
+  neutralOption.style.display = 'block';
+}

@@ -207,10 +207,19 @@
   opacity: 80%;
 }
 
+/* Video containers settings */
+.videoContainer {
+  width: 320px;
+  height: 240px;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
 /* Video elements settings */
 .videoElement {
-   min-width: 320px;
-   min-height: 240px;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 /* Group information container settings */

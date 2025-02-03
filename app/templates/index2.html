@@ -49,14 +49,16 @@
         <!-- Container to compare the agents -->
         <div class="agentsContainer">
             <!-- Button to choose first agent -->
-            <button class="agentOptions" onclick="setPreference(1), displayLoader()">
+            <button class="agentOptions" onclick="setPreference(1)">
                 <div id="agentOption1">
                     <br>
                     <h1>Agent 1</h1>
                     <br>
                     <br>
+                    <div class="videoContainer">
                     <!-- Video of the first agent -->
-                    <video class="videoElement" id="video1" controls autoplay></video>
+                        <video class="videoElement" id="video1" controls autoplay></video>
+                    </div>
                     <br>
                     <br>
                     <br>
@@ -66,14 +68,16 @@
                 <div class="loader1" id="loader1"></div>
             </button>
             <!-- Button to choose second agent -->
-            <button class="agentOptions" onclick="setPreference(0), displayLoader()">
+            <button class="agentOptions" onclick="setPreference(0)">
                 <div id="agentOption2">
                     <br>
                     <h1>Agent 2</h1>
                     <br>
                     <br>
-                    <!-- Video of second agent -->
-                    <video class="videoElement" id="video2" controls autoplay></video>
+                    <div class="videoContainer">
+                    <!-- Video of the second agent -->
+                        <video class="videoElement" id="video2" controls autoplay></video>
+                    </div>
                     <br>
                     <br>
                     <br>
@@ -89,7 +93,7 @@
         <br>
         <br>
         <!-- Button to choose neutral option  -->
-        <button class="neutralOption" id="neutralOption" onclick="setPreference(0.5), displayLoader()">
+        <button class="neutralOption" id="neutralOption" onclick="setPreference(0.5)">
             <h3>Neutral</h3>
         </button>
         <br>
