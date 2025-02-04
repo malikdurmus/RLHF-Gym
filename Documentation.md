@@ -45,7 +45,7 @@ After this is done, we proceed to:
 3. Calculate a model reward based on that action (if ensemble: avg. of our reward networks)
 4. Add it to our Replaybuffer, sample and train the actor/critic networks
 
-TODO: Documentation of each component: Buffers, networks, how everything is calculated
+
 
 
 
