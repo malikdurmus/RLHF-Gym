@@ -44,7 +44,7 @@ if __name__ == "__main__":
         initialize_networks(envs, device, args.policy_lr, args.q_network_lr, args.batch_processing, args.reward_models)) # batch_processing to be removed
 
     # Initialize preference predictor (preference_predictor.py)
-    preference_optimizer = PreferencePredictor(reward_networks, reward_model_lr=args.reward_model_lr, device=device, l2=args.l2)
+    preference_optimizer = PreferencePredictor(reward_networks, reward_model_lr=args.reward_model_lr, device=device, l2_regularization_coefficient=args.l2_regularization_coefficient)
 
     # Initialize preference buffer (buffer.py)
     preference_buffer = PreferenceBuffer(args.preference_buffer_size)

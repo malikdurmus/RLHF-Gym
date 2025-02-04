@@ -53,7 +53,7 @@ async function fetchVideoPairs() {
   } catch (error) {
     console.error('Error fetching video pairs:', error);
     updateStatus("Info: Failed to fetch video pairs.");
-    displayLoader();
+    //displayLoader();
   }
 }
 
@@ -65,6 +65,7 @@ function displayVideoPair(pair) {
   video1.src = `/videos/${runName}/${pair.video1}`;
   video2.src = `/videos/${runName}/${pair.video2}`;
 
+  /*
   // Resolve when both videos are loaded
   const videosLoaded = Promise.all([
   new Promise((resolve) => { video1.onloadeddata = resolve; }),
@@ -77,12 +78,12 @@ function displayVideoPair(pair) {
     // Show the current index and total number of pairs
     updateStatus(`Pair ${currentIndex + 1} of ${videoPairs.length}`);
   });
+
+   */
 }
 
 // Set user's preference for the current video pair
 function setPreference(preference) {
-  if (currentIndex >= videoPairs.length) return; // Check if all video pairs have been processed
-
   const pair = videoPairs[currentIndex]; // Get the current video pair based on the index
   feedback.push({ id: pair.id, preference });  // Store video pair ID and the user's preference
 
@@ -94,7 +95,9 @@ function setPreference(preference) {
   } else {
     updateStatus("Info: All pairs completed. Submitting feedback...");
     submitFeedback();
-    displayLoader();
+
+    const finalVideoSrc = `/videos/${runName}/final_video.mp4`;
+    displayFinalVideoModal(finalVideoSrc);
   }
 }
 
@@ -129,21 +132,34 @@ socket.on('new_video_pairs', (data) => {
 
 // Display the explanation modal and hide  main content
 function displayExplanationModal() {
-    const modal = document.getElementById("explanationModal");
+    const explanationModal = document.getElementById("explanationModal");
     const closeRules = document.getElementById("modalCloseButton");
     const mainContent = document.getElementById('mainContent');
 
     mainContent.classList.add('mainContent');
-    modal.style.display = "flex";
+    explanationModal.style.display = "flex";
     document.body.style.overflow = 'hidden'; // Disable scrolling
 
     // Close the modal and display the main content once close button is clicked
     closeRules.addEventListener("click", () => {
-        modal.style.display = "none";
+        explanationModal.style.display = "none";
         mainContent.classList.remove('mainContent');
         document.body.style.overflow = 'auto'; // Enable scrolling
     });
 }
+
+/*
+// TODO
+function displayFinalVideoModal () {
+   const finalVideoModal = document.getElementById("finalVideoModal");
+   const finalVideo = document.getElementById("finalVideo");
+   const mainContent = document.getElementById('mainContent');
+
+  finalVideo.src = finalVideoSrc;
+  mainContent.classList.add('mainContent');
+  finalVideoModal.style.display = "flex";
+  document.body.style.overflow = 'hidden'; // Disable scrolling
+}*/
 
 // Display loaders until the videos are loaded
 function displayLoader() {
@@ -159,7 +175,6 @@ function displayLoader() {
   loader1.style.display = 'block';
   loader2.style.display = 'block';
 }
-
 // Hide loaders when the videos are loaded
 function hideLoader() {
   const agentOption1 = document.getElementById('agentOption1');
