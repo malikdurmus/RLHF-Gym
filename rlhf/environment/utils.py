@@ -1,6 +1,5 @@
 import gymnasium as gym
 
-
 def make_env(env_id, seed):
     """
     Create and return an environment instance based on the provided `env_id` and `seed`.
@@ -13,9 +12,11 @@ def make_env(env_id, seed):
         gym.Env: The created and initialized environment.
     """
     if "pendulum" in env_id.lower() or "pusher" in env_id.lower():
-        env = gym.make(env_id, render_mode="rgb_array")
+        env = gym.make(env_id, render_mode="rgb_array",
+                       max_episode_steps=1000)
     else:
-        env = gym.make(env_id, render_mode="rgb_array", terminate_when_unhealthy=False)
+        env = gym.make(env_id, render_mode="rgb_array", terminate_when_unhealthy=False,
+                       max_episode_steps=1000)
 
     env = gym.wrappers.RecordEpisodeStatistics(env)
     env.action_space.seed(seed)  # Seed the action space for reproducibility

@@ -19,6 +19,7 @@ from shared import video_queue, preference_mutex, stored_pairs, feedback_event
 
 if __name__ == "__main__":
     args = tyro.cli(Args)
+    # Create the global run name and the folders
     run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
     os.makedirs(os.path.join(f"videos/{run_name}"), exist_ok=True)
     os.makedirs(os.path.join(f"evaluation/{run_name}"), exist_ok=True)
@@ -35,23 +36,22 @@ if __name__ == "__main__":
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
-    torch.backends.cudnn.deterministic = args.torch_deterministic
+    torch.backends.cudnn.deterministic = args.is_torch_deterministic
 
     # Choose hardware
-    device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() and args.enable_cuda else "cpu")
 
     # Initialize environment (environment.py)
     envs = initialize_env(args.env_id, args.seed)
 
     # Initialize networks (networks.py)
     actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer = (
-        initialize_networks(envs, device, args.policy_lr, args.q_lr, args.num_models))
+        initialize_networks(envs, device, args.policy_lr, args.q_network_lr, args.reward_models))
 
     # Initialize preference predictor (preference_predictor.py)
-    preference_optimizer = PreferencePredictor(reward_networks, reward_model_lr=args.reward_model_lr, device=device, l2=args.l2)
-
+    preference_optimizer = PreferencePredictor(reward_networks, reward_model_lr=args.reward_model_lr, device=device, l2=args.l2_regularization_coefficient)
     # Initialize preference buffer (buffer.py)
-    human_label_preference_buffer = PreferenceBuffer(args.pref_buffer_size)
+    human_label_preference_buffer = PreferenceBuffer(args.preference_buffer_size)
 
     # Initialize replay buffer (buffer.py)
     rb = CustomReplayBuffer.initialize(envs, args.replay_buffer_size, device)
@@ -68,6 +68,19 @@ if __name__ == "__main__":
     else:
         app, socketio, notify = None, None, None
 
+        # optional weights and biases tracking
+    if args.wandb_track:
+        import wandb
+        wandb.init(
+            project=args.wandb_project_name,
+            entity=args.wandb_entity,
+            sync_tensorboard=True,
+            config=vars(args),
+            name=run_name,
+            monitor_gym=True,
+            save_code=True,
+        )
+
 
     # Create a function to run the Flask app in a separate thread
     def run_flask_app():
@@ -77,6 +90,7 @@ if __name__ == "__main__":
 
     # Create an event to signal when training is done
     training_done_event = threading.Event()
+
     # Start training thread
     def train_thread_func():
         train(

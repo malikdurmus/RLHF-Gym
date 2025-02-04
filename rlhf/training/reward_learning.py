@@ -80,8 +80,7 @@ class PreferencePredictor:
 
         for reward_model, optimizer in zip(self.reward_networks, self.optimizers):
             # Individual sampling for each model
-            sample = pb.sample(batch_size, replace=True)
-            val_sample = pb.sample(int(batch_size / 2.718), replace=False)
+            sample, val_sample = pb.sample_with_validation_sample(batch_size, replace=True)
 
             # Compute loss for this model
             model_loss = self._compute_loss_batch(reward_model, sample)
@@ -105,7 +104,7 @@ class PreferencePredictor:
         # Calculate ratio of validation loss to training loss
         ratio = avg_overfit_loss / avg_entropy_loss
 
-        # Adjust L2 regularization based on the ratio to avoid overfitting
+        # Adjust L2 regularization based on the ratio to avoid overfitting: Keep validation loss between 1.1 and 1.5
         if ratio < 1.1:
             self.l2 *= 1.1
             self._update_optimizers()
@@ -148,8 +147,9 @@ class PreferencePredictor:
 
         for reward_model, optimizer in zip(self.reward_networks, self.optimizers):
             # Sample human-labeled and validation samples from the augmented preference buffer
-            human_labeled_sample = augmented_preference_buffer.sample(batch_size, replace=True)
-            human_labeled_val_sample = augmented_preference_buffer.sample(int(batch_size / 2.718), replace=False)
+            human_labeled_sample, human_labeled_val_sample = (augmented_preference_buffer.
+                                                              sample_with_validation_sample(batch_size, replace=True))
+
 
             # Use the SSL buffer directly for pseudo-labeled data
             pseudo_labeled_sample = ssl_preference_buffer.get_buffer()

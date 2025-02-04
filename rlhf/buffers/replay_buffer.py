@@ -38,10 +38,9 @@ class CustomReplayBuffer(ReplayBuffer):
     # Override to also add model_rewards and infos
     def add(self, obs, next_obs, action, env_reward, model_reward, done, infos, full_state):
         super().add(obs, next_obs, action, env_reward, done, infos)
-        # return to correct pos (self.pos += 1 in super().add) # TODO handle if rb full
-        self.model_rewards[self.pos - 1, :] = model_reward
-        self.infos[self.pos - 1] = infos
-        self.full_states[self.pos - 1] = full_state
+        self.model_rewards[(self.pos - 1) % self.buffer_size, :] = model_reward
+        self.infos[(self.pos - 1) % self.buffer_size] = infos
+        self.full_states[(self.pos - 1) % self.buffer.size] = full_state
 
     # Override to also sample model_rewards
     def sample(self, batch_size, env=None):
@@ -77,22 +76,24 @@ class CustomReplayBuffer(ReplayBuffer):
             handle_timeout_termination=False,
         )
 
-    def relabel(self, reward_models, device):
+    def relabel(self, reward_models, device, batch_size):
         num_entries = self.buffer_size if self.full else self.pos
 
-        for idx in range(num_entries):
-            # Extract stored transition
-            action = torch.tensor(self.actions[idx], device=device, dtype=torch.float32)
-            state = torch.tensor(self.observations[idx], device=device, dtype=torch.float32)
+        for start_idx in range(0, num_entries, batch_size):
+            end_idx = min(start_idx + batch_size, num_entries)
+
+            # Extract stored transitions
+            actions = torch.tensor(self.actions[start_idx:end_idx], device=device, dtype=torch.float32)
+            states = torch.tensor(self.observations[start_idx:end_idx], device=device, dtype=torch.float32)
 
             # Compute the new reward using the reward models' mean
             rewards = []
             with torch.no_grad():
                 for reward_model in reward_models:
-                    reward = reward_model.forward(action=action, observation=state)
+                    reward = reward_model.forward(action=actions, observation=states)
                     rewards.append(reward.cpu().numpy())
 
             # Compute mean reward
             mean_reward = np.mean(rewards, axis=0)
 
-            self.model_rewards[idx] = mean_reward
+            self.model_rewards[start_idx:end_idx] = mean_reward

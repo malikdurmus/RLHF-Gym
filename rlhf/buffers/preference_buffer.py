@@ -1,7 +1,5 @@
 import numpy as np
-
 from rlhf.buffers.sampler import TrajectorySamples
-
 
 class PreferenceBuffer:
     def __init__(self, buffer_size):
@@ -16,6 +14,21 @@ class PreferenceBuffer:
 
         self.buffer.append([trajectories, preference])
 
+
+    def sample_with_validation_sample(self, batch_size, replace):
+        indices = np.random.choice(len(self.buffer), size=min(batch_size, len(self.buffer)), replace=replace)
+        np.random.shuffle(indices)
+
+        split_idx = int(len(indices) * (1 - 1/np.e))
+
+        train_indices = indices[:split_idx]
+        val_indices = indices[split_idx:]
+
+        train_samples = [self.buffer[i] for i in train_indices]
+        val_samples = [self.buffer[i] for i in val_indices]
+
+        return train_samples, val_samples
+
     def sample(self, batch_size, replace=False):
         indices = np.random.choice(len(self.buffer), size=min(batch_size, len(self.buffer)), replace=replace)
         return [self.buffer[i] for i in indices]
@@ -23,7 +36,7 @@ class PreferenceBuffer:
     def __len__(self):
         return len(self.buffer)
 
-    def reset(self):    # not used anymore
+    def reset(self):
         self.buffer.clear()
 
     def copy(self, apply_tda=True,crop_size=None):
