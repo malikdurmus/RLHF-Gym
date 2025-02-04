@@ -28,7 +28,7 @@ class TrajectorySampler:
                 - `states` (torch.Tensor): States of the trajectory, shape `(traj_length, state_dim)`.
                 - `actions` (torch.Tensor): Actions of the trajectory, shape `(traj_length, action_dim)`.
                 - `env_rewards` (torch.Tensor or None): Rewards of the trajectory if `synthetic_feedback` is True, otherwise None.
-                TODO add infos
+                - `infos`: Other infos of the trajectory, shape [{info, value}]
         :raises: ValueError: If the buffer size or time window is insufficient to sample the requested trajectory length.
         """
 

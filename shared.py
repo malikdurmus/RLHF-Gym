@@ -1,4 +1,3 @@
-# shared.py
 import threading
 import queue
 

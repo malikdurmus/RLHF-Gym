@@ -77,7 +77,7 @@ class PreferencePredictor:
 
 
 
-    def _compute_loss_batch(self,reward_model, sample):
+    def _compute_loss_batch(self, reward_model, sample):
         """
         Compute the cumulative entropy loss for the given sample.
         """
@@ -97,7 +97,7 @@ class PreferencePredictor:
 
         return entropy_loss
 
-    def _compute_predicted_probability_batch(self,reward_model, trajectories):
+    def _compute_predicted_probability_batch(self, reward_model, trajectories):
         """
         Compute the predicted probability of human preference for trajectory0 over trajectory1.
         """

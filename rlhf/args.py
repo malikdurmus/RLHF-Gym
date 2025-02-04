@@ -11,11 +11,13 @@ class Args:
     exp_name (str): experiment name
     env_id (str): environment ID
     seed (int): experiment seed for reproducibility
+    batch_size (int): batch size for batch processing, depends on cpu/gpu
     """
 
     exp_name: str = "RLHF_Agent"
     env_id: str = "Hopper-v5"
     seed: int = 1
+    batch_size: int = 1024
 
     # -------------------------
     # CUDA and WandB arguments
@@ -96,7 +98,7 @@ class Args:
     replay_buffer_size: int = int(1e6)
     replay_batch_size: int = 256
     preference_buffer_size: int = replay_buffer_size
-    preference_batch_size: int = 30
+    preference_batch_size: int = 32
 
     # -------------------------
     # Timestep arguments
@@ -110,7 +112,7 @@ class Args:
 
     total_timesteps: int = int(1e6)
     pretraining_timesteps: int = 2000
-    unsupervised_timesteps: int = 5000
+    unsupervised_timesteps: int = 10000
 
     # -------------------------
     # Feedback query arguments
@@ -125,9 +127,9 @@ class Args:
     ensemble_query_size (int): number of ensemble-based feedback samples requested during each feedback iteration
     """
 
-    synthetic_feedback: bool = False
+    synthetic_feedback: bool = True
     ensemble_sampling: bool = True
-    feedback_frequency: int = 5000
+    feedback_frequency: int = 10000
     trajectory_length: int = 90
     uniform_query_size: int = 80
     ensemble_query_size: int = 20

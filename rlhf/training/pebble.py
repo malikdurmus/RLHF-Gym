@@ -51,8 +51,7 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
                 writer.add_scalar("losses/ratio", ratio, global_step)
 
                 # relabel replay buffer with updated reward networks
-                rb.relabel(reward_networks, device)
-
+                rb.relabel(reward_networks, device, args.batch_size)
 
         ### ACTION ###
         # choose random action
@@ -70,6 +69,7 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
         # in remaining exploration phase, calculate intrinsic reward
         if args.pretraining_timesteps <= global_step <= args.unsupervised_timesteps:
             model_rewards = int_rew_calc.compute_intrinsic_reward(obs)
+            int_rew_calc.add_state(obs)
         # in reward learning phase, calculate reward based on reward model
         else:
             action = torch.tensor(actions, device=device, dtype=torch.float32)
@@ -103,7 +103,6 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
         obs = next_obs
 
 
-        # TODO Move actor-critic training to actor.py/critic.py respectively
         ### ACTOR-CRITIC TRAINING ###
         if global_step >= args.pretraining_timesteps:
             # sample random minibatch
