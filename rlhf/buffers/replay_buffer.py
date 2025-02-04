@@ -32,13 +32,16 @@ class CustomReplayBuffer(ReplayBuffer):
 
         # Include storge of infos
         self.infos = [None] * self.buffer_size
+        # Include Mujoco Internal State
+        self.full_states = [None] * self.buffer_size
 
     # Override to also add model_rewards and infos
-    def add(self, obs, next_obs, action, env_reward, model_reward, done, infos):
+    def add(self, obs, next_obs, action, env_reward, model_reward, done, infos, full_state):
         super().add(obs, next_obs, action, env_reward, done, infos)
         # return to correct pos (self.pos += 1 in super().add) # TODO handle if rb full
         self.model_rewards[self.pos - 1, :] = model_reward
         self.infos[self.pos - 1] = infos
+        self.full_states[self.pos - 1] = full_state
 
     # Override to also sample model_rewards
     def sample(self, batch_size, env=None):

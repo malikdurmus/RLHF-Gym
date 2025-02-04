@@ -1,5 +1,4 @@
 import numpy as np
-import torch
 
 from rlhf.buffers.sampler import TrajectorySamples
 
@@ -100,8 +99,8 @@ def tda(trajectory_pair, min_length, max_length):
         states=segment0.states[start_index: start_index + crop_length],
         actions=segment0.actions[start_index: start_index + crop_length],
         env_rewards=segment0.env_rewards,
-        infos = segment0.infos
-
+        infos = segment0.infos,
+        full_states = segment0.full_states
     )
 
     # Crop all fields of segment1
@@ -109,7 +108,8 @@ def tda(trajectory_pair, min_length, max_length):
         states=segment1.states[start_index: start_index + crop_length],
         actions=segment1.actions[start_index: start_index + crop_length],
         env_rewards=segment1.env_rewards,
-        infos= segment1.infos
+        infos= segment1.infos,
+        full_states = segment1.full_states
     )
 
     return cropped_segment0, cropped_segment1

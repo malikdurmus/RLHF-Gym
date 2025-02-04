@@ -74,6 +74,8 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
 
         # execute action
         next_obs, env_rewards, terminations, truncations, infos = envs.step(actions)
+        # Get the full state of the Mujoco Model
+        full_state = (envs.envs[0].unwrapped.data.qpos.copy(), envs.envs[0].unwrapped.data.qvel.copy())
 
         # in exploration phase, calculate intrinsic reward
         if args.pretrain_timesteps <= global_step < args.unsupervised_timesteps:
@@ -107,7 +109,7 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
                 real_next_obs[idx] = next_obs[idx]
 
         # Adding step results to Replay Buffer
-        rb.add(obs, real_next_obs, actions, env_rewards, model_rewards, terminations, infos)
+        rb.add(obs, real_next_obs, actions, env_rewards, model_rewards, terminations, infos, full_state)
         obs = next_obs
 
 

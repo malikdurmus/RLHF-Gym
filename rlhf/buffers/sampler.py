@@ -10,6 +10,8 @@ class TrajectorySamples:
     actions: torch.Tensor
     env_rewards: torch.Tensor
     infos: Any
+    full_states: Any
+
 
     def to(self, device: torch.device):
         """Move all tensors to the given device."""
@@ -38,6 +40,8 @@ class TrajectorySampler:
         states = torch.tensor(self.rb.observations[start_index:end_index])
         actions = torch.tensor(self.rb.actions[start_index:end_index])
         infos = self.rb.infos[start_index:end_index]
+        full_states = self.rb.full_states[start_index:end_index]
+
 
         if synthetic_feedback:
             env_rewards = torch.tensor(self.rb.rewards[start_index:end_index])
@@ -51,9 +55,10 @@ class TrajectorySampler:
             actions=actions if actions.ndim > 1 else actions.unsqueeze(-1),
             env_rewards=env_rewards,
             infos=infos,
+            full_states=full_states,
         )
 
-        trajectory.to(device=self.device) #since this is an immutable tuple, the tensors have to be recreated everytime, which is not good TODO: better doc herer dont commit
+        trajectory.to(device=self.device)
 
         return trajectory
         # TrajectorySamples(states=tensor([[States1], [States2], ..., [States_n]]),
