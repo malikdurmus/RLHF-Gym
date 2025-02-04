@@ -50,7 +50,7 @@ if __name__ == "__main__":
     preference_optimizer = PreferencePredictor(reward_networks, reward_model_lr=args.reward_model_lr, device=device, l2=args.l2)
 
     # Initialize preference buffer (buffer.py)
-    preference_buffer = PreferenceBuffer(args.pref_buffer_size)
+    human_label_preference_buffer = PreferenceBuffer(args.pref_buffer_size)
 
     # Initialize replay buffer (buffer.py)
     rb = CustomReplayBuffer.initialize(envs, args.replay_buffer_size, device)
@@ -63,7 +63,7 @@ if __name__ == "__main__":
 
     # Create app if human feedback is used
     if not args.synthetic_feedback:
-        app, socketio, notify = create_app(run_name, preference_buffer, video_queue, stored_pairs, feedback_event, preference_mutex)
+        app, socketio, notify = create_app(run_name, human_label_preference_buffer, video_queue, stored_pairs, feedback_event, preference_mutex)
     else:
         app, socketio, notify = None, None, None
 
@@ -81,7 +81,7 @@ if __name__ == "__main__":
         train(
             envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_optimizer,
             actor_optimizer, preference_optimizer, args, writer, device, sampler,
-            preference_buffer, video_queue, stored_pairs, feedback_event,
+            human_label_preference_buffer, video_queue, stored_pairs, feedback_event,
             int_rew_calc, notify, preference_mutex, run_name
         )
         # Signal that training is done

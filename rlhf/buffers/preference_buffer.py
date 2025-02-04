@@ -58,32 +58,21 @@ class PreferenceBuffer:
         Combines a list of TrajectorySamples with a PreferenceBuffer containing TrajectorySamples.
 
         Args:
-            sample (list[TrajectorySamples]): A list of TrajectorySamples.
-            augmented_sample (PreferenceBuffer): A PreferenceBuffer object containing TrajectorySamples.
+            primary_sample (list[TrajectorySamples]): A list of TrajectorySamples.
 
         Returns:
             list[TrajectorySamples]: A combined list of TrajectorySamples.
         """
         # Extract the list of TrajectorySamples from the augmented_sample (PreferenceBuffer)
-        augmented_list = self.buffer  # Assuming augmented_sample has a `list` attribute
+        augmented_list = self.get_buffer()  # Assuming augmented_sample has a `list` attribute
 
         # Combine the two lists of TrajectorySamples
         combined_list = primary_sample + augmented_list
 
-        # Might be a good idea for batch processing
-        # combined_states = torch.cat([s.states for s in combined_list], dim=0)
-        # combined_actions = torch.cat([s.actions for s in combined_list], dim=0)
-        # combined_env_rewards = torch.cat([s.env_rewards for s in combined_list], dim=0)
-
-        # Create a new TrajectorySamples object with the combined fields
-        # combined_trajectory_samples = TrajectorySamples(
-        #     states=combined_states,
-        #     actions=combined_actions,
-        #     env_rewards=combined_env_rewards
-        # )
-
-
         return combined_list
+
+    def get_buffer(self):
+        return self.buffer
 
 
 # Static
