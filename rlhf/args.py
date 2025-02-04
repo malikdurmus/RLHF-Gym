@@ -127,7 +127,7 @@ class Args:
     ensemble_sampling: bool = True
     feedback_frequency: int = 10000
     trajectory_length: int = 90
-    uniform_query_size: int = 80
+    uniform_query_size: int = 100
     ensemble_query_size: int = int(uniform_query_size/10) # In SURF Paper this is set to uniform / 10
 
     # SSL & TDA Arguments
@@ -146,6 +146,6 @@ class Args:
     surf: bool = True
     tda_active: bool = True
     ssl: bool = True
-    crop: int = 10
+    crop: int = 5
     confidence_threshold: float = 0.99
     loss_weight_ssl: float = 1.0

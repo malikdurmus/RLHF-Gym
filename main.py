@@ -36,10 +36,10 @@ if __name__ == "__main__":
     random.seed(args.seed)
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
-    torch.backends.cudnn.deterministic = args.is_torch_deterministic
+    torch.backends.cudnn.deterministic = args.torch_deterministic
 
     # Choose hardware
-    device = torch.device("cuda" if torch.cuda.is_available() and args.enable_cuda else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() and args.cuda else "cpu")
 
     # Initialize environment (environment.py)
     envs = initialize_env(args.env_id, args.seed)
