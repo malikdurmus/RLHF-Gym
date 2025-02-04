@@ -26,12 +26,11 @@ class PreferenceBuffer:
     def reset(self):    # not used anymore
         self.buffer.clear()
 
-    def copy(self, apply_tda=True, min_length=None, max_length=None):
+    def copy(self, apply_tda=True,crop_size=None):
         """
         Create a copy of the current PreferenceBuffer object.
         :param apply_tda: If True, apply Temporal Data Augmentation (TDA) to the copied buffer.
-        :param min_length: Minimum length of the cropped segments (required if apply_tda is True).
-        :param max_length: Maximum length of the cropped segments (required if apply_tda is True).
+        :param crop_size: cropping intensity for the segments (required if apply_tda is True).
         :return: A new PreferenceBuffer object with the same (or augmented) contents.
         """
         # Create a new PreferenceBuffer instance with the same buffer size
@@ -39,12 +38,12 @@ class PreferenceBuffer:
 
         # Copy the contents of the current buffer to the new buffer
         if apply_tda:
-            if min_length is None or max_length is None:
-                raise ValueError("min_length and max_length must be provided if apply_tda is True")
+            if crop_size is None:
+                raise ValueError("crop must be provided if apply_tda is True")
 
             # Apply TDA to each trajectory pair in the buffer
             for trajectories, preference in self.buffer:
-                augmented_trajectories = tda((trajectories[0], trajectories[1]), min_length, max_length)
+                augmented_trajectories = tda((trajectories[0], trajectories[1]), crop_size)
                 new_buffer.add(augmented_trajectories, preference)
         else:
             # Copy the buffer without applying TDA
@@ -75,41 +74,54 @@ class PreferenceBuffer:
 
 
 # Static
-def tda(trajectory_pair, min_length, max_length):
+def tda(trajectory_pair,crop_size):
     """
     Apply temporal data augmentation to a pair of trajectory segments.
 
+    :param crop_size: crop size for the segments
     :param trajectory_pair: a trajectory pair.
-    :param min_length: Minimum length of the cropped segments.
-    :param max_length: Maximum length of the cropped segments.
     :return: A pair of cropped segments.
+    :raises ValueError: If crop size is too large for the given trajectory length.
     """
-
     segment0, segment1 = trajectory_pair
+
+    # Ensure segments have same length before cropping
+    if len(segment0.states) != len(segment1.states):
+        raise Exception("Trajectory lengths differ")
+
+    segment_length = len(segment0.states)
+
+    # Ensure crop size is not too large
+    if crop_size * 2 >= segment_length:
+        raise ValueError(f"Crop size {crop_size} is too large for trajectory length {segment_length}. "
+                         f"Must be smaller than {segment_length // 2}.")
+
+    max_length = segment_length - crop_size
+    min_length = segment_length - (crop_size * 2)
 
     # Ensure both segments have the same length after cropping
     crop_length = np.random.randint(min_length, max_length + 1)  # H'
 
     # Calculate the maximum possible start index to ensure the crop_length is valid
-    max_start_index = min(len(segment0.states), len(segment1.states)) - crop_length
+    max_start_index = segment_length - crop_length
     start_index = np.random.randint(0, max_start_index + 1)  # max (H - H')
 
-    # Crop all fields of segment0
+    # Crop all fields of segment 1 and segment 1
     cropped_segment0 = TrajectorySamples(
         states=segment0.states[start_index: start_index + crop_length],
         actions=segment0.actions[start_index: start_index + crop_length],
-        env_rewards=segment0.env_rewards,
-        infos = segment0.infos,
-        full_states = segment0.full_states
+        env_rewards=segment0.env_rewards[start_index: start_index + crop_length],
+        infos=segment0.infos[start_index: start_index + crop_length],
+        full_states=segment0.full_states[start_index: start_index + crop_length]
     )
 
-    # Crop all fields of segment1
     cropped_segment1 = TrajectorySamples(
         states=segment1.states[start_index: start_index + crop_length],
         actions=segment1.actions[start_index: start_index + crop_length],
-        env_rewards=segment1.env_rewards,
-        infos= segment1.infos,
-        full_states = segment1.full_states
+        env_rewards=segment1.env_rewards[start_index: start_index + crop_length],
+        infos=segment1.infos[start_index: start_index + crop_length],
+        full_states=segment1.full_states[start_index: start_index + crop_length]
     )
+
 
     return cropped_segment0, cropped_segment1

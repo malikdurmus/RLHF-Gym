@@ -22,6 +22,7 @@ if __name__ == "__main__":
     run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
     os.makedirs(os.path.join(f"videos/{run_name}"), exist_ok=True)
     os.makedirs(os.path.join(f"evaluation/{run_name}"), exist_ok=True)
+    os.makedirs(os.path.join(f"models/{run_name}"), exist_ok=True)
 
 
     # Initialize writer
@@ -99,10 +100,14 @@ if __name__ == "__main__":
     # Wait for the training thread to finish before starting the evaluation
     training_thread.join()
 
-    # Once training is done, start the evaluation thread
+
+    #Save the model after the training
+    torch.save(actor, os.path.join(f"models/{run_name}", "actor.pth"))
+
+    # Start the evaluation thread
     evaluation_thread = threading.Thread(
         target=evaluation,
-        args=(args.env_id, 100, 5, actor, device,f"evaluation/{run_name}")
+        args=(args.env_id, 1000, 5, actor, device,f"evaluation/{run_name}")
     )
 
     evaluation_thread.start()

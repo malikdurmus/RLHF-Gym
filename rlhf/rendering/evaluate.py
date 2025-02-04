@@ -5,7 +5,9 @@ from rlhf.environment.utils import initialize_eval_env
 
 
 def evaluation(env_id, max_steps, n_eval_episodes, actor_policy, device , out_directory):
-    record_replay_video(env_id, actor_policy, out_directory, device)
+    #Record a replay video of the agent
+    record_replay_video(env_id,max_steps, actor_policy, out_directory, device)
+    #Evaluate the agent based on rewards
     evaluate_agent(env_id, max_steps, n_eval_episodes, actor_policy, device)
 
 
@@ -75,7 +77,7 @@ def evaluate_agent(eval_env_id, max_steps, n_eval_episodes, actor_policy, device
     print(mean_reward, std_reward)
 
 
-def record_replay_video(env_id, actor_policy, out_directory, device):
+def record_replay_video(env_id, max_steps, actor_policy, out_directory, device):
     """
     Generate a replay video of the agent's performance in the evaluation environment.
 
@@ -84,6 +86,7 @@ def record_replay_video(env_id, actor_policy, out_directory, device):
 
     Args:
         env_id (str): The ID of the environment in which the agent will perform (e.g., "CartPole-v1").
+        max_steps (int): Maximum number of steps to run the agent in each replay video.
         actor_policy (Actor): The trained actor policy (a model) used to generate actions for the agent.
         out_directory (str): The directory where the output video will be saved.
         device (torch.device): The device (CPU or GPU) where the model and tensor computations will occur.
@@ -107,10 +110,10 @@ def record_replay_video(env_id, actor_policy, out_directory, device):
     # Capture the first frame
     img = env.render()
     images.append(img)
-    frames = 0
+    steps  = 0
 
     # Perform the agent's actions and record the frames
-    while (not done) and (not terminated) and frames <= 6000: #TODO: optimize frames
+    while (not done) and (not terminated) and steps <= max_steps:
 
         input_t = torch.Tensor(state).unsqueeze(0)
         input_t = input_t.to(device)
@@ -127,7 +130,7 @@ def record_replay_video(env_id, actor_policy, out_directory, device):
 
         # Update state for the next step
         state = new_state
-        frames = frames + 1
+        steps = steps + 1
 
     # Save the recorded frames as a video
     with imageio.get_writer(out_directory + "/evaluation_video.mp4", fps=60) as writer:

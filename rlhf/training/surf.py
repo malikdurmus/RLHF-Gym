@@ -37,7 +37,7 @@ def semi_supervised_labeling(preference_predictor, sampler, args, tda_active):
         if tda_active:
             try:
                 trajectory_pair = tda(
-                    trajectory_pair, min_length=args.min_crop_length, max_length=args.max_crop_length
+                    trajectory_pair, crop_size=args.crop
                 )
             except ValueError as e:
                 print(f"Skipping trajectory pair in human_feedback_pb due to error in TDA: {e}")
@@ -87,7 +87,7 @@ def surf(preference_optimizer, sampler, args, preference_buffer):
         ssl_preference_buffer = semi_supervised_labeling(preference_optimizer, sampler, args, tda_active=True)
 
         augmented_pb = preference_buffer.copy(
-            apply_tda=True, min_length=args.min_crop_length, max_length=args.max_crop_length
+            apply_tda=True, crop_size= args.crop
         )
 
         entropy_loss, ratio = preference_optimizer.train_reward_models_surf(
@@ -104,7 +104,7 @@ def surf(preference_optimizer, sampler, args, preference_buffer):
         )
     elif args.tda_active:  # Only TDA (no semi-supervised labeling)
         augmented_pb = preference_buffer.copy(
-            apply_tda=True, min_length=args.min_crop_length, max_length=args.max_crop_length
+            apply_tda=True, crop_size = args.crop
         )
         entropy_loss, ratio = preference_optimizer.train_reward_models(augmented_pb, args.pref_batch_size)
     else:

@@ -85,20 +85,20 @@ class Args:
     """length of trajectories"""
     uniform_query_size: int = 30
     """how much uniform feedback each iteration"""
-    ensemble_query_size: int = 15
+    ensemble_query_size: int = int (uniform_query_size/10) # In SURF Paper this is set to uniform / 10
     """how much ensemble-based sampling each iteration (needs to be less or equal to uniform [equal = inefficient uniform sampling])"""
 
     # SSL & TDA Arguments
     surf: bool = True
+    """Toggle SURF (Semi-Supervised Reward Learning with Data Augmentation)"""
     tda_active: bool = True
+    """Toggle Temporal Data Augmentation (TDA), which crops trajectory segments"""
     ssl: bool = True
-    min_crop_length: int = 45
-    max_crop_length: int = 55
+    """Enable semi-supervised learning (SSL) to use pseudo-labeling for reward learning"""
+    crop: int = 10
+    """Defines the intensity (crop size) for trajectory cropping in TDA. 
+       Determines min and max crop lengths dynamically based on trajectory length."""
     confidence_threshold: float = 0.99
+    """Minimum confidence required to accept pseudo-labels in SSL"""
     loss_weight_ssl: float = 1.0
-
-    # Evaluation arguments
-    eval_env_id: str = env_id
-    eval_max_steps: int = 10000
-    n_eval_episodes: int = 1000
-    eval_seed : int = 3
+    """Weighting factor for the SSL loss term in the reward learning objective"""
