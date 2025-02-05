@@ -123,10 +123,10 @@ class Args:
                             the remaining queries will be uniformly sampled
     """
 
-    synthetic_feedback: bool = False
+    synthetic_feedback: bool = True
     feedback_frequency: int = 10000
     trajectory_length: int = 90
-    total_queries: int = 1200
+    total_queries: int = 5000
     ensemble_ratio: int = 75
 
     """
