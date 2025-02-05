@@ -125,20 +125,21 @@ Use `sbatch` when you want to submit a job to Slurm in the background, especiall
 Use the batch script provided in project home directory (`synthetic_job_script.sh`) with the following content:
 
 ```bash
-#SBATCH --job-name= RLFH
-#SBATCH --comment= RLFH- training
+sbatch <<EOF
+#!/bin/bash
+#SBATCH --job-name=RLFH
+#SBATCH --comment=RLFH-training
 #SBATCH --mail-type=ALL
-#SBATCH --mail-user= malikdurmus2@gmail.com
-#SBATCH --chdir= /home/d/durmusy/Desktop/GIT/sep-groupb
-#SBATCH --output= /home/d/durmusy/Desktop/GIT/sep-groupb/slurm.%j.%N.out
+#SBATCH --mail-user=malikdurmus2@gmail.com
+#SBATCH --chdir=/home/d/durmusy/Desktop/GIT/sep-groupb
+#SBATCH --output=/home/d/durmusy/Desktop/GIT/sep-groupb/surf_runs/slurm.%j.%N.out
 #SBATCH --ntasks=1
 #SBATCH --partition=NvidiaAll
 
 module load python/3.8
-
 source venv/bin/activate
-
-python main.py --synthetic-feedback
+xvfb-run -a python -u main.py
+EOF
 
 ```
 
@@ -152,14 +153,23 @@ python main.py --synthetic-feedback
 + --chdir= /home/d/durmusy/Desktop/GIT/sep-groupb
 + --output= /home/d/durmusy/Desktop/GIT/sep-groupb/slurm.%j.%N.out
   
-Submit the job with:
+Submit the job with needed args:
 
 ```bash
 
-sbatch synthetic_job_script.sh
+synthetic_job_script.sh
 
 ```
+**Important**:
 
+Do not change the args in the args.py, rather keep the project in line with remote/main
+and give run the script above with different args:
+E.g.:
+
++ xvfb-run -a python -u main.py
++ xvfb-run -a python -u main.py --no-tda
++ xvfb-run -a python -u main.py --crop = 2
++ ...
 ## **3. Checking the Job Status**
 
 ### **View All Jobs**

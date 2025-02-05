@@ -118,11 +118,11 @@ def tda(trajectory_pair,crop_size):
     max_start_index = segment_length - crop_length
     start_index = np.random.randint(0, max_start_index + 1)  # max (H - H')
 
-    # Crop all fields of segment 1 and segment 1
+    # Crop all fields of segment 0 and segment 1
     cropped_segment0 = TrajectorySamples(
         states=segment0.states[start_index: start_index + crop_length],
         actions=segment0.actions[start_index: start_index + crop_length],
-        env_rewards=segment0.env_rewards,
+        env_rewards=segment0.env_rewards[start_index: start_index + crop_length],
         infos=segment0.infos[start_index: start_index + crop_length],
         full_states=segment0.full_states[start_index: start_index + crop_length]
     )
@@ -130,10 +130,9 @@ def tda(trajectory_pair,crop_size):
     cropped_segment1 = TrajectorySamples(
         states=segment1.states[start_index: start_index + crop_length],
         actions=segment1.actions[start_index: start_index + crop_length],
-        env_rewards=segment1, # TODO: why are these none if synthetic_feedback = False ? Is this needed, this restricts cropping for env_rewards (@Tobi)
+        env_rewards=segment1.env_rewards[start_index: start_index + crop_length],
         infos=segment1.infos[start_index: start_index + crop_length],
         full_states=segment1.full_states[start_index: start_index + crop_length]
     )
-
 
     return cropped_segment0, cropped_segment1
