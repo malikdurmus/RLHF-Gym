@@ -29,7 +29,7 @@ def semi_supervised_labeling(preference_predictor, sampler, args, tda_active):
 
     # Generate unlabeled trajectory pairs for pseudo-labeling
     unlabeled_trajectories_list = sampler.uniform_trajectory_pair_batch(
-        args.trajectory_length, args.feedback_frequency, labeled_batch_size, args.synthetic_feedback
+        labeled_batch_size, args.trajectory_length, args.feedback_frequency, args.synthetic_feedback
     )
 
     for trajectory_pair in unlabeled_trajectories_list:
@@ -90,7 +90,7 @@ def surf(preference_optimizer, sampler, args, preference_buffer):
             apply_tda=True, crop_size= args.crop
         )
 
-        entropy_loss, ratio = preference_optimizer.train_reward_models_surf(
+        entropy_loss, validation_loss, ratio, l2 = preference_optimizer.train_reward_models_surf(
             augmented_pb, ssl_preference_buffer, args.preference_batch_size, loss_weight_ssl=args.loss_weight_ssl
         )
     elif args.ssl:  # Semi-supervised labeling without TDA
@@ -98,7 +98,7 @@ def surf(preference_optimizer, sampler, args, preference_buffer):
 
         unchanged_preference_buffer = preference_buffer.copy(apply_tda=False)
 
-        entropy_loss, ratio = preference_optimizer.train_reward_models_surf(
+        entropy_loss, validation_loss, ratio, l2 = preference_optimizer.train_reward_models_surf(
             unchanged_preference_buffer, ssl_preference_buffer, args.preference_batch_size,
             loss_weight_ssl=args.loss_weight_ssl
         )
@@ -106,8 +106,8 @@ def surf(preference_optimizer, sampler, args, preference_buffer):
         augmented_pb = preference_buffer.copy(
             apply_tda=True, crop_size = args.crop
         )
-        entropy_loss, ratio = preference_optimizer.train_reward_models(augmented_pb, args.preference_batch_size)
+        entropy_loss, validation_loss, ratio, l2 = preference_optimizer.train_reward_models(augmented_pb, args.preference_batch_size)
     else:
         raise Exception("If SURF is True, either tda_active or ssl must be True")
 
-    return entropy_loss, ratio
+    return entropy_loss, validation_loss, ratio, l2

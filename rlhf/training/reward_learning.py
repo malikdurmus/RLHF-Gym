@@ -246,9 +246,6 @@ class PreferencePredictor:
         if trajectory0.states.size(0) != trajectory1.states.size(0):
             raise ValueError("Trajectory lengths do not match.")
 
-        trajectory0.to(self.device)
-        trajectory1.to(self.device)
-
         rewards0 = reward_model(trajectory0.actions, trajectory0.states)
         rewards1 = reward_model(trajectory1.actions, trajectory1.states)
 

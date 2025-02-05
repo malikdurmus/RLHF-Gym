@@ -102,7 +102,7 @@ class Args:
 
     """
     total_timesteps (int): total number of timesteps for the experiment
-    random_exploration_timesteps (int): number of timesteps for random exploration (phase 0.1)
+    random_exploration_timesteps (int): number of timesteps for random exploration
     reward_learning_starts (int): timestep at which reward learning starts
     """
 
@@ -123,14 +123,14 @@ class Args:
                             the remaining queries will be uniformly sampled
     """
 
-    synthetic_feedback: bool = True
+    synthetic_feedback: bool = False
     feedback_frequency: int = 10000
     trajectory_length: int = 90
-    total_queries: int = 5000
+    total_queries: int = 1200
     ensemble_ratio: int = 75
 
     """
-    k (int): number of nearest neighbors used to compute the intrinsic reward.
+    k (int): number of nearest neighbors used to compute the intrinsic reward
     """
     k: int = 5
 

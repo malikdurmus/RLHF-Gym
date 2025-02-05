@@ -15,7 +15,7 @@ def make_env(env_id, seed):
         env = gym.make(env_id, render_mode="rgb_array",
                        max_episode_steps=1000)
     else:
-        env = gym.make(env_id, render_mode="rgb_array", terminate_when_unhealthy=False,
+        env = gym.make(env_id, render_mode="rgb_array", terminate_when_unhealthy=True,
                        max_episode_steps=1000)
 
     env = gym.wrappers.RecordEpisodeStatistics(env)

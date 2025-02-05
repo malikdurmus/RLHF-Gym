@@ -12,14 +12,6 @@ class TrajectorySamples:
     infos: List[Dict[str, Any]]
     full_states: Any
 
-
-    def to(self, device: torch.device):
-        """Move all tensors to the given device."""
-        self.states = self.states.to(device)
-        self.actions = self.actions.to(device)
-        if self.env_rewards is not None:
-            self.env_rewards = self.env_rewards.to(device)
-
 class TrajectorySampler:
     def __init__(self, rb, device):
         self.rb = rb
@@ -51,8 +43,8 @@ class TrajectorySampler:
         end_index = start_index + traj_length
 
         # extract states, actions, env_rewards
-        states = torch.tensor(self.rb.observations[start_index:end_index])
-        actions = torch.tensor(self.rb.actions[start_index:end_index])
+        states = torch.tensor(self.rb.observations[start_index:end_index], device=self.device)
+        actions = torch.tensor(self.rb.actions[start_index:end_index], device=self.device)
         infos = self.rb.infos[start_index:end_index]
         full_states = self.rb.full_states[start_index:end_index]
 
@@ -71,8 +63,6 @@ class TrajectorySampler:
             infos=infos,
             full_states=full_states,
         )
-
-        trajectory.to(device=self.device)
 
         return trajectory
 
