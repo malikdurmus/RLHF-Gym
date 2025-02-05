@@ -37,7 +37,7 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() and args.enable_cuda else "cpu")
 
     # Initialize environment (environment.py)
-    envs = initialize_env(args.env_id, args.seed, args.capture_video, run_name)
+    envs = initialize_env(args.env_id, args.seed)
 
     # Initialize networks (networks.py)
     actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer = (
@@ -57,7 +57,7 @@ if __name__ == "__main__":
     sampler = TrajectorySampler(rb, device)
 
     # Initialize intrinsic reward calculator
-    int_rew_calc = IntrinsicRewardCalculator(k=5)
+    int_rew_calc = IntrinsicRewardCalculator(k=args.k)
 
     # Create app if human feedback is used
     if not args.synthetic_feedback:

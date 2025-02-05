@@ -1,6 +1,6 @@
 import gymnasium as gym
 
-def make_env(env_id, seed, idx, capture_video, run_name):
+def make_env(env_id, seed):
 
     def thunk():
         env = gym.make(env_id, render_mode="rgb_array",
@@ -13,9 +13,9 @@ def make_env(env_id, seed, idx, capture_video, run_name):
 
     return thunk
 
-def initialize_env(env_id, seed, capture_video, run_name):
+def initialize_env(env_id, seed):
     # Create environment
-    envs = gym.vector.SyncVectorEnv([make_env(env_id, seed, 0, capture_video, run_name)])
+    envs = gym.vector.SyncVectorEnv([make_env(env_id, seed)])
     # Check if env is continuous
     assert isinstance(envs.single_action_space, gym.spaces.Box), "only continuous action space is supported"
     return envs

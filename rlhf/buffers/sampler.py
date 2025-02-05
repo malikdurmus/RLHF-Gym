@@ -72,7 +72,7 @@ class TrajectorySampler:
 
 
     # batch of trajectories
-    def uniform_trajectory_batch(self, traj_length, time_window, batch_size, synthetic_feedback):
+    def uniform_trajectory_batch(self, batch_size, traj_length, time_window, synthetic_feedback):
         trajectories_batch = []
 
         for _ in range(batch_size):
@@ -84,7 +84,7 @@ class TrajectorySampler:
 
 
     # batch of trajectory pairs
-    def uniform_trajectory_pair_batch(self, traj_length, time_window, batch_size, synthetic_feedback):
+    def uniform_trajectory_pair_batch(self, batch_size, traj_length, time_window, synthetic_feedback):
         trajectories_batch = []
 
         for _ in range(batch_size):
@@ -94,12 +94,11 @@ class TrajectorySampler:
 
         return trajectories_batch
 
-    def ensemble_sampling(self,ensemble_size, uniform_size, traj_length, time_window, synthetic_feedback, preference_optimizer):
+    def ensemble_sampling(self, query_size, traj_length, time_window, synthetic_feedback, preference_optimizer):
         """
         Performs ensemble-based sampling by evaluating variance across an ensemble of predicted probabilities.
 
-        :param ensemble_size: Number of trajectory pairs to select with the highest variance.
-        :param uniform_size: Number of trajectory pairs to sample uniformly before selecting the top pairs.
+        :param query_size: Number of trajectory pairs to sample
         :param traj_length: Length of the trajectory in steps. Must be less than or equal to the current buffer size.
         :param time_window: Relevant range within the replay buffer to sample from. Defines the range between
                             the most recent and earlier entries. Must be greater than `traj_length`.
@@ -114,7 +113,7 @@ class TrajectorySampler:
 
         # Create empty list for variance: ((traj1, traj2), variance)
         variance_list = []
-        for _ in range(uniform_size):
+        for _ in range(query_size * 3):
             # sample one trajectory pair
             traj_pair = self.uniform_trajectory_pair(traj_length, time_window, synthetic_feedback)
 
@@ -129,4 +128,4 @@ class TrajectorySampler:
         # sort list in descending order
         sorted_variance = sorted(variance_list, key=lambda x: x[1], reverse=True)
 
-        return [element[0] for element in sorted_variance[:ensemble_size]]
+        return [element[0] for element in sorted_variance[:query_size]]

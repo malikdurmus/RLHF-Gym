@@ -52,20 +52,20 @@ class PreferencePredictor:
 
         # Average losses over all models
         avg_entropy_loss = sum(model_losses) / len(model_losses)
-        avg_overfit_loss = sum(val_losses) / len(val_losses)
+        avg_val_loss = sum(val_losses) / len(val_losses)
 
         # Calculate ratio
-        ratio = avg_overfit_loss / avg_entropy_loss
+        ratio = avg_val_loss / avg_entropy_loss
 
         # Adjust coefficient to keep validation loss between 1.1 and 1.5
         if ratio < 1.1:
-            self.l2 *= 1.1
+            self.l2 *= 1.02
             self._update_optimizers()
         elif ratio > 1.5:
-            self.l2 *= 0.9
+            self.l2 *= 0.98
             self._update_optimizers()
 
-        return avg_entropy_loss, ratio
+        return avg_entropy_loss, avg_val_loss, ratio, self.l2
 
     def compute_predicted_probabilities(self, trajectories):
         predictions = [

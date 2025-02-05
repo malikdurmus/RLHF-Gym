@@ -12,7 +12,6 @@ class PreferenceBuffer:
 
     def sample_with_validation_sample(self, batch_size, replace):
         indices = np.random.choice(len(self.buffer), size=min(batch_size, len(self.buffer)), replace=replace)
-        np.random.shuffle(indices)
 
         split_idx = int(len(indices) * (1 - 1/np.e))
 

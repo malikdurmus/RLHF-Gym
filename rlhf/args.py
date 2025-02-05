@@ -37,10 +37,6 @@ class Args:
     wandb_project_name: str = "RLHF Agent Training"
     wandb_entity: str = None
 
-
-    capture_video: bool = True  # TODO do we still need this? see environment.py @malik
-    """whether to capture videos of the agent performances (check out `videos` folder)"""
-
     ###-----------------------------
     ### Algorithm specific arguments
     ###-----------------------------
@@ -106,13 +102,13 @@ class Args:
 
     """
     total_timesteps (int): total number of timesteps for the experiment
-    pretraining_timesteps (int): number of timesteps for random exploration (phase 1)
-    unsupervised_timesteps (int): number of timesteps for unsupervised exploration (phase 2)
+    random_exploration_timesteps (int): number of timesteps for random exploration (phase 0.1)
+    reward_learning_starts (int): timestep at which reward learning starts
     """
 
     total_timesteps: int = int(1e6)
-    pretraining_timesteps: int = 2000
-    unsupervised_timesteps: int = 10000
+    random_exploration_timesteps: int = 2000
+    reward_learning_starts: int = 10000
 
     # -------------------------
     # Feedback query arguments
@@ -120,19 +116,23 @@ class Args:
 
     """   
     synthetic_feedback (bool): whether to use synthetic or human feedback
-    ensemble_sampling (bool): whether to use ensemble-based or uniform-based sampling
     feedback_frequency: how often feedback is requested 
-    trajectory_length (int): trajectory length during each feedback iteration
-    uniform_query_size (int): number of feedback samples requested uniformly during each feedback iteration
-    ensemble_query_size (int): number of ensemble-based feedback samples requested during each feedback iteration
+    trajectory_length (int): trajectory length of the segments to be compared
+    total_queries (int): number of total feedback over the whole training
+    ensemble_ratio (int): percentage (0-100) of feedback queries that should use ensemble-based sampling;
+                            the remaining queries will be uniformly sampled
     """
 
     synthetic_feedback: bool = True
-    ensemble_sampling: bool = True
     feedback_frequency: int = 10000
     trajectory_length: int = 90
-    uniform_query_size: int = 80
-    ensemble_query_size: int = 20
+    total_queries: int = 1250
+    ensemble_ratio: int = 75
+
+    """
+    k (int): number of nearest neighbors used to compute the intrinsic reward.
+    """
+    k: int = 5
 
     # TODO Remove? @malik
     batch_processing: bool = True  # TODO: remove later, not needed
