@@ -31,7 +31,7 @@
 }
 
 /* Explanation modal settings */
-.explanationModal, .finalVideoModal {
+.explanationModal {
   position: fixed;
   top: 40%;
   left: 50%;
@@ -209,7 +209,7 @@
 
 /* Video containers settings */
 .videoContainer {
-  width: 320px;
+  width: 240px;
   height: 240px;
   margin: 0 auto;
   overflow: hidden;
