@@ -2,8 +2,30 @@ import torch
 import torch.optim as optim
 
 class PreferencePredictor:
+    """
+    A class that predicts human preferences between trajectory pairs using an ensemble of reward models.
+
+    The class handles the training of multiple reward models, both for supervised and semi-supervised tasks,
+    using preference data. It also includes logic for adjusting model parameters based on validation losses.
+
+    Attributes:
+        reward_networks (list): A list of reward models (neural networks) that predict human preferences.
+        device: The device on which the models and data are loaded (e.g., "cuda" or "cpu").
+        l2 (float): L2 regularization coefficient for the optimizer.
+        reward_model_lr (float): Learning rate for the reward models.
+        optimizers (list): A list of Adam optimizers, one for each reward model in the ensemble.
+    """
 
     def __init__(self, reward_networks: list, reward_model_lr, device, l2):
+        """
+        Initializes the PreferencePredictor with the specified parameters.
+
+        Args:
+            reward_networks (list): List of reward models (neural networks) used for predicting preferences.
+            reward_model_lr (float): Learning rate for the reward models.
+            device: The device (e.g., "cuda" or "cpu") where models and data are loaded.
+            l2 (float): The L2 regularization coefficient used in the optimizer.
+        """
         self.reward_networks = reward_networks
         self.device = device
         self.l2 = l2
@@ -11,6 +33,12 @@ class PreferencePredictor:
         self.optimizers = self._initialize_optimizers()
 
     def _initialize_optimizers(self):
+        """
+        Initializes Adam optimizers for each reward network with the specified learning rate and L2 regularization.
+
+        Returns:
+            list: A list of Adam optimizers, one for each reward model.
+        """
         return [
             optim.Adam(
                 reward_network.parameters(),
@@ -21,19 +49,38 @@ class PreferencePredictor:
         ]
 
     def _update_optimizers(self):
+        """
+        Re-initializes the optimizers to apply the updated L2 regularization value.
+        """
         self.optimizers = self._initialize_optimizers()
 
     def train_reward_models(self, pb, batch_size):
+        """
+        Trains the reward models using the provided preference buffer and batch size.
+
+        For each reward model, it computes the loss, performs backpropagation,
+        and updates the model parameters using an optimizer. It also validates the models
+        using a validation subset of the preference buffer.
+
+        Args:
+            pb: The preference buffer containing human-labeled trajectory pairs.
+            batch_size (int): The batch size used for training.
+
+        Returns:
+            tuple: A tuple containing:
+                - avg_entropy_loss (float): The average entropy loss over all models.
+                - ratio (float): The ratio of the validation loss to the training loss.
+        """
         model_losses = []
         val_losses = []
-        # Preference buffer has fewer entries than the sample batch
+
+        # Preference buffer has fewer entries than the sample batch, adjust batch size if necessary
         if batch_size > len(pb):
             batch_size = len(pb)
 
         for reward_model, optimizer in zip(self.reward_networks, self.optimizers):
-            # Individual sampling #
-            sample = pb.sample(batch_size, replace=True)
-            val_sample = pb.sample(int(batch_size / 2.718), replace=False)
+            # Individual sampling for each model
+            sample, val_sample = pb.sample_with_validation_sample(batch_size, replace=True)
 
             # Compute loss for this model
             model_loss = self._compute_loss_batch(reward_model, sample)
@@ -50,16 +97,14 @@ class PreferencePredictor:
                 val_loss = self._compute_loss_batch(reward_model, val_sample)
                 val_losses.append(val_loss.item())
 
-
         # Average losses over all models
         avg_entropy_loss = sum(model_losses) / len(model_losses)
         avg_overfit_loss = sum(val_losses) / len(val_losses)
 
-        # Calculate ratio
+        # Calculate ratio of validation loss to training loss
         ratio = avg_overfit_loss / avg_entropy_loss
 
-        # Adjust coefficient to keep validation loss between 1.1 and 1.5
-        # TODO need to adjust how much the coefficient is changed (maybe use some function including ratio and target)
+        # Adjust L2 regularization based on the ratio to avoid overfitting: Keep validation loss between 1.1 and 1.5
         if ratio < 1.1:
             self.l2 *= 1.1
             self._update_optimizers()
@@ -69,11 +114,23 @@ class PreferencePredictor:
 
         return avg_entropy_loss, ratio
 
-    def train_reward_models_surf(self, augmented_preference_buffer, ssl_preference_buffer, batch_size):
+    def train_reward_models_surf(self, augmented_preference_buffer, ssl_preference_buffer, batch_size, loss_weight_ssl):
         """
-        Train reward models using two buffers:
-        - primary_buffer: Sampled.
-        - augmented_buffer: Used directly without sampling.
+        Trains the reward models using both augmented human-labeled data and pseudo-labeled data from SSL.
+
+        This function combines the human-labeled data in the augmented preference buffer and the pseudo-labeled
+        data in the SSL buffer, applying the given weight to the pseudo-labeled loss.
+
+        Args:
+            augmented_preference_buffer: The preference buffer with human-labeled trajectory pairs, possibly augmented.
+            ssl_preference_buffer: The preference buffer containing pseudo-labeled trajectory pairs.
+            batch_size (int): The batch size used for training.
+            loss_weight_ssl (float): The weight applied to the loss from pseudo-labeled data.
+
+        Returns:
+            tuple: A tuple containing:
+                - entropy_loss (float): The average entropy loss over all models.
+                - ratio (float): The ratio of the validation loss to the training loss.
         """
         model_losses = []
         val_losses = []
@@ -82,68 +139,84 @@ class PreferencePredictor:
         if batch_size is None:
             batch_size = 32  # Default batch size
 
-        # Ensure batch_size does not exceed the primary buffer length
+        loss_w_ssl = loss_weight_ssl
+
+        # Ensure batch size does not exceed the size of the augmented preference buffer
         if batch_size > len(augmented_preference_buffer):
             batch_size = len(augmented_preference_buffer)
 
         for reward_model, optimizer in zip(self.reward_networks, self.optimizers):
-            # Sample from the primary buffer
-            primary_sample = augmented_preference_buffer.sample(batch_size, replace=True)
-            primary_val_sample = augmented_preference_buffer.sample(int(batch_size / 2.718), replace=False)
+            # Sample human-labeled and validation samples from the augmented preference buffer
+            human_labeled_sample, human_labeled_val_sample = (augmented_preference_buffer.
+                                                              sample_with_validation_sample(batch_size, replace=True))
 
-            # Use the ssl buffer directly (no sampling)
-            ssl_sample = ssl_preference_buffer
-            ssl_val_sample = ssl_preference_buffer
 
-            # Combine the samples
-            combined_sample = ssl_sample.combine_samples(primary_sample)
-            combined_val_sample = ssl_val_sample.combine_samples(primary_val_sample)
+            # Use the SSL buffer directly for pseudo-labeled data
+            pseudo_labeled_sample = ssl_preference_buffer.get_buffer()
 
-            # Compute loss for this model
-            model_loss = self._compute_loss_batch(reward_model, combined_sample)
+            # Compute loss for human-labeled and pseudo-labeled data
+            human_label_loss = self._compute_loss_batch(reward_model, human_labeled_sample)
+            pseudo_label_loss = self._compute_loss_batch(reward_model, pseudo_labeled_sample)
+
+            # Total loss is the sum of human-labeled loss and weighted pseudo-labeled loss
+            total_loss = human_label_loss + pseudo_label_loss * loss_w_ssl
 
             # Training for this model
             optimizer.zero_grad()
-            model_loss.backward()
+            total_loss.backward()
             optimizer.step()
 
-            model_losses.append(model_loss.item())
+            model_losses.append(total_loss.item())
 
-            # Validation
+            # Validation loss to check for overfitting
             with torch.no_grad():
-                val_loss = self._compute_loss_batch(reward_model, combined_val_sample)
+                val_loss = self._compute_loss_batch(reward_model, human_labeled_val_sample)
                 val_losses.append(val_loss.item())
 
-        # Return some values (e.g., entropy_loss and ratio)
+        # Return average loss and ratio of validation to training loss
         entropy_loss = sum(model_losses) / len(model_losses)
         ratio = sum(val_losses) / len(val_losses)
         return entropy_loss, ratio
 
     def compute_predicted_probabilities(self, trajectories):
+        """
+        Computes predicted probabilities for human preference between two trajectories from each reward model.
+
+        Args:
+            trajectories (tuple): A tuple containing two trajectory objects (trajectory0, trajectory1).
+
+        Returns:
+            list: A list of predicted probabilities from each reward model in the ensemble.
+        """
         predictions = [
             self.compute_predicted_probability_batch(reward_model, trajectories)
             for reward_model in self.reward_networks
         ]
         return predictions
 
-
-
-
-    def _compute_loss_batch(self,reward_model, sample):
+    def _compute_loss_batch(self, reward_model, sample):
         """
-        Compute the cumulative entropy loss for the given sample.
+        Computes the cumulative entropy loss for the given sample from the preference buffer.
+
+        Args:
+            reward_model: The reward model used to compute preferences.
+            sample: A batch of trajectory pairs and their corresponding human feedback labels.
+
+        Returns:
+            torch.Tensor: The cumulative entropy loss for the batch.
         """
         entropy_loss = torch.tensor(0.0, requires_grad=True)
 
         for trajectory_pair, human_feedback_label in sample:
             predicted_prob = self.compute_predicted_probability_batch(reward_model, trajectory_pair)
 
-            # label to tensor
+            # Convert label to tensor
             label = torch.tensor(human_feedback_label, dtype=torch.float, device=self.device)
 
-            # clamp to to avoid log(0)
+            # Clamp predicted probability to avoid log(0)
             predicted_prob = torch.clamp(predicted_prob, min=1e-7, max=1 - 1e-7)
 
+            # Compute binary cross-entropy loss
             loss = -label * torch.log(predicted_prob) - (1 - label) * torch.log(1 - predicted_prob)
             entropy_loss = entropy_loss + loss
 
@@ -151,10 +224,18 @@ class PreferencePredictor:
 
     def compute_predicted_probability_batch(self, reward_model, trajectories):
         """
-        Compute the predicted probability of human preference for trajectory0 over trajectory1.
+        Computes the predicted probability of human preference for trajectory0 over trajectory1.
+
+        Args:
+            reward_model: The reward model used to compute preferences.
+            trajectories (tuple): A tuple containing two trajectory objects (trajectory0, trajectory1).
+
+        Returns:
+            torch.Tensor: The predicted probability of human preference for trajectory0 over trajectory1.
         """
         trajectory0, trajectory1 = trajectories
 
+        # Ensure trajectories have the same length
         if trajectory0.states.size(0) != trajectory1.states.size(0):
             raise ValueError("Trajectory lengths do not match.")
 
@@ -167,99 +248,11 @@ class PreferencePredictor:
         total_reward0 = rewards0.sum()
         total_reward1 = rewards1.sum()
 
-        # softmax
+        # Apply softmax to compute probability
         max_reward = torch.max(total_reward0, total_reward1)
 
         predicted_prob = torch.exp(total_reward0 - max_reward) / ( # estimated probability, that the human will prefer action 0 over 1
-                torch.exp(total_reward0 - max_reward) + torch.exp(total_reward1 - max_reward)
+            torch.exp(total_reward0 - max_reward) + torch.exp(total_reward1 - max_reward)
         )
+
         return predicted_prob
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Deprecated Methods, will remove those
-# for each data in sample we will use the predict function. after that we will use the preference to calculate entropy loss
-    def _deprecated_predicted_probability(self,reward_model, trajectories):
-        """
-        :param trajectories: A tuple consisting of two trajectories, where each trajectory is an iterable of tuples. Each tuple represents (action, state) pairs from the trajectory.
-        :return: A scalar value representing the predicted probability that the human will choose the first trajectory over the second. Returns None if the trajectories have mismatched lengths.
-        """
-        # trajectories is a tuple that consist of two trajectories (torch tensors)
-        # Here I consider a trajectory to be an iterable type of tuples like: [(action1,state1),(action3,state2), (action0,state3) ...]
-        # We can change this later on
-        trajectory0, trajectory1 = trajectories[0], trajectories[1]
-
-        states0, actions0 = trajectory0.states, trajectory0.actions
-        states1, actions1 = trajectory1.states, trajectory1.actions
-
-        if len(states0) != len(states1) or len(actions0) != len(actions1):
-            raise ValueError("Trajectory lengths do not match")
-
-        total_prob0 = 0
-        total_prob1 = 0
-        for state, action in zip(states0, actions0):
-            action = action.to(self.device)
-            state = state.to(self.device)
-            prob_for_action = reward_model(action=action,
-                                                  observation=state) # estimated probability, that the human will prefer action 0
-            total_prob0 += prob_for_action
-
-        for state, action in zip(states1, actions1):
-            action = action.to(self.device)
-            state = state.to(self.device)
-            prob_for_action = reward_model(action=action,
-                                                  observation=state)  # estimated probability, that the human will prefer action 1
-            total_prob1 += prob_for_action # Tensor of shape {Tensor : {1,1}} , tested
-
-        max_prob = torch.max(total_prob0, total_prob1)
-        predicted_prob = torch.exp(total_prob0 - max_prob) / (
-                torch.exp(total_prob0 - max_prob) + torch.exp(total_prob1 - max_prob)
-        )
-        return predicted_prob
-
-    def _deprecated_compute_loss(self, reward_model,sample):
-        """
-        :param sample: A list of lists where each inner list contains:
-               - A tuple (trajectory1, trajectory2) (both trajectories)
-               - An integer representing human feedback (0 or 1)
-        :return: The cumulative entropy loss computed across all trajectory pairs in the sample.
-        """
-        entropy_loss = torch.tensor(0.0, requires_grad=True)
-        for trajectory_pair, human_feedback_label in sample:
-            predicted_prob = self._deprecated_predicted_probability(reward_model,trajectory_pair)
-            # human feedback label to tensor conversion for processing
-            label_1 = torch.tensor(human_feedback_label, dtype=torch.float)
-            label_1 = label_1.to(self.device)
-
-            predicted_prob = torch.clamp(predicted_prob, min=1e-7, max=1 - 1e-7)
-
-            # calculate loss
-            loss_1 = label_1 * torch.log(predicted_prob)
-            loss_2 = (1 - label_1) * torch.log(1 - predicted_prob)
-
-            entropy_loss = entropy_loss + -(loss_1 + loss_2 )
-        return entropy_loss #loss for whole batch
-

@@ -5,13 +5,14 @@ readme = "README.md"
 authors = [
     "Malik Durmus <malikdurmus2@gmail.com>",
     "Tobias Huber",
-    "Aleksander Mijatovic",
+    "Aleksandar Mijatovic",
     "Thang Long Nguyen",
     "Martin Plank"
 
 ]
 description = "Reinforcement Learning from Human Feedback Framework"
 packages = [
+    { include = "app"},
     { include = "rlhf"}
 ]
 

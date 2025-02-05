@@ -25,3 +25,6 @@ class IntrinsicRewardCalculator:
         reward = np.log(k_distance + 1e-6)
 
         return reward
+
+    def __len__(self):
+        return len(self.states)

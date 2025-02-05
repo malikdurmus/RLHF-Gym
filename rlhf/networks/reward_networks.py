@@ -11,11 +11,16 @@ class EstimatedRewardNetwork(nn.Module):
     #Neural network for reward estimation
     def __init__(self, env):
         """
-        :param env: Instance of MujocoEnv (strict), which provides the observation_space and action_space properties. These describe the dimensions of the environment's observations and actions. This parameter is used to define the input size for the first fully connected layer.
+        :param env: Instance of MujocoEnv (strict), which provides the observation_space and action_space properties.
+                    These describe the dimensions of the environment's observations and actions. This parameter is
+                    used to define the input size for the first fully connected layer.
         """
         super().__init__()
         self.fc1 = nn.Linear( np.array(env.observation_space.shape).prod() + np.prod(env.action_space.shape),
-                    256) #TODO: observation_space and action space shape differ greatly among envs. we could define a function to overcome overfitting/underfitting after testing on training data but vs on validation or test data
+                    256)
+        #TODO: observation_space and action space shape differ greatly among envs.
+        # we could define a function to overcome overfitting/underfitting after testing
+        # on training data but vs on validation or test data (Tobi: Wir testen bereits auf Overfitting @malik)
         self.fc2 = nn.Linear(256, 256)
         self.fc3 = nn.Linear(256, 1)
 
