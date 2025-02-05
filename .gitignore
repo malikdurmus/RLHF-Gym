@@ -1,6 +1,8 @@
 /poetry.lock
 /runs
 /videos
+/evaluation
+/models
 /wandb
 /.idea
 /rlhf-frontend/frontend-react/node_modules

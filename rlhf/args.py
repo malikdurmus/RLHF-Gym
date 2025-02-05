@@ -107,8 +107,8 @@ class Args:
     """
 
     total_timesteps: int = int(1e6)
-    random_exploration_timesteps: int = 2000
-    reward_learning_starts: int = 10000
+    random_exploration_timesteps: int = 1000
+    reward_learning_starts: int = 2000
 
     # -------------------------
     # Feedback query arguments
@@ -126,7 +126,7 @@ class Args:
     synthetic_feedback: bool = True
     feedback_frequency: int = 10000
     trajectory_length: int = 90
-    total_queries: int = 1250
+    total_queries: int = 5000
     ensemble_ratio: int = 75
 
     """

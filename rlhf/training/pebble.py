@@ -43,13 +43,13 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
                 trajectory_pairs = []
                 # uniform-sampling
                 if num_uniform > 0:
-                    trajectory_pairs.extend(sampler.uniform_trajectory_pair_batch(query_size, args.trajectory_length,
+                    trajectory_pairs.extend(sampler.uniform_trajectory_pair_batch(num_uniform, args.trajectory_length,
                                                                              args.feedback_frequency,
                                                                              args.synthetic_feedback)
                                             )
                 # ensemble-sampling
                 if num_ensemble > 0:
-                    trajectory_pairs.extend(sampler.ensemble_sampling(query_size, args.trajectory_length,
+                    trajectory_pairs.extend(sampler.ensemble_sampling(num_ensemble, args.trajectory_length,
                                                                  args.feedback_frequency, args.synthetic_feedback,
                                                                  preference_optimizer)
                                             )
