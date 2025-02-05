@@ -20,7 +20,7 @@ def evaluate_agent(eval_env_id, max_steps, n_eval_episodes, actor_policy, device
     across all episodes.
 
     Args:
-        eval_env_id (str): The ID of the environment to evaluate the agent on (e.g., "CartPole-v1").
+        eval_env_id (str): The ID of the environment to evaluate the agent on (e.g., "Hopper-v5").
         max_steps (int): Maximum number of steps to run the agent in each evaluation episode.
         n_eval_episodes (int): Number of evaluation episodes to run the agent.
         actor_policy (Actor): The trained actor policy (a model) used to generate actions for the agent.
@@ -74,7 +74,7 @@ def evaluate_agent(eval_env_id, max_steps, n_eval_episodes, actor_policy, device
     std_reward = np.std(episode_rewards)
 
     # Print the mean and standard deviation of the rewards
-    print(mean_reward, std_reward)
+    print("Mean reward: ", mean_reward, "Standard deviation of rewards: " , std_reward)
 
 
 def record_replay_video(env_id, max_steps, actor_policy, out_directory, device):

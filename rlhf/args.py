@@ -31,7 +31,7 @@ class Args:
     wandb_entity (str): WandB entity name (None = default user account)   
     """
 
-    torch_deterministic: bool = True
+    torch_deterministic: bool = False
     cuda: bool = True
     wandb_track: bool = False
     wandb_project_name: str = "RLHF Agent Training"

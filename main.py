@@ -25,6 +25,7 @@ if __name__ == "__main__":
     os.makedirs(os.path.join(f"evaluation/{run_name}"), exist_ok=True)
     os.makedirs(os.path.join(f"models/{run_name}"), exist_ok=True)
 
+    print("RUN NAME: ", run_name) 
 
     # Initialize writer
     writer = SummaryWriter(f"runs/{run_name}")
