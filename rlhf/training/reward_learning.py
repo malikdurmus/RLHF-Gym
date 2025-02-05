@@ -54,6 +54,14 @@ class PreferencePredictor:
         """
         self.optimizers = self._initialize_optimizers()
 
+    def _adjust_l2(self, ratio):
+        if ratio < 1.1:
+            self.l2 *= 1.02
+            self._update_optimizers()
+        elif ratio > 1.5:
+            self.l2 *= 0.98
+            self._update_optimizers()
+
     def train_reward_models(self, pb, batch_size):
         """
         Trains the reward models using the provided preference buffer and batch size.
@@ -99,20 +107,15 @@ class PreferencePredictor:
 
         # Average losses over all models
         avg_entropy_loss = sum(model_losses) / len(model_losses)
-        avg_overfit_loss = sum(val_losses) / len(val_losses)
+        avg_val_loss = sum(val_losses) / len(val_losses)
 
         # Calculate ratio of validation loss to training loss
-        ratio = avg_overfit_loss / avg_entropy_loss
+        ratio = avg_val_loss / avg_entropy_loss
 
         # Adjust L2 regularization based on the ratio to avoid overfitting: Keep validation loss between 1.1 and 1.5
-        if ratio < 1.1:
-            self.l2 *= 1.1
-            self._update_optimizers()
-        elif ratio > 1.5:
-            self.l2 *= 0.9
-            self._update_optimizers()
+        self._adjust_l2(ratio)
 
-        return avg_entropy_loss, ratio
+        return avg_entropy_loss, avg_val_loss, ratio, self.l2
 
     def train_reward_models_surf(self, augmented_preference_buffer, ssl_preference_buffer, batch_size, loss_weight_ssl):
         """
@@ -175,8 +178,12 @@ class PreferencePredictor:
 
         # Return average loss and ratio of validation to training loss
         entropy_loss = sum(model_losses) / len(model_losses)
+        validation_loss = sum(val_losses) / len(val_losses)
         ratio = sum(val_losses) / len(val_losses)
-        return entropy_loss, ratio
+
+        self._adjust_l2(ratio)
+
+        return entropy_loss, validation_loss, ratio, self.l2
 
     def compute_predicted_probabilities(self, trajectories):
         """

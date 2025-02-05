@@ -24,8 +24,8 @@ class Args:
     # -------------------------
 
     """
-    is_torch_deterministic (str): whether to ensure deterministic behavior by setting `torch.backends.cudnn.deterministic=False` 
-    enable_cuda (bool): whether to enable CUDA support by default
+    torch_deterministic (str): whether to ensure deterministic behavior by setting `torch.backends.cudnn.deterministic=False` 
+    cuda (bool): whether to enable CUDA support by default
     wandb_track (bool): whether to enable WandB tracking by default
     wandb_project_name (str): WandB project name 
     wandb_entity (str): WandB entity name (None = default user account)   
@@ -102,13 +102,13 @@ class Args:
 
     """
     total_timesteps (int): total number of timesteps for the experiment
-    pretraining_timesteps (int): number of timesteps for random exploration (phase 1)
-    unsupervised_timesteps (int): number of timesteps for unsupervised exploration (phase 2)
+    random_exploration_timesteps (int): number of timesteps for random exploration (phase 0.1)
+    reward_learning_starts (int): timestep at which reward learning starts
     """
 
     total_timesteps: int = int(1e6)
-    pretraining_timesteps: int = 2000
-    unsupervised_timesteps: int = 10000
+    random_exploration_timesteps: int = 2000
+    reward_learning_starts: int = 10000
 
     # -------------------------
     # Feedback query arguments
@@ -116,22 +116,23 @@ class Args:
 
     """   
     synthetic_feedback (bool): whether to use synthetic or human feedback
-    ensemble_sampling (bool): whether to use ensemble-based or uniform-based sampling
     feedback_frequency: how often feedback is requested 
-    trajectory_length (int): trajectory length during each feedback iteration
-    uniform_query_size (int): number of feedback samples requested uniformly during each feedback iteration
-    ensemble_query_size (int): number of ensemble-based feedback samples requested during each feedback iteration
+    trajectory_length (int): trajectory length of the segments to be compared
+    total_queries (int): number of total feedback over the whole training
+    ensemble_ratio (int): percentage (0-100) of feedback queries that should use ensemble-based sampling;
+                            the remaining queries will be uniformly sampled
     """
 
     synthetic_feedback: bool = True
-    ensemble_sampling: bool = True
     feedback_frequency: int = 10000
     trajectory_length: int = 90
-    uniform_query_size: int = 100
-    ensemble_query_size: int = int(uniform_query_size/10) # In SURF Paper this is set to uniform / 10
+    total_queries: int = 5000
+    ensemble_ratio: int = 75
 
-    # SSL & TDA Arguments
-    # --------------------
+    """
+    k (int): number of nearest neighbors used to compute the intrinsic reward.
+    """
+    k: int = 5
 
     """
     surf (bool): Toggle SURF (Semi-Supervised Reward Learning with Data Augmentation)

@@ -60,7 +60,7 @@ if __name__ == "__main__":
     sampler = TrajectorySampler(rb, device)
 
     # Initialize intrinsic reward calculator
-    int_rew_calc = IntrinsicRewardCalculator(k=5)
+    int_rew_calc = IntrinsicRewardCalculator(k=args.k)
 
     # Create app if human feedback is used
     if not args.synthetic_feedback:
