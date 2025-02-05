@@ -28,7 +28,7 @@ async function fetchRunName() {
   try {
     const response = await fetch('/get_run_name'); // Get request to the corresponding endpoint
     const data = await response.json(); // Parse the JSON response
-    runName = data.global_run_name;
+    runName = data.run_name;
     console.log("Run name fetched:", runName);
   } catch (error) {
     console.error('Error fetching run_name:', error);
@@ -152,5 +152,4 @@ async function displayLoader() {
 }
 
 
-
-
+// TODO Fix loaders (Martin)

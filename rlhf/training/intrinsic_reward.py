@@ -19,9 +19,12 @@ class IntrinsicRewardCalculator:
         k_distances = np.sort(distances)[:self.k]
 
         # Get the k smallest distance
-        k_distance = k_distances[-1] if len(k_distances) == self.k else k_distances[-1]
+        k_distance = k_distances[-1]
 
         # Intrinsic reward
         reward = np.log(k_distance + 1e-6)
 
         return reward
+
+    def __len__(self):
+        return len(self.states)
