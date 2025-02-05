@@ -6,7 +6,7 @@ def init_routes(app, socketio, run_name, preference_buffer, video_queue, stored_
     @app.route("/", methods=["GET"])
     # Serve the HTML landing page
     def serve_landing_page():
-        return send_from_directory(TEMPLATES_DIR, "index2.html")
+        return send_from_directory("templates", "index2.html")
 
     # Fetch available video pairs from the video queue
     @app.route('/get_video_pairs', methods=["GET"])
@@ -20,13 +20,13 @@ def init_routes(app, socketio, run_name, preference_buffer, video_queue, stored_
     # Return the current run name
     @app.route("/get_run_name", methods=["GET"])
     def get_run_name():
-        return jsonify({'global_run_name': run_name})
+        return jsonify({'run_name': run_name})
 
     # Serve the videos files from the specified run directory
     @app.route('/videos/<flask_run_name>/<filename>')
     def serve_video(flask_run_name, filename):
         video_dir = os.path.join("../videos", flask_run_name)
-        return send_from_directory(video_dir, filename)
+        return send_from_directory(video_dir, filename, mimetype='video/mp4')
 
     # Handle preferences from the user
     @app.route('/submit_preferences', methods=['POST'])
