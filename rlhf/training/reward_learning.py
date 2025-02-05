@@ -179,7 +179,7 @@ class PreferencePredictor:
         # Return average loss and ratio of validation to training loss
         entropy_loss = sum(model_losses) / len(model_losses)
         validation_loss = sum(val_losses) / len(val_losses)
-        ratio = sum(val_losses) / len(val_losses)
+        ratio = validation_loss / entropy_loss
 
         self._adjust_l2(ratio)
 
