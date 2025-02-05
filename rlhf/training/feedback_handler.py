@@ -16,6 +16,7 @@ def handle_feedback(args, global_step, video_queue, stored_pairs, preference_buf
             notify()
 
         print("Waiting for user feedback...")
+        print("(http://localhost:5000)")
         feedback_event.wait()  # Wait until feedback is populated
         feedback_event.clear()  # Reset the event
         stored_pairs.clear()

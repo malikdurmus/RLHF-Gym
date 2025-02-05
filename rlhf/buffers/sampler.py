@@ -45,21 +45,15 @@ class TrajectorySampler:
         # extract states, actions, env_rewards
         states = torch.tensor(self.rb.observations[start_index:end_index], device=self.device)
         actions = torch.tensor(self.rb.actions[start_index:end_index], device=self.device)
+        env_rewards = torch.tensor(self.rb.rewards[start_index:end_index], device=self.device)
         infos = self.rb.infos[start_index:end_index]
         full_states = self.rb.full_states[start_index:end_index]
-
-
-        if synthetic_feedback:
-            env_rewards = torch.tensor(self.rb.rewards[start_index:end_index], device=self.device)
-            env_rewards = env_rewards if env_rewards.ndim > 1 else env_rewards.unsqueeze(-1)
-        else:
-            env_rewards = None
 
         # name tensors for better access
         trajectory = TrajectorySamples(
             states=states if states.ndim > 1 else states.unsqueeze(-1),
             actions=actions if actions.ndim > 1 else actions.unsqueeze(-1),
-            env_rewards=env_rewards,
+            env_rewards=env_rewards if env_rewards.ndim > 1 else env_rewards.unsqueeze(-1),
             infos=infos,
             full_states=full_states,
         )
