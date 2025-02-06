@@ -75,12 +75,15 @@ class PreferencePredictor:
             batch_size (int): The batch size used for training.
 
         Returns:
-            tuple: A tuple containing:
-                - avg_entropy_loss (float): The average entropy loss over all models.
-                - ratio (float): The ratio of the validation loss to the training loss.
+        tuple: A tuple containing:
+            - avg_post_update_loss (float): The average training loss after update.
+            - avg_val_loss (float): The average validation loss.
+            - ratio (float): The ratio of the validation loss to the training loss.
+            - l2 (float): The current L2 regularization coefficient.
         """
-        model_losses = []
         val_losses = []
+        post_update_losses = []
+
 
         # Preference buffer has fewer entries than the sample batch, adjust batch size if necessary
         if batch_size > len(pb):
@@ -98,24 +101,27 @@ class PreferencePredictor:
             model_loss.backward()
             optimizer.step()
 
-            model_losses.append(model_loss.item())
-
             # Use validation sample with trained reward model (to test for overfitting)
+            # Check for Overfitting, Underfitting, Generalization
             with torch.no_grad():
+                # Recompute the training loss on the same human-labeled sample (post-update)
+                post_update_loss = self._compute_loss_batch(reward_model, sample)
+                post_update_losses.append(post_update_loss.item())
+
+                # Compute validation loss
                 val_loss = self._compute_loss_batch(reward_model, val_sample)
                 val_losses.append(val_loss.item())
 
-        # Average losses over all models
-        avg_entropy_loss = sum(model_losses) / len(model_losses)
+        # Return average loss and ratio of validation to training loss
         avg_val_loss = sum(val_losses) / len(val_losses)
+        avg_post_update_loss = sum(post_update_losses) / len(post_update_losses)
 
-        # Calculate ratio of validation loss to training loss
-        ratio = avg_val_loss / avg_entropy_loss
+        ratio = avg_val_loss / avg_post_update_loss
 
-        # Adjust L2 regularization based on the ratio to avoid overfitting: Keep validation loss between 1.1 and 1.5
+        # Adjust L2 regularization based on the ratio: Keep validation loss between 1.1 and 1.5
         self._adjust_l2(ratio)
 
-        return avg_entropy_loss, avg_val_loss, ratio, self.l2
+        return avg_post_update_loss, avg_val_loss, ratio, self.l2
 
     def train_reward_models_surf(self, augmented_preference_buffer, ssl_preference_buffer, batch_size, loss_weight_ssl):
         """
@@ -131,12 +137,15 @@ class PreferencePredictor:
             loss_weight_ssl (float): The weight applied to the loss from pseudo-labeled data.
 
         Returns:
-            tuple: A tuple containing:
-                - entropy_loss (float): The average entropy loss over all models.
-                - ratio (float): The ratio of the validation loss to the training loss.
+        tuple: A tuple containing:
+            - avg_post_update_loss (float): The average training loss after update.
+            - avg_val_loss (float): The average validation loss.
+            - ratio (float): The ratio of the validation loss to the training loss.
+            - l2 (float): The current L2 regularization coefficient.
         """
         model_losses = []
         val_losses = []
+        post_update_losses = []
 
         # If batch_size is not provided, set it to a default value
         if batch_size is None:
@@ -169,21 +178,26 @@ class PreferencePredictor:
             total_loss.backward()
             optimizer.step()
 
-            model_losses.append(total_loss.item())
-
-            # Validation loss to check for overfitting
+            # Check for Overfitting, Underfitting, Generalization
             with torch.no_grad():
+                # Recompute the training loss on the same human-labeled sample (post-update)
+                post_update_loss = self._compute_loss_batch(reward_model, human_labeled_sample)
+                post_update_losses.append(post_update_loss.item())
+
+                # Compute validation loss
                 val_loss = self._compute_loss_batch(reward_model, human_labeled_val_sample)
                 val_losses.append(val_loss.item())
 
         # Return average loss and ratio of validation to training loss
-        entropy_loss = sum(model_losses) / len(model_losses)
-        validation_loss = sum(val_losses) / len(val_losses)
-        ratio = validation_loss / entropy_loss
+        avg_val_loss = sum(val_losses) / len(val_losses)
+        avg_post_update_loss = sum(post_update_losses) / len(post_update_losses)
 
+        ratio = avg_val_loss / avg_post_update_loss
+
+        # Adjust L2 regularization based on the ratio: Keep validation loss between 1.1 and 1.5
         self._adjust_l2(ratio)
 
-        return entropy_loss, validation_loss, ratio, self.l2
+        return avg_post_update_loss, avg_val_loss, ratio, self.l2
 
     def compute_predicted_probabilities(self, trajectories):
         """
