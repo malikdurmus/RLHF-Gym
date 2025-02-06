@@ -1,51 +1,123 @@
-## Initializing networks & buffers
-For our algorithm we need different kinds of networks. Firstly, the ones specified in SAC (CleanRL),
-And additional ones that make up PEBBLE.
+## Initializing Networks & Buffers  
 
-+ SAC: actor network, q1 and q2 (two critic networks)
-+ PEBBLE: reward networks(multiple or one, depending on if we do uniform or ensemble based sampling)
+To implement our algorithm, we require multiple neural networks and buffer structures. These components come from **SAC (Soft Actor-Critic)**, **PEBBLE (Preference-Based Learning)**, and **SURF (Semi-Supervised Reward Learning with Data Augmentation)**.  
 
-A variety of buffers to handle trajectories (state/action)
-+ ReplayBuffer (stores the normal state/action next state... given by the environment after taking a step)
-Form: (obs, real_next_obs, actions, rewards, true_rewards, terminations, infos)
-+ PreferenceBuffer (stores a trajectory pair and a preference)
-  Form: [(traj1,traj2), preference]
+---
 
+### **Networks**  
 
-## Algorithm logic
-The PEBBLE algorithm consists of two main parts that make up the training: 
-1. Unsupervised Exploration (Random Exploration)
-2. Reward model training with Relabeling
+#### **SAC (Soft Actor-Critic)**
+The SAC framework includes the following networks:  
+- **Actor Network:** The policy network that outputs actions.  
+- **Q-Networks:** Two critic networks (**q1** and **q2**) used for value estimation.  
 
-In our framework, before we jump into the Unsupervised Exploration, we first fill our ReplayBuffer with random
-state/actions. This means, in our very first phase of our algorithm, we have:
-+ the argument: pretrain_timesteps, which specifies, how many state/actions we save into our ReplayBuffer
+#### **PEBBLE / SURF**  
+These frameworks introduce additional **reward networks** to model the reward function based on human or synthetic preferences:  
+- **Reward Networks:**  
+  - Can be either a **single network** or an **ensemble of multiple networks**, depending on whether **uniform sampling** or **ensemble-based sampling** is used.  
+  - **PEBBLE** trains the reward networks using **human preference feedback** or **synthetic labels**.  
+  - **SURF** enhances PEBBLE with **semi-supervised learning (SSL) and Temporal Data Augmentation (TDA)** to improve feedback efficiency.
 
-No training is happening yet. After the pretrain_timesteps, we start the second phase, which is the Unsupervised Phase.
-
-## Unsupervised Exploration
-In our second phase, we don't use the sample() method from the environment, instead, we let our untrained
-actor decide actions. We then take that action and based on the state, we now compute an intrinsic
-reward, based on the previous states we visited (during pretraining). We add this reward to our ReplayBuffer
-(in our code: model_rewards) and train our actor/critics networks with it. We repeat these steps until we
-have an actor that focuses on entropy maximisation. After the global step reached unsupervised_timesteps,
-we start with our reward training with Relabeling.
-
-## Reward model training with Relabeling
-We start by sampling our trajectory pairs out of our Replaybuffer, either with uniform-(every state/action has the same probability
-to get picked) or with ensemble-based-sampling(multiple reward networks choose the state/actions that 
-differ the most in terms of computed probability). Assuming we use human feedback, the trajectory pairs
-that got sampled and rendered, appear in the frontend where we can give a preference(Form: [preftraj1,preftraj2]).
-The trajectory pairs and preference(Form: [(traj1,traj2), preference]) get added to our Preferencebuffer.
-We sample out of our Preferencebuffer and train our reward networks with the preferences.
-Then, we relabel our entire Replaybuffer according to the newly updated reward_networks.
-After this is done, we proceed to:
-1. Get an action from our actor network
-2. Take that action
-3. Calculate a model reward based on that action (if ensemble: avg. of our reward networks)
-4. Add it to our Replaybuffer, sample and train the actor/critic networks
+---
 
 
+### **Buffers**  
 
+To store experience and preference data, we use the following buffer structures:  
+
+#### **ReplayBuffer**  
+- Stores the standard **state-action transitions** collected from the environment.  
+- Used for training the actor-critic networks.  
+- **Form:**  
+  ```python
+  (obs, real_next_obs, actions, rewards, true_rewards, terminations, infos, full_states)
+  
+#### PreferenceBuffer  
+
+The **PreferenceBuffer** stores **pairs of trajectories** along with **preference labels**, which are used to train the reward model. Preferences can be obtained through:  
+
+- Stores **pairs of trajectories** along with **preference labels**.
+- Preference labels are obtained either from **human feedback** or **pseudo-labeling** (in SURF).
+
+- Used to train the **reward model**.
+- **Form:**  
+  ```python
+  [(traj1, traj2), preference]
+  
+## Algorithm Logic
+
+The **PEBBLE** algorithm consists of two main parts that structure the training process:
+1. **Pre-training**
+2. **Unsupervised Exploration (Random Exploration)**
+3. **Reward Model Training with Relabeling (Preference-based Learning)**
+
+---
+
+## **Phase 1: Pretraining**  
+
+Before training begins, the agent must first **populate the ReplayBuffer** with random state/action pairs. This ensures that the algorithm starts with a diverse set of experiences, providing a foundation for meaningful exploration.
+
+### **Pretraining Process**
+- The **ReplayBuffer** is filled with random **state-action transitions** from the environment.
+- This phase is controlled by the argument **`pretrain_timesteps`**, which determines how many state-action pairs should be stored before training begins.
+- **No network training takes place** during this phase. The primary goal is to collect enough diverse experiences to bootstrap exploration effectively.
+
+Once the **pretrain_timesteps** threshold is reached, the algorithm transitions into **Phase 2: Unsupervised Exploration**, where the actor begins selecting actions based on learned policies rather than random sampling.
+
+
+
+
+
+
+## Phase 2: Unsupervised Exploration
+
+After the pretraining phase, the algorithm transitions into the **unsupervised exploration** phase. During this stage, the agent explores the environment without any human feedback, relying on intrinsic rewards to guide its learning.
+
+### **Unsupervised Exploration Process**
+1. The **untrained actor** begins choosing actions instead of using random sampling.
+2. After executing an action, an **intrinsic reward** is assigned, computed based on the states visited during pretraining.
+3. This **intrinsic reward** (stored as `model_rewards` in the code) is added to the **ReplayBuffer**.
+4. The **actor-critic networks (SAC components)** are trained using this data, with an emphasis on **entropy maximization**, promoting broader exploration of the environment.
+5. When the global step reaches `unsupervised_timesteps`, the algorithm **transitions to reward model training with relabeling**, where feedback-based learning begins.
+
+This phase helps the agent **efficiently explore the environment** (entropy maximization) before incorporating external feedback, ensuring a diverse state-action distribution for later preference-based learning. 🚀  
+
+
+## Phase 3: Reward Model Training with Relabeling (PEBBLE + SURF)
+
+Once the unsupervised exploration phase is complete, the algorithm transitions to training the reward model. This phase involves preference-based learning, where feedback is used to refine the reward function that guides the policy.
+
+### **Sampling Trajectory Pairs**  
+Trajectory pairs are sampled from the ReplayBuffer using one of the following methods:
+
+- **Uniform-based Sampling:** Every state/action pair has an equal chance of being selected.  
+- **Ensemble-based Sampling:** Multiple reward networks evaluate trajectories and select those with the highest disagreement in reward predictions. This ensures feedback is provided on the most uncertain or informative samples.  
+
+### **Collecting Feedback (PEBBLE + SURF Enhancements)**  
+- For **human-in-the-loop feedback**, the sampled trajectory pairs are rendered in the frontend, where a user selects a preferred trajectory.  
+- The labeled trajectory pairs, along with their preferences, are stored in the **PreferenceBuffer**.  
+
+#### **SURF (Semi-Supervised Reward Learning with Data Augmentation) Enhancements:**  
+- In addition to human feedback, **SURF** leverages **semi-supervised learning (SSL)** to generate **pseudo-labels** for unlabeled trajectories.  
+- **Confidence filtering** ensures only high-confidence pseudo-labels contribute to training.  
+- **Temporal Data Augmentation (TDA)** applies random cropping to trajectory segments, improving generalization and feedback efficiency.  
+
+### **Training the Reward Model**  
+- The **reward networks** are trained using data from the **PreferenceBuffer**.  
+- If using **SURF**, the training loss consists of:  
+  - A **supervised loss** from human-labeled preference data.  
+  - A **semi-supervised loss** from high-confidence pseudo-labels, weighted by a hyperparameter.  
+- After training, the **entire ReplayBuffer is relabeled** using the updated reward networks.  
+
+### **Continuing Actor-Critic Training**  
+Once the **ReplayBuffer** is relabeled, the actor network resumes training with the updated reward function:
+
+1. The **actor selects an action**.  
+2. The **environment returns the next state**.  
+3. If ensemble active: The **reward is computed** as the **average output from the ensemble of reward networks**.  
+4. The **new data is added to the ReplayBuffer**.  
+5. The **SAC actor and critic networks continue to train** using these updated rewards.  
+
+This phase iteratively refines the reward model, reducing reliance on human feedback while ensuring high-quality reward labels through **semi-supervised learning and data augmentation**. 🚀  
 
 
