@@ -2,22 +2,25 @@ const socket = io(); // Socket connection to the server
 let currentIndex = 0; // Current video pair index
 let feedback = []; // Stores the user feedback
 let videoPairs = []; // Stores the video pairs
-let loaded = false; // Indicates whether the video pairs have been loaded
 let status;  // Stores current status message
-let explanationClosed = false; //  Indicates whether the initial explanation has been closed
-let runName = ""; // Stores the current run name
+let runName = ""; // Stores current run name
 
 // Show the explanation modal and fetch the run name and video pairs once the window is loaded
 window.onload = async function () {
   status = document.getElementById('status');
+  displayExplanationModal();
   await fetchRunName();
-
-  // Show the initial explanation until it is closed
-  if (!explanationClosed) {
-    displayExplanationModal();
-  }
   fetchVideoPairs();
 };
+
+// Update the status displayed on the page
+function updateStatus(message) {
+  if (status) {
+    status.innerText = message;
+  } else {
+    console.warn('Status element is not defined.');
+  }
+}
 
 // Fetch video pairs once new video pairs have been received
 socket.on('new_video_pairs', (data) => {
@@ -25,21 +28,12 @@ socket.on('new_video_pairs', (data) => {
   fetchVideoPairs();
 });
 
-// Update the status displayed on the page
-function updateStatus(message) {
-  if (status) {
-    status.innerText = message;
-  } else {
-    console.warn('Status element is not defined.'); // Warning if status element is missing
-  }
-}
-
 // Fetch the run name from the server
 async function fetchRunName() {
   try {
     const response = await fetch('/get_run_name'); // Get request to the corresponding endpoint
     const data = await response.json(); // Parse the JSON response
-    runName = data.global_run_name;
+    runName = data.run_name;
     console.log("Run name fetched:", runName);
   } catch (error) {
     console.error('Error fetching run_name:', error);
@@ -56,17 +50,14 @@ async function fetchVideoPairs() {
     if (data.video_pairs && data.video_pairs.length > 0) {
       videoPairs = data.video_pairs;
       currentIndex = 0;
+      updateStatus("Info: New video pairs have been loaded. Please choose Pair 1");
       displayVideoPair(videoPairs[currentIndex]);
-      updateStatus("Info: New video pairs have been loaded.");
-      loaded = true;
     } else {
       updateStatus("Info: No video pairs available at the moment. Waiting for new pairs...");
-      displayLoader();
     }
   } catch (error) {
     console.error('Error fetching video pairs:', error);
-    updateStatus("Info: Failed to fetch video pairs. Please try again later!");
-    displayLoader();
+    updateStatus("Info: Failed to fetch video pairs.");
   }
 }
 
@@ -74,8 +65,7 @@ async function fetchVideoPairs() {
 function displayVideoPair(pair) {
   document.getElementById('video1').src = `/videos/${runName}/${pair.video1}`;
   document.getElementById('video2').src = `/videos/${runName}/${pair.video2}`;
-  // Show the current index and total number of pairs
-  updateStatus(`Pair ${currentIndex + 1} of ${videoPairs.length}`);
+  updateStatus(`Pair ${currentIndex + 1} of ${videoPairs.length}`); // Show the current index and total number of pairs
 }
 
 // Set user's preference for the current video pair
@@ -86,6 +76,7 @@ function setPreference(preference) {
   feedback.push({ id: pair.id, preference });  // Store video pair ID and the user's preference
 
   currentIndex++; // Move to the next video pair
+
   // Display the next video pair if there are more pairs
   if (currentIndex < videoPairs.length) {
     displayVideoPair(videoPairs[currentIndex]);
@@ -106,7 +97,6 @@ async function submitFeedback() {
       body: JSON.stringify({ preferences: feedback })  // Sending the feedback in the request body
     });
     updateStatus("Info: Feedback submitted. Now waiting for new video pairs...");
-    displayLoader();
 
     // Resetting the feedback, video pairs and index after submission
     feedback = [];
@@ -114,7 +104,7 @@ async function submitFeedback() {
     currentIndex = 0;
   } catch (error) {
     console.error('Error submitting feedback:', error);
-    updateStatus("Info: Failed to submit feedback. Please try again later!");
+    updateStatus("Info: Failed to submit feedback.");
   }
 }
 
@@ -130,32 +120,8 @@ function displayExplanationModal() {
 
     // Close the modal and display the main content once close button is clicked
     closeRules.addEventListener("click", () => {
-        explanationClosed = true;
         modal.style.display = "none";
         mainContent.classList.remove('mainContent');
         document.body.style.overflow = 'auto'; // Enable scrolling
     });
-}
-
-// Display loaders once an option is selected until the videos are loaded
-function displayLoader() {
-  const agentOption1 = document.getElementById('agentOption1');
-  const agentOption2 = document.getElementById('agentOption2');
-  const neutralOption = document.getElementById('neutralOption');
-  const loader1 = document.getElementById('loader1');
-  const loader2 = document.getElementById('loader2');
-
-  agentOption1.style.display = 'none';
-  agentOption2.style.display = 'none';
-  neutralOption.style.display = 'none';
-  loader1.style.display = 'block';
-  loader2.style.display = 'block';
-
-  if (loaded === true) {
-    agentOption1.style.display = 'block';
-    agentOption2.style.display = 'block';
-    neutralOption.style.display = 'block';
-    loader1.style.display = 'none';
-    loader2.style.display = 'none';
-  }
 }

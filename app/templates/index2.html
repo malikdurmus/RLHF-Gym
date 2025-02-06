@@ -50,7 +50,7 @@
         <!-- Container to compare the agents -->
         <div class="agentsContainer">
             <!-- Button to choose the first agent -->
-            <button class="agentOptions" onclick="setPreference(1), displayLoader()">
+            <button class="agentOptions" onclick="setPreference(1)">
                 <div id="agentOption1">
                     <br>
                     <h1>Agent 1</h1>
@@ -65,11 +65,9 @@
                     <br>
                     <br>
                 </div>
-                <!-- Loader for the first agent -->
-                <div class="loader1" id="loader1"></div>
             </button>
             <!-- Button to choose the second agent -->
-            <button class="agentOptions" onclick="setPreference(0), displayLoader()">
+            <button class="agentOptions" onclick="setPreference(0)">
                 <div id="agentOption2">
                     <br>
                     <h1>Agent 2</h1>
@@ -84,8 +82,6 @@
                     <br>
                     <br>
                 </div>
-                <!-- Loader for the second agent -->
-                <div class="loader2" id="loader2"></div>
             </button>
         </div>
         <br>
@@ -94,7 +90,7 @@
         <br>
         <br>
         <!-- Button to choose the neutral option -->
-        <button class="neutralOption" id="neutralOption" onclick="setPreference(0.5), displayLoader()">
+        <button class="neutralOption" id="neutralOption" onclick="setPreference(0.5)">
             <h3>Neutral</h3>
         </button>
         <br>
