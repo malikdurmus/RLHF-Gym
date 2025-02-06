@@ -10,14 +10,12 @@ def semi_supervised_labeling(preference_predictor, sampler, args, tda_active):
     of an ensemble of reward models. It filters the generated pseudo-labels based on a confidence
     threshold and returns a new preference buffer containing both human-labeled and pseudo-labeled data.
 
-    Args:
-        preference_predictor (PreferencePredictor): PreferencePredictor object. Contains reward models in the ensemble used to predict preferences and the necessary methods.
-        sampler: The sampler used to generate trajectory pairs.
-        args: Configuration arguments containing parameters such as batch size, confidence threshold, etc.
-        tda_active (bool): Flag indicating whether temporal data augmentation (TDA) should be applied.
+    :param preference_predictor: PreferencePredictor object. Contains reward models in the ensemble used to predict preferences and the necessary methods.
+    :param sampler: The sampler used to generate trajectory pairs.
+    :param args: Configuration arguments containing parameters such as batch size, confidence threshold, etc.
+    :param tda_active: Flag indicating whether temporal data augmentation (TDA) should be applied.
 
-    Returns:
-        PreferenceBuffer: A preference buffer containing both human-labeled and pseudo-labeled data.
+    :return: A preference buffer containing both human-labeled and pseudo-labeled data.
     """
     # Initialize a new preference buffer for SSL // ssl buffer is recreated everytime to ensure the reward_model update happens with the most reliable (last) labels.
     ssl_preference_buffer = PreferenceBuffer(args.preference_batch_size * 5)
@@ -70,18 +68,17 @@ def surf(preference_optimizer, sampler, args, preference_buffer):
     This function handles the semi-supervised learning pipeline by incorporating the use of temporal data
     augmentation (TDA) and semi-supervised labeling (SSL) to augment the preference buffer and train reward models.
 
-    Args:
-        preference_optimizer: The optimizer used for training the reward models.
-        sampler: The sampler used for generating trajectory pairs.
-        args: Configuration arguments that control the behavior of the algorithm.
-        preference_buffer: The buffer containing human-labeled preference data.
+    :param preference_optimizer: The optimizer used for training the reward models.
+    :param sampler: The sampler used for generating trajectory pairs.
+    :param args: Configuration arguments that control the behavior of the algorithm.
+    :param preference_buffer: The buffer containing human-labeled preference data.
 
-    Returns:
-        entropy_loss (float): The entropy loss incurred during the training.
-        ratio (float): The ratio of positive to negative preferences used in training.
-
-    Raises:
-        Exception: If neither SSL nor TDA is enabled when SURF is activated.
+    :return: A tuple containing:
+        - entropy_loss (float): The entropy loss incurred during the training.
+        - validation_loss (float): The validation loss incurred during the training.
+        - ratio (float): The ratio of positive to negative preferences used in training.
+        - l2 (float): The L2 regularization loss incurred during the training.
+    :raises Exception: If neither SSL nor TDA is enabled when SURF is activated.
     """
     if args.ssl and args.tda_active:  # Semi-supervised labeling with TDA (Trajectory Data Augmentation)
         ssl_preference_buffer = semi_supervised_labeling(preference_optimizer, sampler, args, tda_active=True)

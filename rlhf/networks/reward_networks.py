@@ -11,6 +11,7 @@ class EstimatedRewardNetwork(nn.Module):
     #Neural network for reward estimation
     def __init__(self, env):
         """
+        Initialize the Reward Network.
         :param env: Instance of MujocoEnv (strict), which provides the observation_space and action_space properties.
                     These describe the dimensions of the environment's observations and actions. This parameter is
                     used to define the input size for the first fully connected layer.
@@ -23,6 +24,7 @@ class EstimatedRewardNetwork(nn.Module):
 
     def forward(self, action, observation):
         """
+        Forward action and state to compute a reward.
         :param action: Tensor representing the actions taken, expected to be concatenated with the observation.
         :param observation: Tensor representing the state observations from the environment.
         :return: Tensor representing the estimated reward as predicted by the network.

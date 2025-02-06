@@ -2,11 +2,23 @@ import numpy as np
 from rlhf.buffers.sampler import TrajectorySamples
 
 class PreferenceBuffer:
+    """
+    This class creates a Preference Buffer which saves our trajectory pair and the corresponding preference.
+    """
     def __init__(self, buffer_size):
+        """
+        Initialize the buffer.
+        :param buffer_size: a specific size of our buffer.
+        """
         self.buffer = []
         self.buffer_size = buffer_size
 
     def add(self, trajectories, preference):
+        """
+        Adding samples to our Preference Buffer.
+        :param trajectories: a trajectory pair.
+        :param preference: a preference.
+        """
         if len(trajectories) != 2:
             raise Exception("More than 2 trajectories")
         if len(self.buffer) >= self.buffer_size:
@@ -16,6 +28,13 @@ class PreferenceBuffer:
 
 
     def sample_with_validation_sample(self, batch_size, replace):
+        """
+        Samples a batch from the buffer with a train-validation split.
+        :param batch_size: The amount of samples.
+        :param replace: A boolean whether we sample the same samples multiple times.
+
+        :return: Two lists: A Training subset and Validation subset of the sampled batch.
+        """
         indices = np.random.choice(len(self.buffer), size=min(batch_size, len(self.buffer)), replace=replace)
 
         split_idx = int(len(indices) * (1 - 1/np.e))
@@ -29,13 +48,26 @@ class PreferenceBuffer:
         return train_samples, val_samples
 
     def sample(self, batch_size, replace=False):
+        """
+        Samples a batch from the Preference Buffer.
+        :param batch_size: The amount of samples.
+        :param replace: A boolean whether we sample the same samples multiple times, Default: False.
+
+        :return: A list of sampled elements that are saved in the buffer.
+        """
         indices = np.random.choice(len(self.buffer), size=min(batch_size, len(self.buffer)), replace=replace)
         return [self.buffer[i] for i in indices]
 
     def __len__(self):
+        """
+        :return: length of our buffer.
+        """
         return len(self.buffer)
 
     def reset(self):
+        """
+        Empty the buffer .
+        """
         self.buffer.clear()
 
     def copy(self, apply_tda=True,crop_size=None):
@@ -43,6 +75,7 @@ class PreferenceBuffer:
         Create a copy of the current PreferenceBuffer object.
         :param apply_tda: If True, apply Temporal Data Augmentation (TDA) to the copied buffer.
         :param crop_size: cropping intensity for the segments (required if apply_tda is True).
+
         :return: A new PreferenceBuffer object with the same (or augmented) contents.
         """
         # Create a new PreferenceBuffer instance with the same buffer size
@@ -66,12 +99,9 @@ class PreferenceBuffer:
     def combine_samples(self, primary_sample):
         """
         Combines a list of TrajectorySamples with a PreferenceBuffer containing TrajectorySamples.
+        :param primary_sample: (list[TrajectorySamples]): A list of TrajectorySamples.
 
-        Args:
-            primary_sample (list[TrajectorySamples]): A list of TrajectorySamples.
-
-        Returns:
-            list[TrajectorySamples]: A combined list of TrajectorySamples.
+        :return: list[TrajectorySamples]: A combined list of TrajectorySamples.
         """
         # Extract the list of TrajectorySamples from the augmented_sample (PreferenceBuffer)
         augmented_list = self.get_buffer()  # Assuming augmented_sample has a `list` attribute
@@ -89,9 +119,9 @@ class PreferenceBuffer:
 def tda(trajectory_pair,crop_size):
     """
     Apply temporal data augmentation to a pair of trajectory segments.
-
     :param crop_size: crop size for the segments
     :param trajectory_pair: a trajectory pair.
+
     :return: A pair of cropped segments.
     :raises ValueError: If crop size is too large for the given trajectory length.
     """
