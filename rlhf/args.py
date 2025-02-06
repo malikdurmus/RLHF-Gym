@@ -131,8 +131,10 @@ class Args:
 
     """
     k (int): number of nearest neighbors used to compute the intrinsic reward.
+    normalize_int_rewards (bool): whether to normalize the intrinsic rewards with a running std.Deviation estimate
     """
     k: int = 5
+    normalize_int_rewards: bool = False
 
     # TODO Remove? @malik
     batch_processing: bool = True  # TODO: remove later, not needed
