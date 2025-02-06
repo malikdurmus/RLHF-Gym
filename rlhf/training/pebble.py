@@ -9,6 +9,9 @@ from rlhf.training.surf import surf
 def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer,
           preference_optimizer, args, writer, device, sampler,
           human_labeled_preference_buffer, video_queue, stored_pairs, feedback_event, int_rew_calc, notify, preference_mutex, run_name):
+    """
+    PEBBLE Algorithm logic
+    """
 
     # [Optional] automatic adjustment of the entropy coefficient
     if args.automatic_entropy_coefficient_tuning:
