@@ -55,11 +55,13 @@ class PreferencePredictor:
         self.optimizers = self._initialize_optimizers()
 
     def _adjust_l2(self, ratio):
+        # If ratio (val_loss / train_loss) is too low (underfitting), decrease L2 to reduce regularization
         if ratio < 1.1:
-            self.l2 *= 1.02
+            self.l2 *= 0.95  # Decrease L2 to allow more fitting
             self._update_optimizers()
+        # If ratio is too high (overfitting), increase L2 to add regularization
         elif ratio > 1.5:
-            self.l2 *= 0.98
+            self.l2 *= 1.05  # Increase L2 to reduce overfitting
             self._update_optimizers()
 
     def train_reward_models(self, pb, batch_size):
@@ -101,15 +103,17 @@ class PreferencePredictor:
             model_loss.backward()
             optimizer.step()
 
-            # Use validation sample with trained reward model (to test for overfitting)
+            # Use validation sample with trained reward model
             # Check for Overfitting, Underfitting, Generalization
             with torch.no_grad():
                 # Recompute the training loss on the same human-labeled sample (post-update)
                 post_update_loss = self._compute_loss_batch(reward_model, sample)
+                post_update_loss = post_update_loss / len(sample)  # Normalize
                 post_update_losses.append(post_update_loss.item())
 
                 # Compute validation loss
                 val_loss = self._compute_loss_batch(reward_model, val_sample)
+                val_loss = val_loss / len(val_sample) # Normalize
                 val_losses.append(val_loss.item())
 
         # Return average loss and ratio of validation to training loss
@@ -181,11 +185,14 @@ class PreferencePredictor:
             # Check for Overfitting, Underfitting, Generalization
             with torch.no_grad():
                 # Recompute the training loss on the same human-labeled sample (post-update)
-                post_update_loss = self._compute_loss_batch(reward_model, human_labeled_sample)
+                post_human_loss = self._compute_loss_batch(reward_model, human_labeled_sample) / len(human_labeled_sample)  # Normalize
+                post_ssl_loss = self._compute_loss_batch(reward_model, pseudo_labeled_sample) / len(pseudo_labeled_sample)  # Normalize
+                post_update_loss = post_human_loss + post_ssl_loss * loss_w_ssl
                 post_update_losses.append(post_update_loss.item())
 
                 # Compute validation loss
                 val_loss = self._compute_loss_batch(reward_model, human_labeled_val_sample)
+                val_loss = val_loss / len(human_labeled_val_sample) # Normalize
                 val_losses.append(val_loss.item())
 
         # Return average loss and ratio of validation to training loss
