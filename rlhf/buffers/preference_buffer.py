@@ -1,4 +1,6 @@
 import numpy as np
+from pandas.core.indexers import validate_indices
+
 from rlhf.buffers.sampler import TrajectorySamples
 
 class PreferenceBuffer:
@@ -12,6 +14,7 @@ class PreferenceBuffer:
         """
         self.buffer = []
         self.buffer_size = buffer_size
+        self.pos = 0
 
     def add(self, trajectories, preference):
         """
@@ -25,23 +28,37 @@ class PreferenceBuffer:
             self.buffer.pop(0)
 
         self.buffer.append([trajectories, preference])
+        self.pos += 1
 
 
-    def sample_with_validation_sample(self, batch_size, replace):
+    def sample_with_validation_sample(self, batch_size, recent_data_size, replace):
         """
         Samples a batch from the buffer with a train-validation split.
         :param batch_size: The amount of samples.
+        :param recent_data_size: The number of elements considered for validation (from the end of the buffer).
         :param replace: A boolean whether we sample the same samples multiple times.
 
         :return: Two lists: A Training subset and Validation subset of the sampled batch.
         """
-        indices = np.random.choice(len(self.buffer), size=min(batch_size, len(self.buffer)), replace=replace)
 
-        split_idx = int(len(indices) * (1 - 1/np.e))
 
-        train_indices = indices[:split_idx]
-        val_indices = indices[split_idx:]
+        # Get all valid validation indices (since last feedback query)
+        val_start_idx = max(0, self.pos - recent_data_size)
+        val_candidate_indices = np.arange(val_start_idx, self.pos)
 
+        # Sample 1/e of last feedback, at least 1
+        val_sample_size = max(1, int(recent_data_size / np.e))
+        val_indices = np.random.choice(val_candidate_indices,
+                                              size=min(val_sample_size, len(val_candidate_indices)), replace=False)
+
+        # Get all valid training indices
+        remaining_indices = np.setdiff1d(np.arange(self.pos), val_indices)
+
+        # Sample random training indices
+        train_indices = np.random.choice(remaining_indices, size=min(batch_size, len(remaining_indices)),
+                                                replace=replace)
+
+        # Extract samples
         train_samples = [self.buffer[i] for i in train_indices]
         val_samples = [self.buffer[i] for i in val_indices]
 
