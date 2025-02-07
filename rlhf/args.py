@@ -57,7 +57,7 @@ class Args:
 
     gamma: float = 0.99
     target_smoothing_coefficient: float = 0.005
-    l2_regularization_coefficient: float = 0.01
+    l2_regularization_coefficient: float = 0.001
     reward_model_lr: float = 1e-3
     policy_lr: float = 3e-4
     q_network_lr: float = 1e-3
