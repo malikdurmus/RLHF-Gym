@@ -65,10 +65,11 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
                 ### REWARD MODEL TRAINING ###
                 with preference_mutex:
                     if args.surf:
-                        entropy_loss, validation_loss, ratio, l2 = surf(preference_optimizer, sampler, args, human_labeled_preference_buffer)
+                        entropy_loss, validation_loss, ratio, l2 = surf(preference_optimizer, sampler, args,
+                                                                        human_labeled_preference_buffer, query_size)
                     else:
                         entropy_loss, validation_loss, ratio, l2 = preference_optimizer.train_reward_models(human_labeled_preference_buffer,
-                                                                                       args.preference_batch_size)
+                                                                                       args.preference_batch_size, query_size)
 
                 writer.add_scalar("losses/entropy_loss", entropy_loss, global_step)
                 writer.add_scalar("losses/validation_loss", validation_loss, global_step)

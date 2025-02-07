@@ -11,7 +11,7 @@ implemented and found in the [CleanRL](https://github.com/vwxyzjn/cleanrl) Deep 
 
 ## Features
 + Solving tasks in the MuJoCo environmental
-+ Support for different sampling methods: ensemble-based or uniform-based sampling
++ Support for different sampling methods: ensemble-based and uniform-based sampling
 + Switching between human feedback and synthetic feedback
 + Intuitive user interface for the human feedback mode
   + Selecting between two trajectory pairs or choose a neutral option
@@ -40,9 +40,9 @@ poetry env use python
 # Add arguments to change values
 poetry run main.py --total_timesteps 10000
 
-#Default settings:
+# Default settings:
 # - Synthetic feedback: False
-# - Ensemble sampling: True
+# - Sampling: 75% ensemble, 25% uniform
 ```
 ## Feedback Configuration
 When running the program with synthetic_feedback = False, a trajectory pair is sent to the UI. After
