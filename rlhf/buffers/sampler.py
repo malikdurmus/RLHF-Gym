@@ -6,6 +6,9 @@ from typing import List, Dict, Any
 ### TRAJECTORY SAMPLER ###
 @dataclass
 class TrajectorySamples:
+    """
+    This class saves and coverts sampled variables into tensors.
+    """
     states: torch.Tensor
     actions: torch.Tensor
     env_rewards: torch.Tensor
@@ -13,6 +16,9 @@ class TrajectorySamples:
     full_states: Any
 
 class TrajectorySampler:
+    """
+    A Trajectory Sampler that samples out of our ReplayBuffer and saves them as trajectories.
+    """
     def __init__(self, rb, device):
         self.rb = rb
         self.device = device
@@ -25,6 +31,7 @@ class TrajectorySampler:
                                the most recent and earlier entries. Must be greater than `traj_length`.
         :param synthetic_feedback: Flag to indicate whether to include synthetic feedback.
                                        If True, includes `env_rewards` in the trajectory; otherwise excludes them.
+
         :return: TrajectorySamples: A named tuple containing the sampled trajectory:
                 - `states` (torch.Tensor): States of the trajectory, shape `(traj_length, state_dim)`.
                 - `actions` (torch.Tensor): Actions of the trajectory, shape `(traj_length, action_dim)`.
@@ -63,6 +70,16 @@ class TrajectorySampler:
 
     # trajectory pair
     def uniform_trajectory_pair(self, traj_length, time_window, synthetic_feedback):
+        """
+        Sample two trajectories as a pair (tuple).
+        :param traj_length: Length of the trajectory in steps. Must be less than or equal to the current buffer size.
+        :param time_window: Relevant range within the replay buffer to sample from. Defines the range between
+                               the most recent and earlier entries. Must be greater than `traj_length`.
+        :param synthetic_feedback: Flag to indicate whether to include synthetic feedback.
+                                       If True, includes `env_rewards` in the trajectory; otherwise excludes them.
+
+        :return: Returns two trajectories saved as a tuple.
+        """
         trajectory1 = self.uniform_trajectory(traj_length, time_window, synthetic_feedback)
         trajectory2 = self.uniform_trajectory(traj_length, time_window, synthetic_feedback)
 
@@ -71,6 +88,10 @@ class TrajectorySampler:
 
     # batch of trajectories
     def uniform_trajectory_batch(self, batch_size, traj_length, time_window, synthetic_feedback):
+        """
+        Samples multiple trajectories at once.
+        :return: A list of trajectories.
+        """
         trajectories_batch = []
 
         for _ in range(batch_size):
@@ -83,6 +104,10 @@ class TrajectorySampler:
 
     # batch of trajectory pairs
     def uniform_trajectory_pair_batch(self, batch_size, traj_length, time_window, synthetic_feedback):
+        """
+        Samples multiple trajectory pairs at once.
+        :return: A list of trajectory pair tuples.
+        """
         trajectories_batch = []
 
         for _ in range(batch_size):

@@ -31,7 +31,9 @@ def render_trajectory_gym(env_id, trajectory, global_step, trajectory_id, query_
     return filename
 
 def _generate_images(env, observations):
-    """Generate images from a sequence of internal states of the mujoco model."""
+    """
+    Generate images from a sequence of internal states of the mujoco model.
+    """
     images = []
     for full_state in tqdm(observations.full_states, desc="Processing Observations"):
         try:
