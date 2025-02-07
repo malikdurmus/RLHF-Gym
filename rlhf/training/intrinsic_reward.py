@@ -18,7 +18,7 @@ class IntrinsicRewardCalculator:
         """
         Updates the values for the running std.Deviation estimate
 
-        :param new_value: newest k_distance
+        :param new_value: new intrinsic reward
         """
         self.n += 1
         delta = new_value - self.mean
@@ -28,7 +28,7 @@ class IntrinsicRewardCalculator:
 
     def std_deviation(self):
         """
-        Calculates the current standard deviation of k_distance values
+        Calculates the current standard deviation of all intrinsic rewards
 
         :return: Current std. deviation
         """
