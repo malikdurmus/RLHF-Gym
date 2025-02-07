@@ -129,12 +129,20 @@ class Args:
     total_queries: int = 1400
     ensemble_ratio: int = 75
 
+    # -------------------------
+    # Pretraining arguments
+    # -------------------------
+
     """
     k (int): number of nearest neighbors used to compute the intrinsic reward.
     normalize_int_rewards (bool): whether to normalize the intrinsic rewards with a running std.Deviation estimate
     """
     k: int = 5
     normalize_int_rewards: bool = False
+
+    # -------------------------
+    # SURF Arguments
+    # -------------------------
 
     """
     surf (bool): Toggle SURF (Semi-Supervised Reward Learning with Data Augmentation)
