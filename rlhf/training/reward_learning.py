@@ -57,13 +57,14 @@ class PreferencePredictor:
         :param ratio: The ratio of validation loss to training loss.
         """
         if ratio < 1.1:
-            self.l2 *= 1.02
+            self.l2 *= 0.95  # Decrease L2 to allow more fitting
             self._update_optimizers()
+        # If ratio is too high (overfitting), increase L2 to add regularization
         elif ratio > 1.5:
-            self.l2 *= 0.98
+            self.l2 *= 1.05  # Increase L2 to reduce overfitting
             self._update_optimizers()
 
-    def train_reward_models(self, pb, batch_size):
+    def train_reward_models(self, pb, batch_size, recent_data_size):
         """
         Trains the reward models using the provided preference buffer and batch size.
 
@@ -73,15 +74,17 @@ class PreferencePredictor:
 
         :param pb: The preference buffer containing human-labeled trajectory pairs.
         :param batch_size: The batch size used for training.
+        :param recent_data_size: The number of elements each feedback query
 
         :return: A tuple containing:
-        - avg_entropy_loss (float): The average entropy loss over all models.
+        - avg_post_update_loss (float): The average training loss after update.
         - avg_val_loss (float): The average validation loss over all models.
         - ratio (float): The ratio of the validation loss to the training loss.
         - l2 (float): The updated L2 regularization coefficient.
         """
-        model_losses = []
         val_losses = []
+        post_update_losses = []
+
 
         # Preference buffer has fewer entries than the sample batch, adjust batch size if necessary
         if batch_size > len(pb):
@@ -89,7 +92,7 @@ class PreferencePredictor:
 
         for reward_model, optimizer in zip(self.reward_networks, self.optimizers):
             # Individual sampling for each model
-            sample, val_sample = pb.sample_with_validation_sample(batch_size, replace=True)
+            sample, val_sample = pb.sample_with_validation_sample(batch_size, recent_data_size, replace=True)
 
             # Compute loss for this model
             model_loss = self._compute_loss_batch(reward_model, sample)
@@ -99,26 +102,32 @@ class PreferencePredictor:
             model_loss.backward()
             optimizer.step()
 
-            model_losses.append(model_loss.item())
-
-            # Use validation sample with trained reward model (to test for overfitting)
+            # Use validation sample with trained reward model
+            # Check for Overfitting, Underfitting, Generalization
             with torch.no_grad():
+                # Recompute the training loss on the same human-labeled sample (post-update)
+                post_update_loss = self._compute_loss_batch(reward_model, sample)
+                post_update_loss = post_update_loss / len(sample)  # Normalize
+                post_update_losses.append(post_update_loss.item())
+
+                # Compute validation loss
                 val_loss = self._compute_loss_batch(reward_model, val_sample)
+                val_loss = val_loss / len(val_sample) # Normalize
                 val_losses.append(val_loss.item())
 
-        # Average losses over all models
-        avg_entropy_loss = sum(model_losses) / len(model_losses)
+        # Return average loss and ratio of validation to training loss
         avg_val_loss = sum(val_losses) / len(val_losses)
+        avg_post_update_loss = sum(post_update_losses) / len(post_update_losses)
 
-        # Calculate ratio of validation loss to training loss
-        ratio = avg_val_loss / avg_entropy_loss
+        ratio = avg_val_loss / avg_post_update_loss
 
-        # Adjust L2 regularization based on the ratio to avoid overfitting: Keep validation loss between 1.1 and 1.5
+        # Adjust L2 regularization based on the ratio: Keep validation loss between 1.1 and 1.5
         self._adjust_l2(ratio)
 
-        return avg_entropy_loss, avg_val_loss, ratio, self.l2
+        return avg_post_update_loss, avg_val_loss, ratio, self.l2
 
-    def train_reward_models_surf(self, augmented_preference_buffer, ssl_preference_buffer, batch_size, loss_weight_ssl):
+    def train_reward_models_surf(self, augmented_preference_buffer, ssl_preference_buffer,
+                                 batch_size, recent_data_size, loss_weight_ssl):
         """
         Trains the reward models using both augmented human-labeled data and pseudo-labeled data from SSL.
 
@@ -128,16 +137,17 @@ class PreferencePredictor:
         :param augmented_preference_buffer: The preference buffer with human-labeled trajectory pairs, possibly augmented.
         :param ssl_preference_buffer: The preference buffer containing pseudo-labeled trajectory pairs.
         :param batch_size: The batch size used for training.
+        :param recent_data_size: The number of elements each feedback query
         :param loss_weight_ssl: The weight applied to the loss from pseudo-labeled data.
 
         :return: A tuple containing:
-            - entropy_loss (float): The average entropy loss over all models.
-            - validation_loss (float): The average validation loss over all models.
+            - avg_post_update_loss (float): The average training loss after update.
+            - avg_val_loss (float): The average validation loss.
             - ratio (float): The ratio of the validation loss to the training loss.
             - l2 (float): The updated L2 regularization coefficient.
         """
-        model_losses = []
         val_losses = []
+        post_update_losses = []
 
         # If batch_size is not provided, set it to a default value
         if batch_size is None:
@@ -152,7 +162,8 @@ class PreferencePredictor:
         for reward_model, optimizer in zip(self.reward_networks, self.optimizers):
             # Sample human-labeled and validation samples from the augmented preference buffer
             human_labeled_sample, human_labeled_val_sample = (augmented_preference_buffer.
-                                                              sample_with_validation_sample(batch_size, replace=True))
+                                                              sample_with_validation_sample(batch_size, recent_data_size,
+                                                                                            replace=True))
 
 
             # Use the SSL buffer directly for pseudo-labeled data
@@ -170,28 +181,36 @@ class PreferencePredictor:
             total_loss.backward()
             optimizer.step()
 
-            model_losses.append(total_loss.item())
-
-            # Validation loss to check for overfitting
+            # Check for Overfitting, Underfitting, Generalization
             with torch.no_grad():
+                # Recompute the training loss on the same human-labeled sample (post-update)
+                post_human_loss = self._compute_loss_batch(reward_model, human_labeled_sample) / len(human_labeled_sample)  # Normalize
+                post_ssl_loss = self._compute_loss_batch(reward_model, pseudo_labeled_sample) / len(pseudo_labeled_sample)  # Normalize
+                post_update_loss = post_human_loss + post_ssl_loss * loss_w_ssl
+                post_update_losses.append(post_update_loss.item())
+
+                # Compute validation loss
                 val_loss = self._compute_loss_batch(reward_model, human_labeled_val_sample)
+                val_loss = val_loss / len(human_labeled_val_sample) # Normalize
                 val_losses.append(val_loss.item())
 
         # Return average loss and ratio of validation to training loss
-        entropy_loss = sum(model_losses) / len(model_losses)
-        validation_loss = sum(val_losses) / len(val_losses)
-        ratio = validation_loss / entropy_loss
+        avg_val_loss = sum(val_losses) / len(val_losses)
+        avg_post_update_loss = sum(post_update_losses) / len(post_update_losses)
 
+        ratio = avg_val_loss / avg_post_update_loss
+
+        # Adjust L2 regularization based on the ratio: Keep validation loss between 1.1 and 1.5
         self._adjust_l2(ratio)
 
-        return entropy_loss, validation_loss, ratio, self.l2
+        return avg_post_update_loss, avg_val_loss, ratio, self.l2
 
     def compute_predicted_probabilities(self, trajectories):
         """
         Computes predicted probabilities for human preference between two trajectories from each reward model.
         :param trajectories: A tuple containing two trajectory objects (trajectory0, trajectory1).
 
-        :return: A list of predicted probabilities from each reward model in the ensem
+        :return: A list of predicted probabilities from each reward model
         """
         predictions = [
             self.compute_predicted_probability_batch(reward_model, trajectories)
