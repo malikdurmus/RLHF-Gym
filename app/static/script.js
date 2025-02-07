@@ -1,10 +1,9 @@
 const socket = io(); // Socket connection to the server
-let currentIndex = 0; // current video pair index
-let feedback = []; // stores the user feedback
-let videoPairs = []; // stores the video pairs
-let loaded = false; // indicates whether the video pairs have been loaded
-let status;  // stores current status message
-let runName = ""; // stores current run name
+let currentIndex = 0; // Current video pair index
+let feedback = []; // Stores the user feedback
+let videoPairs = []; // Stores the video pairs
+let status;  // Stores current status message
+let runName = ""; // Stores current run name
 
 // Show the explanation modal and fetch the run name and video pairs once the window is loaded
 window.onload = async function () {
@@ -19,9 +18,15 @@ function updateStatus(message) {
   if (status) {
     status.innerText = message;
   } else {
-    console.warn('Status element is not defined.'); // Warning if status element is missing
+    console.warn('Status element is not defined.');
   }
 }
+
+// Fetch video pairs once new video pairs have been received
+socket.on('new_video_pairs', (data) => {
+  console.log('New video pairs notification received:', data);
+  fetchVideoPairs();
+});
 
 // Fetch the run name from the server
 async function fetchRunName() {
@@ -45,9 +50,8 @@ async function fetchVideoPairs() {
     if (data.video_pairs && data.video_pairs.length > 0) {
       videoPairs = data.video_pairs;
       currentIndex = 0;
+      updateStatus("Info: New video pairs have been loaded. Please choose Pair 1");
       displayVideoPair(videoPairs[currentIndex]);
-      updateStatus("Info: New video pairs have been loaded.");
-      loaded = true;
     } else {
       updateStatus("Info: No video pairs available at the moment. Waiting for new pairs...");
     }
@@ -61,8 +65,7 @@ async function fetchVideoPairs() {
 function displayVideoPair(pair) {
   document.getElementById('video1').src = `/videos/${runName}/${pair.video1}`;
   document.getElementById('video2').src = `/videos/${runName}/${pair.video2}`;
-  // Show the current index and total number of pairs
-  updateStatus(`Pair ${currentIndex + 1} of ${videoPairs.length}`);
+  updateStatus(`Pair ${currentIndex + 1} of ${videoPairs.length}`); // Show the current index and total number of pairs
 }
 
 // Set user's preference for the current video pair
@@ -73,6 +76,7 @@ function setPreference(preference) {
   feedback.push({ id: pair.id, preference });  // Store video pair ID and the user's preference
 
   currentIndex++; // Move to the next video pair
+
   // Display the next video pair if there are more pairs
   if (currentIndex < videoPairs.length) {
     displayVideoPair(videoPairs[currentIndex]);
@@ -104,12 +108,6 @@ async function submitFeedback() {
   }
 }
 
-// Fetch video pairs once new video pairs have been received
-socket.on('new_video_pairs', (data) => {
-  console.log('New video pairs notification received:', data);
-  fetchVideoPairs();
-});
-
 // Display the explanation modal and hide  main content
 function displayExplanationModal() {
     const modal = document.getElementById("explanationModal");
@@ -127,29 +125,3 @@ function displayExplanationModal() {
         document.body.style.overflow = 'auto'; // Enable scrolling
     });
 }
-
-// Display loaders once an option is selected until the videos are loaded
-async function displayLoader() {
-  const agentOption1 = document.getElementById('agentOption1');
-  const agentOption2 = document.getElementById('agentOption2');
-  const neutralOption = document.getElementById('neutralOption');
-  const loader1 = document.getElementById('loader1');
-  const loader2 = document.getElementById('loader2');
-
-  agentOption1.style.display = 'none';
-  agentOption2.style.display = 'none';
-  neutralOption.style.display = 'none';
-  loader1.style.display = 'block';
-  loader2.style.display = 'block';
-
-  if (loaded === true) {
-    agentOption1.style.display = 'block';
-    agentOption2.style.display = 'block';
-    neutralOption.style.display = 'block';
-    loader1.style.display = 'none';
-    loader2.style.display = 'none';
-  }
-}
-
-
-// TODO Fix loaders (Martin)

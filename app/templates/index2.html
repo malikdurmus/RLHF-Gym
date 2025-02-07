@@ -17,17 +17,18 @@
         <div>
             <!-- Modal close button -->
             <button class="modalCloseButton" id="modalCloseButton">x</button>
-            <h1>Train a RLHF agent</h1>
+            <h1>RLHF Agent Training</h1>
             <p>
                 <br>
                 On this website, you see two different videos used to train a RLHF agent<br>
                 Please carefully compare the agents' behaviors.<br>
-                Afterwards, select the agent with the better performance.<br>
+                Subsequently, select the agent with the better performance.<br>
                 If the behavior appears too similar, choose "Neutral".<br>
                 <br>
             </p>
         </div>
     </div>
+
     <!-- Main content -->
     <div class="mainContent" id="mainContent">
         <br>
@@ -48,39 +49,39 @@
         <br>
         <!-- Container to compare the agents -->
         <div class="agentsContainer">
-            <!-- Button to choose first agent -->
-            <button class="agentOptions" onclick="setPreference(1), displayLoader()">
+            <!-- Button to choose the first agent -->
+            <button class="agentOptions" onclick="setPreference(1)">
                 <div id="agentOption1">
                     <br>
                     <h1>Agent 1</h1>
                     <br>
                     <br>
+                    <div class="videoContainer">
                     <!-- Video of the first agent -->
-                    <video class="videoElement" id="video1" width="320" height="240" controls autoplay></video>
+                        <video class="videoElement" id="video1" controls autoplay></video>
+                    </div>
                     <br>
                     <br>
                     <br>
                     <br>
                 </div>
-                <!-- Loader for first agent -->
-                <div class="loader1" id="loader1"></div>
             </button>
-            <!-- Button to choose second agent -->
-            <button class="agentOptions" onclick="setPreference(0), displayLoader()">
+            <!-- Button to choose the second agent -->
+            <button class="agentOptions" onclick="setPreference(0)">
                 <div id="agentOption2">
                     <br>
                     <h1>Agent 2</h1>
                     <br>
                     <br>
-                    <!-- Video of second agent -->
-                    <video class="videoElement" id="video2" width="320" height="240" controls autoplay></video>
+                    <div class="videoContainer">
+                    <!-- Video of the second agent -->
+                        <video class="videoElement" id="video2" controls autoplay></video>
+                    </div>
                     <br>
                     <br>
                     <br>
                     <br>
                 </div>
-                <!-- Loader for second agent -->
-                <div class="loader2" id="loader2"></div>
             </button>
         </div>
         <br>
@@ -88,8 +89,8 @@
         <br>
         <br>
         <br>
-        <!-- Button to choose neutral option  -->
-        <button class="neutralOption" id="neutralOption" onclick="setPreference(0.5), displayLoader()">
+        <!-- Button to choose the neutral option -->
+        <button class="neutralOption" id="neutralOption" onclick="setPreference(0.5)">
             <h3>Neutral</h3>
         </button>
         <br>
