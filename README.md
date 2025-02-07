@@ -49,6 +49,12 @@ When running the program with synthetic_feedback = False, a trajectory pair is s
 providing feedback, wait for new videos to render. To switch modes, navigate to the
 \rlhf folder and configure the settings in args.py.
 
+## Evaluating the Model
+After completing the training (running through the total timesteps), you can find a video of the trained agent in the /evaluation
+folder. The .pth file for the trained model can be found in /models.
+
+Note: You will receive the video and model only when the total timesteps are completed
+
 ## Credits
 This project was developed by:
 + Aleksandar Mijatovic
