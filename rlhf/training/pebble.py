@@ -4,10 +4,14 @@ import torch.optim as optim
 import time
 import numpy as np
 from rlhf.training.feedback_handler import handle_feedback
+from rlhf.training.surf import surf
 
 def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_optimizer, actor_optimizer,
-          preference_optimizer, args, writer, device, sampler, preference_buffer ,video_queue, stored_pairs,
-          feedback_event, int_rew_calc, notify, preference_mutex, run_name):
+          preference_optimizer, args, writer, device, sampler,
+          human_labeled_preference_buffer, video_queue, stored_pairs, feedback_event, int_rew_calc, notify, preference_mutex, run_name):
+    """
+    PEBBLE Algorithm logic
+    """
 
     # [Optional] automatic adjustment of the entropy coefficient
     if args.automatic_entropy_coefficient_tuning:
@@ -55,12 +59,16 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
                                             )
 
                 # handle feedback
-                handle_feedback(args, global_step, video_queue, stored_pairs, preference_buffer,
-                    feedback_event, notify, trajectory_pairs, run_name)
+                handle_feedback(args, global_step, video_queue, stored_pairs, human_labeled_preference_buffer,
+                                feedback_event, notify, trajectory_pairs, run_name)
 
                 ### REWARD MODEL TRAINING ###
                 with preference_mutex:
-                    entropy_loss, validation_loss, ratio, l2 = preference_optimizer.train_reward_models(preference_buffer, args.preference_batch_size)
+                    if args.surf:
+                        entropy_loss, validation_loss, ratio, l2 = surf(preference_optimizer, sampler, args, human_labeled_preference_buffer)
+                    else:
+                        entropy_loss, validation_loss, ratio, l2 = preference_optimizer.train_reward_models(human_labeled_preference_buffer,
+                                                                                       args.preference_batch_size)
 
                 writer.add_scalar("losses/entropy_loss", entropy_loss, global_step)
                 writer.add_scalar("losses/validation_loss", validation_loss, global_step)
@@ -81,6 +89,8 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
 
         # execute action
         next_obs, env_rewards, terminations, truncations, infos = envs.step(actions)
+        # Get the full state of the Mujoco Model
+        full_state = (envs.envs[0].unwrapped.data.qpos.copy(), envs.envs[0].unwrapped.data.qvel.copy())
 
         # in remaining exploration phase, calculate intrinsic reward
         if args.random_exploration_timesteps <= global_step < args.reward_learning_starts:
@@ -115,7 +125,7 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
                 real_next_obs[idx] = next_obs[idx]
 
         # Adding step results to Replay Buffer
-        rb.add(obs, real_next_obs, actions, env_rewards, model_rewards, terminations, infos)
+        rb.add(obs, real_next_obs, actions, env_rewards, model_rewards, terminations, infos, full_state)
         obs = next_obs
 
 

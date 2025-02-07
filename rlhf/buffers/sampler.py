@@ -6,12 +6,19 @@ from typing import List, Dict, Any
 ### TRAJECTORY SAMPLER ###
 @dataclass
 class TrajectorySamples:
+    """
+    This class saves and coverts sampled variables into tensors.
+    """
     states: torch.Tensor
     actions: torch.Tensor
     env_rewards: torch.Tensor
     infos: List[Dict[str, Any]]
+    full_states: Any
 
 class TrajectorySampler:
+    """
+    A Trajectory Sampler that samples out of our ReplayBuffer and saves them as trajectories.
+    """
     def __init__(self, rb, device):
         self.rb = rb
         self.device = device
@@ -24,6 +31,7 @@ class TrajectorySampler:
                                the most recent and earlier entries. Must be greater than `traj_length`.
         :param synthetic_feedback: Flag to indicate whether to include synthetic feedback.
                                        If True, includes `env_rewards` in the trajectory; otherwise excludes them.
+
         :return: TrajectorySamples: A named tuple containing the sampled trajectory:
                 - `states` (torch.Tensor): States of the trajectory, shape `(traj_length, state_dim)`.
                 - `actions` (torch.Tensor): Actions of the trajectory, shape `(traj_length, action_dim)`.
@@ -44,20 +52,17 @@ class TrajectorySampler:
         # extract states, actions, env_rewards
         states = torch.tensor(self.rb.observations[start_index:end_index], device=self.device)
         actions = torch.tensor(self.rb.actions[start_index:end_index], device=self.device)
+        env_rewards = torch.tensor(self.rb.rewards[start_index:end_index], device=self.device)
         infos = self.rb.infos[start_index:end_index]
+        full_states = self.rb.full_states[start_index:end_index]
 
-        if synthetic_feedback:
-            env_rewards = torch.tensor(self.rb.rewards[start_index:end_index], device=self.device)
-            env_rewards = env_rewards if env_rewards.ndim > 1 else env_rewards.unsqueeze(-1)
-        else:
-            env_rewards = None
-
-        # naming for better access
+        # name tensors for better access
         trajectory = TrajectorySamples(
             states=states if states.ndim > 1 else states.unsqueeze(-1),
             actions=actions if actions.ndim > 1 else actions.unsqueeze(-1),
-            env_rewards=env_rewards,
-            infos=infos
+            env_rewards=env_rewards if env_rewards.ndim > 1 else env_rewards.unsqueeze(-1),
+            infos=infos,
+            full_states=full_states,
         )
 
         return trajectory
@@ -65,6 +70,16 @@ class TrajectorySampler:
 
     # trajectory pair
     def uniform_trajectory_pair(self, traj_length, time_window, synthetic_feedback):
+        """
+        Sample two trajectories as a pair (tuple).
+        :param traj_length: Length of the trajectory in steps. Must be less than or equal to the current buffer size.
+        :param time_window: Relevant range within the replay buffer to sample from. Defines the range between
+                               the most recent and earlier entries. Must be greater than `traj_length`.
+        :param synthetic_feedback: Flag to indicate whether to include synthetic feedback.
+                                       If True, includes `env_rewards` in the trajectory; otherwise excludes them.
+
+        :return: Returns two trajectories saved as a tuple.
+        """
         trajectory1 = self.uniform_trajectory(traj_length, time_window, synthetic_feedback)
         trajectory2 = self.uniform_trajectory(traj_length, time_window, synthetic_feedback)
 
@@ -73,6 +88,10 @@ class TrajectorySampler:
 
     # batch of trajectories
     def uniform_trajectory_batch(self, batch_size, traj_length, time_window, synthetic_feedback):
+        """
+        Samples multiple trajectories at once.
+        :return: A list of trajectories.
+        """
         trajectories_batch = []
 
         for _ in range(batch_size):
@@ -85,6 +104,10 @@ class TrajectorySampler:
 
     # batch of trajectory pairs
     def uniform_trajectory_pair_batch(self, batch_size, traj_length, time_window, synthetic_feedback):
+        """
+        Samples multiple trajectory pairs at once.
+        :return: A list of trajectory pair tuples.
+        """
         trajectories_batch = []
 
         for _ in range(batch_size):
@@ -113,7 +136,7 @@ class TrajectorySampler:
 
         # Create empty list for variance: ((traj1, traj2), variance)
         variance_list = []
-        for _ in range(query_size * 3):
+        for _ in range(query_size * 10):
             # sample one trajectory pair
             traj_pair = self.uniform_trajectory_pair(traj_length, time_window, synthetic_feedback)
 

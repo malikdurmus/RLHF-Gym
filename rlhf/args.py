@@ -24,15 +24,15 @@ class Args:
     # -------------------------
 
     """
-    is_torch_deterministic (str): whether to ensure deterministic behavior by setting `torch.backends.cudnn.deterministic=False` 
-    enable_cuda (bool): whether to enable CUDA support by default
+    torch_deterministic (str): whether to ensure deterministic behavior by setting `torch.backends.cudnn.deterministic=False` 
+    cuda (bool): whether to enable CUDA support by default
     wandb_track (bool): whether to enable WandB tracking by default
     wandb_project_name (str): WandB project name 
     wandb_entity (str): WandB entity name (None = default user account)   
     """
 
-    is_torch_deterministic: bool = True
-    enable_cuda: bool = True
+    torch_deterministic: bool = False
+    cuda: bool = True
     wandb_track: bool = False
     wandb_project_name: str = "RLHF Agent Training"
     wandb_entity: str = None
@@ -102,7 +102,7 @@ class Args:
 
     """
     total_timesteps (int): total number of timesteps for the experiment
-    random_exploration_timesteps (int): number of timesteps for random exploration (phase 0.1)
+    random_exploration_timesteps (int): number of timesteps for random exploration
     reward_learning_starts (int): timestep at which reward learning starts
     """
 
@@ -136,14 +136,19 @@ class Args:
     k: int = 5
     normalize_int_rewards: bool = False
 
-    # TODO Remove? @malik
-    batch_processing: bool = True  # TODO: remove later, not needed
     """
-    # TODO Remove? @malik
-    # Evaluation arguments
-    eval_env_id: str = env_id
-    eval_max_steps: int = 10000
-    n_eval_episodes: int = 1000
-    eval_seed : int = 3
-    ###
+    surf (bool): Toggle SURF (Semi-Supervised Reward Learning with Data Augmentation)
+    tda_active (bool): Toggle Temporal Data Augmentation (TDA), which crops trajectory segments
+    ssl (bool): Enable semi-supervised learning (SSL) to use pseudo-labeling for reward learning
+    crop (int): Defines the intensity (crop size) for trajectory cropping in TDA. 
+                Determines min and max crop lengths dynamically based on trajectory length.
+    confidence_threshold (float): Minimum confidence required to accept pseudo-labels in SSL
+    loss_weight_ssl (float): Weighting factor for the SSL loss term in the reward learning objective
     """
+
+    surf: bool = True
+    tda_active: bool = True
+    ssl: bool = True
+    crop: int = 5
+    confidence_threshold: float = 0.99
+    loss_weight_ssl: float = 1.0
