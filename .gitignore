@@ -3,6 +3,8 @@
 /models
 /runs
 /videos
+/evaluation
+/models
 /wandb
 /.idea
 *.pyc
