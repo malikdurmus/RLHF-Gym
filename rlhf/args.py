@@ -141,7 +141,7 @@ class Args:
     normalize_int_rewards: bool = False
 
     # -------------------------
-    # SURF Arguments
+    # SURF arguments
     # -------------------------
 
     """
