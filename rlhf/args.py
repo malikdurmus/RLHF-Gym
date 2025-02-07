@@ -107,8 +107,8 @@ class Args:
     """
 
     total_timesteps: int = int(1e6)
-    random_exploration_timesteps: int = 1000
-    reward_learning_starts: int = 2000
+    random_exploration_timesteps: int = 2000
+    reward_learning_starts: int = 10000
 
     # -------------------------
     # Feedback query arguments
