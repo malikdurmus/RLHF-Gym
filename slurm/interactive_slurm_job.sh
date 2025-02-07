@@ -1,7 +1,4 @@
 #!/bin/bash
-PROJECT_DIR = ~/sep-groupb
-cd $PROJECT_DIR
-
 srun --job-name=python_interactive_job \
      --output=output_%j.log \
      --error=error_%j.log \
