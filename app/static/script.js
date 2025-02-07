@@ -108,7 +108,7 @@ async function submitFeedback() {
   }
 }
 
-// Display the explanation modal and hide  main content
+// Display the explanation modal and hide  main content 
 function displayExplanationModal() {
     const modal = document.getElementById("explanationModal");
     const closeRules = document.getElementById("modalCloseButton");

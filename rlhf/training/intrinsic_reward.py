@@ -1,4 +1,5 @@
 import numpy as np
+from rlhf.args import Args
 
 class IntrinsicRewardCalculator:
     """
@@ -17,6 +18,11 @@ class IntrinsicRewardCalculator:
         self.states = []
         self.k = k
 
+        # values for std. deviation calculation
+        self.n = 0
+        self.mean = 0
+        self.M2 = 0
+
     def add_state(self, state):
         """
         Adds a new state to the history of states.
@@ -24,6 +30,29 @@ class IntrinsicRewardCalculator:
         :param state: The state to add to the history.
         """
         self.states.append(state)
+
+    def update(self, new_value):
+        """
+        Updates the values for the running std.Deviation estimate
+
+        :param new_value: new intrinsic reward
+        """
+        self.n += 1
+        delta = new_value - self.mean
+        self.mean += delta / self.n
+        delta2 = new_value - self.mean
+        self.M2 += delta * delta2
+
+    def std_deviation(self):
+        """
+        Calculates the current standard deviation of all intrinsic rewards
+
+        :return: Current std. deviation
+        """
+        if self.n < 2:
+            return 1
+        else:
+            return (self.M2 / self.n) ** 0.5
 
     def compute_intrinsic_reward(self, state):
         """
@@ -49,6 +78,12 @@ class IntrinsicRewardCalculator:
 
         # Intrinsic reward
         reward = np.log(k_distance + 1e-6)
+
+        if Args.normalize_int_rewards:
+            # Update std. deviation values
+            self.update(reward)
+            # Normalize reward by dividing by standard devíation
+            reward = reward/self.std_deviation()
 
         return reward
 
