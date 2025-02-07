@@ -15,6 +15,11 @@ class IntrinsicRewardCalculator:
         self.states.append(state)
 
     def update(self, new_value):
+        """
+        Updates the values for the running std.Deviation estimate
+
+        :param new_value: newest k_distance
+        """
         self.n += 1
         delta = new_value - self.mean
         self.mean += delta / self.n
@@ -22,6 +27,11 @@ class IntrinsicRewardCalculator:
         self.M2 += delta * delta2
 
     def std_deviation(self):
+        """
+        Calculates the current standard deviation of k_distance values
+
+        :return: Current std. deviation
+        """
         if self.n < 2:
             return 1
         else:
@@ -45,9 +55,9 @@ class IntrinsicRewardCalculator:
 
         if Args.normalize_int_rewards:
             # Update std. deviation values
-            self.update(k_distance)
-            std_deviation = self.std_deviation()
-            reward = reward/std_deviation
+            self.update(reward)
+            # Normalize reward by dividing by standard devíation
+            reward = reward/self.std_deviation()
 
         return reward
 
