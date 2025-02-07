@@ -34,7 +34,7 @@ class Args:
     torch_deterministic: bool = False
     cuda: bool = True
     wandb_track: bool = False
-    wandb_project_name: str = "RLHF Agent Training"
+    wandb_project_name: str = "RLHF_Agent_Training"
     wandb_entity: str = None
 
     ###-----------------------------
@@ -123,10 +123,10 @@ class Args:
                             the remaining queries will be uniformly sampled
     """
 
-    synthetic_feedback: bool = True
+    synthetic_feedback: bool = False
     feedback_frequency: int = 10000
     trajectory_length: int = 90
-    total_queries: int = 5000
+    total_queries: int = 1400
     ensemble_ratio: int = 75
 
     """

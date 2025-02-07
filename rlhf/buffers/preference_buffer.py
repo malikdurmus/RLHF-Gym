@@ -1,5 +1,4 @@
 import numpy as np
-from pandas.core.indexers import validate_indices
 
 from rlhf.buffers.sampler import TrajectorySamples
 
