@@ -11,5 +11,5 @@ sbatch <<EOF
 
 module load python/3.8
 source venv/bin/activate
-xvfb-run -a python -u main.py --no-surf --no-ensemble_sampling
+xvfb-run -a python -u main.py --no-surf
 EOF
