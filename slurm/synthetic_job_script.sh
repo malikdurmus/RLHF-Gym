@@ -1,3 +1,4 @@
+cd ..
 sbatch <<EOF
 #!/bin/bash
 #SBATCH --job-name=RLFH
