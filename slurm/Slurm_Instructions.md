@@ -16,7 +16,7 @@ You can also use the PyCharm Remote Development tool for this
 
 
 
-Use git clone to clone the project. Go to your project directory
+Use git clone to clone the project, then navigate to your project home directory.
 
 ## 2. Create a Virtual Environment with Python 3.8
 ``` bash 
@@ -28,7 +28,7 @@ source myenv/bin/activate
 ```
 ## 4. Install the Required Packages
 ``` bash
-pip install -r requirements.txt
+pip install -r slurm/requirements.txt
 ```
 
 Now you can run jobs on SLURM
@@ -100,7 +100,7 @@ Forward the port by executing:
 ssh -L 6001:127.0.0.1:5000 durmusy@aleurit.cip.ifi.lmu.de
 ```
 
-Now you can go to the adress: (http://127.0.0.1:6001/) to access te application
+Now you can go to the adress: (http://127.0.0.1:6001/) to access the application
 
 **Notes**
 + You can run the application in multiple SLURM computers by executing srun command above multiple times in different terminals
@@ -122,13 +122,13 @@ You can go to those adresses and give feedback. All 3 apps are individual and do
 Use `sbatch` when you want to submit a job to Slurm in the background, especially for synthetic feedback that doesn’t require interaction.
 ### **Basic Command for Non-Interactive Jobs**
 
-Use the batch script provided in project home directory (`synthetic_job_script.sh`) with the following content:
+Use the batch script provided in the projects' slurm directory (`synthetic_job_script.sh`) with the following content:
 
 ```bash
 sbatch <<EOF
 #!/bin/bash
-#SBATCH --job-name=RLFH
-#SBATCH --comment=RLFH-training
+#SBATCH --job-name=RLHF
+#SBATCH --comment=RLHF-training
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=malikdurmus2@gmail.com
 #SBATCH --chdir=/home/d/durmusy/Desktop/GIT/sep-groupb
@@ -149,7 +149,7 @@ EOF
  
 
 - **replace the following**: 
-+ -mail-user= malikdurmus2@gmail.com
++ --mail-user= malikdurmus2@gmail.com
 + --chdir= /home/d/durmusy/Desktop/GIT/sep-groupb
 + --output= /home/d/durmusy/Desktop/GIT/sep-groupb/slurm.%j.%N.out
   
@@ -164,7 +164,7 @@ synthetic_job_script.sh
 
 Do not change the args in the args.py, rather keep the project in line with remote/main
 and give run the script above with different args:
-E.g.:
+For example:
 
 + xvfb-run -a python -u main.py
 + xvfb-run -a python -u main.py --no-tda
