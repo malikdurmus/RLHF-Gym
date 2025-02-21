@@ -51,10 +51,10 @@ def semi_supervised_labeling(preference_predictor, sampler, args, tda_active):
 
         # Generate pseudo-label and its confidence based on mean preference probability
         if mean_preference_prob > 0.5:
-            pseudo_label = 0  # segment_0 is preferred
+            pseudo_label = 1  # segment_0 is preferred  TODO: fix the labels
             confidence = mean_preference_prob  # Confidence is the predicted probability
         else:
-            pseudo_label = 1  # segment_1 is preferred
+            pseudo_label = 0  # segment_1 is preferred
             confidence = 1 - mean_preference_prob  # Confidence is 1 - predicted probability
 
         # Filter and add pseudo-labels to preference buffer based on confidence threshold

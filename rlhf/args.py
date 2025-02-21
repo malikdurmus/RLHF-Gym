@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+from typing import Optional
+
 
 @dataclass
 class Args:
@@ -12,12 +14,14 @@ class Args:
     env_id (str): environment ID
     seed (int): experiment seed for reproducibility
     batch_size (int): batch size for batch processing, depends on cpu/gpu
+    port (int): port to serve the flask app
     """
 
     exp_name: str = "RLHF_Agent"
     env_id: str = "Hopper-v5"
-    seed: int = 1
+    seed: Optional[int] = None
     batch_size: int = 1024
+    port: int = 5000
 
     # -------------------------
     # CUDA and WandB arguments
@@ -123,7 +127,7 @@ class Args:
                             the remaining queries will be uniformly sampled
     """
 
-    synthetic_feedback: bool = False
+    synthetic_feedback: bool = True
     feedback_frequency: int = 10000
     trajectory_length: int = 90
     total_queries: int = 1400
