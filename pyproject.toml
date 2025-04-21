@@ -22,7 +22,8 @@ python = ">=3.8,<3.11"
 tensorboard = "^2.10.0"
 wandb = "^0.13.11"
 torch = ">=1.12.1"
-# Replace to download cuda instead
+
+## Use the same version as in your original wheel (2.5.1)
 
 #You have to use torch 2.1.0 for slurm computers, since they are equipped with python3.8 and last torch version that supports 3.8 is 2.1.0
 #torch = { url = "https://download.pytorch.org/whl/cu124/torch-2.5.1%2Bcu124-cp310-cp310-win_amd64.whl" }
@@ -74,3 +75,8 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.extras]
 mujoco = ["mujoco", "imageio"]
+
+[[tool.poetry.source]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+priority = "explicit"

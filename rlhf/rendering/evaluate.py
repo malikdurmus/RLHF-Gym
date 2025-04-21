@@ -74,7 +74,7 @@ def evaluate_agent(eval_env_id, max_steps, n_eval_episodes, actor_policy, device
     std_reward = np.std(episode_rewards)
 
     # Print the mean and standard deviation of the rewards
-    print(mean_reward, std_reward)
+    print("Mean reward: ", mean_reward, "Standard deviation of rewards: " , std_reward)
 
 
 def record_replay_video(env_id, max_steps, actor_policy, out_directory, device):

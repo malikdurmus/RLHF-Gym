@@ -102,13 +102,13 @@ class Args:
 
     """
     total_timesteps (int): total number of timesteps for the experiment
-    pretraining_timesteps (int): number of timesteps for random exploration (phase 1)
-    unsupervised_timesteps (int): number of timesteps for unsupervised exploration (phase 2)
+    random_exploration_timesteps (int): number of timesteps for random exploration
+    reward_learning_starts (int): timestep at which reward learning starts
     """
 
+    random_exploration_timesteps: int = 1000
+    reward_learning_starts: int = 2000
     total_timesteps: int = int(1e6)
-    pretraining_timesteps: int = 2000
-    unsupervised_timesteps: int = 10000
 
     # -------------------------
     # Feedback query arguments
@@ -125,13 +125,25 @@ class Args:
 
     synthetic_feedback: bool = True
     ensemble_sampling: bool = True
-    feedback_frequency: int = 10000
+    feedback_frequency: int = 500
     trajectory_length: int = 90
     uniform_query_size: int = 100
     ensemble_query_size: int = int(uniform_query_size/10) # In SURF Paper this is set to uniform / 10
 
-    # SSL & TDA Arguments
-    # --------------------
+    # -------------------------
+    # Pretraining arguments
+    # -------------------------
+
+    """
+    k (int): number of nearest neighbors used to compute the intrinsic reward.
+    normalize_int_rewards (bool): whether to normalize the intrinsic rewards with a running std.Deviation estimate
+    """
+    k: int = 5
+    normalize_int_rewards: bool = False
+
+    # -------------------------
+    # SURF arguments
+    # -------------------------
 
     """
     surf (bool): Toggle SURF (Semi-Supervised Reward Learning with Data Augmentation)

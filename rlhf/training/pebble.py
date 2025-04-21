@@ -27,9 +27,9 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
     ### PEBBLE ALGO ###
     for global_step in range(args.total_timesteps):
         ### REWARD LEARNING ###
-        if global_step >= args.unsupervised_timesteps and global_step != 0:
+        if global_step >= args.reward_learning_starts and global_step != 0:
             ### FEEDBACK QUERY ###
-            if global_step % args.feedback_frequency == 0 or global_step == args.unsupervised_timesteps:
+            if global_step % args.feedback_frequency == 0 or global_step == args.reward_learning_starts:
                 # ensemble-sampling
                 if args.ensemble_sampling:
                     trajectory_pairs = sampler.ensemble_sampling(args.ensemble_query_size, args.uniform_query_size,
@@ -48,22 +48,25 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
 
                 with preference_mutex:
                     if args.surf:
-                        entropy_loss, ratio = surf(preference_optimizer, sampler, args, human_labeled_preference_buffer)
+                        entropy_loss, validation_loss, ratio, l2 = surf(preference_optimizer, sampler, args,
+                                                                        human_labeled_preference_buffer)
                     else:
-                        entropy_loss, ratio = preference_optimizer.train_reward_models(human_labeled_preference_buffer,
-                                                                                       args.preference_batch_size)
+                        entropy_loss, validation_loss, ratio, l2 = preference_optimizer.train_reward_models(
+                            human_labeled_preference_buffer,
+                            args.preference_batch_size)
 
                 writer.add_scalar("losses/entropy_loss", entropy_loss, global_step)
-                writer.add_scalar("losses/ratio", ratio, global_step)
+                writer.add_scalar("losses/validation_loss", validation_loss, global_step)
+                writer.add_scalar("losses/validation_ratio", ratio, global_step)
+                writer.add_scalar("losses/l2", l2, global_step)
 
                 # relabel replay buffer with updated reward networks
                 rb.relabel(reward_networks, device, args.batch_size)
 
         ### ACTION ###
         # choose random action
-        if global_step < args.pretraining_timesteps:
+        if global_step < args.random_exploration_timesteps:
             actions = np.array([envs.single_action_space.sample() for _ in range(envs.num_envs)])
-            int_rew_calc.add_state(obs)
         # policy/actor chooses action
         else:
             actions, _, _ = actor.get_action(torch.Tensor(obs).to(device))
@@ -75,9 +78,9 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
         full_state = (envs.envs[0].unwrapped.data.qpos.copy(), envs.envs[0].unwrapped.data.qvel.copy())
 
         # in remaining exploration phase, calculate intrinsic reward
-        if args.pretraining_timesteps <= global_step <= args.unsupervised_timesteps:
-            model_rewards = int_rew_calc.compute_intrinsic_reward(obs)
+        if args.random_exploration_timesteps <= global_step < args.reward_learning_starts:
             int_rew_calc.add_state(obs)
+            model_rewards = int_rew_calc.compute_intrinsic_reward(obs)
         # in reward learning phase, calculate reward based on reward model
         else:
             action = torch.tensor(actions, device=device, dtype=torch.float32)
@@ -85,7 +88,7 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
             model_rewards = []
             with torch.no_grad():
                 for reward_model in reward_networks:
-                    model_reward = reward_model.forward(action=action, observation=state) #TODO:
+                    model_reward = reward_model.forward(action=action, observation=state) #TODO: remove forward
                     model_rewards.append(model_reward.cpu().numpy())
             model_rewards = np.mean(model_rewards, axis=0)
         episodic_model_rewards += model_rewards
@@ -112,7 +115,7 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
 
 
         ### ACTOR-CRITIC TRAINING ###
-        if global_step >= args.pretraining_timesteps:
+        if global_step >= args.random_exploration_timesteps:
             # sample random minibatch
             data = rb.sample(args.replay_batch_size)
 

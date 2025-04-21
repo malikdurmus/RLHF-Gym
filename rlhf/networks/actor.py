@@ -5,7 +5,6 @@ import numpy as np
 LOG_STD_MAX = 2
 LOG_STD_MIN = -5
 
-# TODO: Enhanced documentation
 
 class Actor(nn.Module):
 
