@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+from typing import Optional
+
 
 @dataclass
 class Args:
@@ -12,20 +14,22 @@ class Args:
     env_id (str): environment ID
     seed (int): experiment seed for reproducibility
     batch_size (int): batch size for batch processing, depends on cpu/gpu
+    port (int): port to serve the flask app
     """
 
     exp_name: str = "RLHF_Agent"
     env_id: str = "Hopper-v5"
-    seed: int = 1
+    seed: Optional[int] = None
     batch_size: int = 1024
+    port: int = 5000
 
     # -------------------------
     # CUDA and WandB arguments
     # -------------------------
 
     """
-    is_torch_deterministic (str): whether to ensure deterministic behavior by setting `torch.backends.cudnn.deterministic=False` 
-    enable_cuda (bool): whether to enable CUDA support by default
+    torch_deterministic (str): whether to ensure deterministic behavior by setting `torch.backends.cudnn.deterministic=False` 
+    cuda (bool): whether to enable CUDA support by default
     wandb_track (bool): whether to enable WandB tracking by default
     wandb_project_name (str): WandB project name 
     wandb_entity (str): WandB entity name (None = default user account)   

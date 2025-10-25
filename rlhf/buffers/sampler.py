@@ -127,7 +127,7 @@ class TrajectorySampler:
 
         # Create empty list for variance: ((traj1, traj2), variance)
         variance_list = []
-        for _ in range(uniform_size):
+        for _ in range(uniform_size): #TODO: query_size * 10?
             # sample one trajectory pair
             traj_pair = self.uniform_trajectory_pair(traj_length, time_window, synthetic_feedback)
 
@@ -140,6 +140,8 @@ class TrajectorySampler:
             variance_list.append((traj_pair, variance))
 
         # sort list in descending order
-        sorted_variance = sorted(variance_list, key=lambda x: x[1], reverse=True)
+        sorted_variance = sorted(variance_list, key=lambda x: x[1], reverse=True) #TODO: Sampling might be wrong here!!
 
         return [element[0] for element in sorted_variance[:ensemble_size]]
+        # This first takes a random sample, then sorts it, and then chooses the one with the highest varience.
+        # only ensemble based, no uniform sampling. always takes the ones that have the most variance.

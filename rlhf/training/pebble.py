@@ -32,7 +32,7 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
             if global_step % args.feedback_frequency == 0 or global_step == args.reward_learning_starts:
                 # ensemble-sampling
                 if args.ensemble_sampling:
-                    trajectory_pairs = sampler.ensemble_sampling(args.ensemble_query_size, args.uniform_query_size,
+                    trajectory_pairs = sampler.ensemble_sampling(args.ensemble_query_size, args.uniform_query_size, #TODO: use extends, mix&fix uniform with ensemble
                                                                  args.trajectory_length, args.feedback_frequency,
                                                                  args.synthetic_feedback, preference_optimizer)
                 # uniform-sampling
@@ -51,7 +51,7 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
                         entropy_loss, validation_loss, ratio, l2 = surf(preference_optimizer, sampler, args,
                                                                         human_labeled_preference_buffer)
                     else:
-                        entropy_loss, validation_loss, ratio, l2 = preference_optimizer.train_reward_models(
+                        entropy_loss, validation_loss, ratio, l2 = preference_optimizer.train_reward_models( #TODO: pebble.py This might be critical (missing argument in sample_with_validation_sample at preference_buffer.py )
                             human_labeled_preference_buffer,
                             args.preference_batch_size)
 

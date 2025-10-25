@@ -19,12 +19,20 @@ from shared import video_queue, preference_mutex, stored_pairs, feedback_event
 
 if __name__ == "__main__":
     args = tyro.cli(Args)
+    # Generate random seed if not provided
+    if args.seed is None:
+        args.seed = random.randint(0, 2 ** 32 - 1)  # Random seed
     # Create the global run name and the folders
     run_name = f"{args.env_id}__{args.exp_name}__{args.seed}__{int(time.time())}"
     os.makedirs(os.path.join(f"videos/{run_name}"), exist_ok=True)
     os.makedirs(os.path.join(f"evaluation/{run_name}"), exist_ok=True)
     os.makedirs(os.path.join(f"models/{run_name}"), exist_ok=True)
 
+    print("RUN NAME: ", run_name)
+    print("\n=== Experiment Configuration ===")
+    for key, value in vars(args).items():
+        print(f"{key:30} {value}")
+    print("===============================\n")
 
     # Initialize writer
     writer = SummaryWriter(f"runs/{run_name}")
@@ -60,7 +68,7 @@ if __name__ == "__main__":
     sampler = TrajectorySampler(rb, device)
 
     # Initialize intrinsic reward calculator
-    int_rew_calc = IntrinsicRewardCalculator(k=5)
+    int_rew_calc = IntrinsicRewardCalculator(k=args.k)
 
     # Create app if human feedback is used
     if not args.synthetic_feedback:
@@ -85,7 +93,7 @@ if __name__ == "__main__":
     # Create a function to run the Flask app in a separate thread
     def run_flask_app():
         if not args.synthetic_feedback:  # human feedback
-            socketio.run(app, host="0.0.0.0", port=5000, debug=False, allow_unsafe_werkzeug=True)
+            socketio.run(app, host="0.0.0.0", port=args.port, debug=False, allow_unsafe_werkzeug=True)
 
 
     # Create an event to signal when training is done
