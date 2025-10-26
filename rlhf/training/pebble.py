@@ -30,15 +30,20 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
         if global_step >= args.reward_learning_starts and global_step != 0:
             ### FEEDBACK QUERY ###
             if global_step % args.feedback_frequency == 0 or global_step == args.reward_learning_starts:
+                trajectory_pairs = []
                 # ensemble-sampling
                 if args.ensemble_sampling:
-                    trajectory_pairs = sampler.ensemble_sampling(args.ensemble_query_size, args.uniform_query_size, #TODO: use extends, mix&fix uniform with ensemble
+                    trajectory_pairs.extend(sampler.
+                                            ensemble_sampling(args.ensemble_query_size, args.uniform_query_size, #TODO: use extends, mix&fix uniform with ensemble
                                                                  args.trajectory_length, args.feedback_frequency,
                                                                  args.synthetic_feedback, preference_optimizer)
+                                            )
                 # uniform-sampling
                 else:
-                    trajectory_pairs = sampler.uniform_trajectory_pair_batch(args.trajectory_length, args.feedback_frequency,
+                    trajectory_pairs.extend(sampler.
+                                            uniform_trajectory_pair_batch(args.trajectory_length, args.feedback_frequency,
                                                                              args.uniform_query_size, args.synthetic_feedback)
+                                            )
 
                 # handle feedback
                 handle_feedback(args, global_step, video_queue, stored_pairs, human_labeled_preference_buffer,
@@ -48,12 +53,12 @@ def train(envs, rb, actor, reward_networks, qf1, qf2, qf1_target, qf2_target, q_
 
                 with preference_mutex:
                     if args.surf:
-                        entropy_loss, validation_loss, ratio, l2 = surf(preference_optimizer, sampler, args,
-                                                                        human_labeled_preference_buffer)
+                        entropy_loss, validation_loss, ratio, l2 = surf(preference_optimizer, sampler, args,        #recent
+                                                                        human_labeled_preference_buffer, args.uniform_query_size)
                     else:
                         entropy_loss, validation_loss, ratio, l2 = preference_optimizer.train_reward_models( #TODO: pebble.py This might be critical (missing argument in sample_with_validation_sample at preference_buffer.py )
-                            human_labeled_preference_buffer,
-                            args.preference_batch_size)
+                            human_labeled_preference_buffer,       #recent
+                            args.preference_batch_size, args.uniform_query_size)
 
                 writer.add_scalar("losses/entropy_loss", entropy_loss, global_step)
                 writer.add_scalar("losses/validation_loss", validation_loss, global_step)

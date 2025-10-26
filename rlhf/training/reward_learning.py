@@ -67,7 +67,7 @@ class PreferencePredictor:
             self.l2 *= 1.05  # Increase L2 to reduce overfitting
             self._update_optimizers()
 
-    def train_reward_models(self, pb, batch_size):
+    def train_reward_models(self, pb, batch_size, recent_data_size):
         """
         Trains the reward models using the provided preference buffer and batch size.
 
@@ -78,6 +78,7 @@ class PreferencePredictor:
         Args:
             pb: The preference buffer containing human-labeled trajectory pairs.
             batch_size (int): The batch size used for training.
+            recent_data_size: The number of elements each feedback query
 
         Returns:
             tuple: A tuple containing:
@@ -94,7 +95,7 @@ class PreferencePredictor:
 
         for reward_model, optimizer in zip(self.reward_networks, self.optimizers):
             # Individual sampling for each model
-            sample, val_sample = pb.sample_with_validation_sample(batch_size, replace=True)
+            sample, val_sample = pb.sample_with_validation_sample(batch_size, recent_data_size, replace=True)
 
             # Compute loss for this model
             model_loss = self._compute_loss_batch(reward_model, sample)
@@ -129,7 +130,8 @@ class PreferencePredictor:
 
         return avg_post_update_loss, avg_val_loss, vloss_trainloss_ratio , self.l2
 
-    def train_reward_models_surf(self, augmented_preference_buffer, ssl_preference_buffer, batch_size, loss_weight_ssl):
+    def train_reward_models_surf(self, augmented_preference_buffer, ssl_preference_buffer,
+                                 batch_size, recent_data_size, loss_weight_ssl):
         """
         Trains the reward models using both augmented human-labeled data and pseudo-labeled data from SSL.
 
@@ -163,7 +165,8 @@ class PreferencePredictor:
         for reward_model, optimizer in zip(self.reward_networks, self.optimizers):
             # Sample human-labeled and validation samples from the augmented preference buffer
             human_labeled_sample, human_labeled_val_sample = (augmented_preference_buffer.
-                                                              sample_with_validation_sample(batch_size, replace=True))
+                                                              sample_with_validation_sample(batch_size, recent_data_size,
+                                                                                            replace=True))
 
 
             # Use the SSL buffer directly for pseudo-labeled data

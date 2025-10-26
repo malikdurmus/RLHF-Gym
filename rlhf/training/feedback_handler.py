@@ -1,4 +1,5 @@
 import uuid
+from tqdm import tqdm
 from rlhf.rendering.gym_renderer import render_trajectory_gym
 
 
@@ -24,7 +25,8 @@ def handle_feedback(args, global_step, video_queue, stored_pairs, preference_buf
     """
 
     if not args.synthetic_feedback: # human feedback
-        for query in range(len(trajectory_pairs)):
+
+        for query in tqdm(range(len(trajectory_pairs)), desc="Processing Observations") :
             trajectory_pair = trajectory_pairs[query]
             _render_and_queue_trajectories(args, query, global_step, video_queue, stored_pairs, trajectory_pair, run_name)
 

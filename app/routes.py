@@ -13,7 +13,7 @@ def init_routes(app, socketio, run_name, preference_buffer, video_queue, stored_
     def get_video_pairs():
         video_pairs = []
         while not video_queue.empty():
-            pair_id, _, _, video1_path, video2_path = video_queue.get()
+            pair_id, _, _, video1_path, video2_path = video_queue.get() #video_queue.get() should not be executed until the queue is full
             video_pairs.append({'id': pair_id, 'video1': video1_path, 'video2': video2_path})
         return jsonify({'video_pairs': video_pairs})
 

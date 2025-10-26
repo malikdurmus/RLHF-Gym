@@ -31,7 +31,7 @@ def semi_supervised_labeling(preference_predictor, sampler, args, tda_active):
 
     # Generate unlabeled trajectory pairs for pseudo-labeling
     unlabeled_trajectories_list = sampler.uniform_trajectory_pair_batch(
-        args.trajectory_length, args.feedback_frequency, labeled_batch_size, args.synthetic_feedback
+        labeled_batch_size, args.trajectory_length, args.feedback_frequency, args.synthetic_feedback
     )
 
     for trajectory_pair in unlabeled_trajectories_list:
@@ -53,7 +53,7 @@ def semi_supervised_labeling(preference_predictor, sampler, args, tda_active):
 
         # Generate pseudo-label and its confidence based on mean preference probability
         if mean_preference_prob > 0.5:
-            pseudo_label = 1  # segment_0 is preferred  TODO: fix the label mismatch in the project
+            pseudo_label = 1  # segment_0 is preferred  TODO: fix the label mismatch in the project (works, but doesnt make sense to label 1 when feedback is 0)
             confidence = mean_preference_prob  # Confidence is the predicted probability
         else:
             pseudo_label = 0  # segment_1 is preferred
@@ -65,7 +65,7 @@ def semi_supervised_labeling(preference_predictor, sampler, args, tda_active):
 
     return ssl_preference_buffer
 
-def surf(preference_optimizer, sampler, args, preference_buffer):
+def surf(preference_optimizer, sampler, args, preference_buffer, recent_data_size):
     """
     Implements the SURF (Semi-Supervised Reward Learning with Feedback) algorithm.
 
@@ -77,6 +77,7 @@ def surf(preference_optimizer, sampler, args, preference_buffer):
         sampler: The sampler used for generating trajectory pairs.
         args: Configuration arguments that control the behavior of the algorithm.
         preference_buffer: The buffer containing human-labeled preference data.
+        recent_data_size: The number of elements each feedback query
 
     Returns:
         entropy_loss (float): The entropy loss incurred during the training.
@@ -93,22 +94,25 @@ def surf(preference_optimizer, sampler, args, preference_buffer):
         )
 
         entropy_loss, validation_loss, ratio, l2 = preference_optimizer.train_reward_models_surf(
-            augmented_pb, ssl_preference_buffer, args.preference_batch_size, loss_weight_ssl=args.loss_weight_ssl
+            augmented_pb, ssl_preference_buffer, args.preference_batch_size,
+            recent_data_size, loss_weight_ssl=args.loss_weight_ssl
         )
     elif args.ssl:  # Semi-supervised labeling without TDA
         ssl_preference_buffer = semi_supervised_labeling(preference_optimizer, sampler, args, tda_active=False)
 
         unchanged_preference_buffer = preference_buffer.copy(apply_tda=False)
 
-        entropy_loss, validation_loss, ratio, l2 = preference_optimizer.train_reward_models_surf(unchanged_preference_buffer, ssl_preference_buffer,
-                                                                                                 args.preference_batch_size, loss_weight_ssl=args.loss_weight_ssl
+        entropy_loss, validation_loss, ratio, l2 = preference_optimizer.train_reward_models_surf(
+            unchanged_preference_buffer, ssl_preference_buffer, args.preference_batch_size, recent_data_size,
+            loss_weight_ssl=args.loss_weight_ssl
         )
     elif args.tda_active:  # Only TDA (no semi-supervised labeling)
         augmented_pb = preference_buffer.copy(
             apply_tda=True, crop_size = args.crop
         )
         entropy_loss, validation_loss, ratio, l2 = preference_optimizer.train_reward_models(augmented_pb,
-                                                                                            args.preference_batch_size)
+                                                                                            args.preference_batch_size,
+                                                                                            recent_data_size)
     else:
         raise Exception("If SURF is True, either tda_active or ssl must be True")
 

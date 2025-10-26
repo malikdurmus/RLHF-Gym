@@ -35,7 +35,7 @@ def _generate_images(env, observations):
     Generate images from a sequence of internal states of the mujoco model.
     """
     images = []
-    for full_state in tqdm(observations.full_states, desc="Processing Observations"):
+    for full_state in observations.full_states:
         try:
             qpos, qvel = full_state
             env.unwrapped.set_state(qpos, qvel)

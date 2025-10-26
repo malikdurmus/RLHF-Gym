@@ -127,9 +127,9 @@ class Args:
     ensemble_query_size (int): number of ensemble-based feedback samples requested during each feedback iteration
     """
 
-    synthetic_feedback: bool = True
+    synthetic_feedback: bool = False
     ensemble_sampling: bool = True
-    feedback_frequency: int = 500
+    feedback_frequency: int = 1000
     trajectory_length: int = 90
     uniform_query_size: int = 100
     ensemble_query_size: int = int(uniform_query_size/10) # In SURF Paper this is set to uniform / 10
