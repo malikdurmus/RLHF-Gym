@@ -1,4 +1,6 @@
 /poetry.lock
+/evaluation
+/models
 /runs
 /videos
 /wandb

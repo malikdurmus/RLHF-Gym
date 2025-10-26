@@ -19,15 +19,13 @@ def evaluate_agent(eval_env_id, max_steps, n_eval_episodes, actor_policy, device
     each episode, and computes the mean and standard deviation of the rewards
     across all episodes.
 
-    Args:
-        eval_env_id (str): The ID of the environment to evaluate the agent on (e.g., "CartPole-v1").
-        max_steps (int): Maximum number of steps to run the agent in each evaluation episode.
-        n_eval_episodes (int): Number of evaluation episodes to run the agent.
-        actor_policy (Actor): The trained actor policy (a model) used to generate actions for the agent.
-        device (torch.device): The device (CPU or GPU) where the model and tensor computations will occur.
+    :param eval_env_id: The ID of the environment to evaluate the agent on (e.g., "Hopper-v5").
+    :param max_steps: Maximum number of steps to run the agent in each evaluation episode.
+    :param n_eval_episodes: Number of evaluation episodes to run the agent.
+    :param actor_policy: The trained actor policy (a model) used to generate actions for the agent.
+    :param device: The device (CPU or GPU) where the model and tensor computations will occur.
 
-    Returns:
-        None: This function prints the mean and standard deviation of the rewards from all evaluation episodes.
+    :return: None. This function prints the mean and standard deviation of the rewards from all evaluation episodes.
 
     Notes:
         - The function assumes that `initialize_eval_env` is defined elsewhere to create the environment.
