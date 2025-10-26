@@ -55,14 +55,6 @@ folder. The .pth file for the trained model can be found in /models.
 
 Note: You will receive the video and model only when the total timesteps are completed
 
-## Credits
-This project was developed by:
-+ Aleksandar Mijatovic
-+ Martin Plank
-+ Thang Long Nguyen
-+ Tobias Huber
-+ Yusuf Malik Durmus
-
 ## Citation
 As previously mentioned, an implementation of SAC was used. This implementation can be found in the CleanRL
 Deep Reinforcement Learning library.
@@ -81,4 +73,13 @@ Deep Reinforcement Learning library.
 ```
 
 ## Project Status
-This project will no longer be maintained or supported after February 7, 2025.
+This project is maintained & supported by Yusuf Malik Durmus.
+
+### Credits
+This project is a supported fork of https://gitlab2.cip.ifi.lmu.de/plankm/sep-groupb which was initially developed by:
+
++ Yusuf Malik Durmus
++ Aleksandar Mijatovic
++ Martin Plank
++ Thang Long Nguyen
++ Tobias Huber
