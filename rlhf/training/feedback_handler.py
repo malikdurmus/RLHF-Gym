@@ -1,6 +1,7 @@
 import uuid
 from tqdm import tqdm
 from rlhf.rendering.gym_renderer import render_trajectory_gym
+from shared import video_queue_lock
 
 
 def handle_feedback(args, global_step, video_queue, stored_pairs, preference_buffer,
@@ -25,6 +26,7 @@ def handle_feedback(args, global_step, video_queue, stored_pairs, preference_buf
     """
 
     if not args.synthetic_feedback: # human feedback
+        video_queue_lock.acquire()
 
         for query in tqdm(range(len(trajectory_pairs)), desc="Processing Observations") :
             trajectory_pair = trajectory_pairs[query]
@@ -33,6 +35,7 @@ def handle_feedback(args, global_step, video_queue, stored_pairs, preference_buf
         if not video_queue.qsize() == len(trajectory_pairs):
             raise Exception("queue has more/less entries")
         elif video_queue.qsize() == len(trajectory_pairs):
+            video_queue_lock.release()
             notify()
 
         print("Waiting for user feedback...")
