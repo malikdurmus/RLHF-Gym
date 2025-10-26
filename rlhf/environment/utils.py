@@ -13,7 +13,7 @@ def make_env(env_id, seed):
                        max_episode_steps=1000)
     else:
         env = gym.make(env_id, render_mode="rgb_array", terminate_when_unhealthy=True,
-                       max_episode_steps=1000)
+                       max_episode_steps=1000) #TODO: check this.
 
     env = gym.wrappers.RecordEpisodeStatistics(env)
     env.action_space.seed(seed)  # Seed the action space for reproducibility

@@ -35,10 +35,10 @@ class Args:
     wandb_entity (str): WandB entity name (None = default user account)   
     """
 
-    torch_deterministic: bool = False
+    torch_deterministic: bool = True
     cuda: bool = True
     wandb_track: bool = False
-    wandb_project_name: str = "RLHF_Agent_Training"
+    wandb_project_name: str = "RLHF Agent Training"
     wandb_entity: str = None
 
     ###-----------------------------
@@ -61,7 +61,7 @@ class Args:
 
     gamma: float = 0.99
     target_smoothing_coefficient: float = 0.005
-    l2_regularization_coefficient: float = 0.001
+    l2_regularization_coefficient: float = 0.01
     reward_model_lr: float = 1e-3
     policy_lr: float = 3e-4
     q_network_lr: float = 1e-3
@@ -110,9 +110,9 @@ class Args:
     reward_learning_starts (int): timestep at which reward learning starts
     """
 
+    random_exploration_timesteps: int = 1000
+    reward_learning_starts: int = 2000
     total_timesteps: int = int(1e6)
-    random_exploration_timesteps: int = 2000
-    reward_learning_starts: int = 10000
 
     # -------------------------
     # Feedback query arguments
@@ -120,18 +120,19 @@ class Args:
 
     """   
     synthetic_feedback (bool): whether to use synthetic or human feedback
+    ensemble_sampling (bool): whether to use ensemble-based or uniform-based sampling
     feedback_frequency: how often feedback is requested 
-    trajectory_length (int): trajectory length of the segments to be compared
-    total_queries (int): number of total feedback over the whole training
-    ensemble_ratio (int): percentage (0-100) of feedback queries that should use ensemble-based sampling;
-                            the remaining queries will be uniformly sampled
+    trajectory_length (int): trajectory length during each feedback iteration
+    uniform_query_size (int): number of feedback samples requested uniformly during each feedback iteration
+    ensemble_query_size (int): number of ensemble-based feedback samples requested during each feedback iteration
     """
 
-    synthetic_feedback: bool = True
-    feedback_frequency: int = 10000
+    synthetic_feedback: bool = False
+    ensemble_sampling: bool = True
+    feedback_frequency: int = 1000
     trajectory_length: int = 90
-    total_queries: int = 1400
-    ensemble_ratio: int = 75
+    uniform_query_size: int = 100
+    ensemble_query_size: int = int(uniform_query_size/10) # In SURF Paper this is set to uniform / 10
 
     # -------------------------
     # Pretraining arguments

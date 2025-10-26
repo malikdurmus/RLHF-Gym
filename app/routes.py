@@ -1,6 +1,7 @@
 from flask import request, jsonify, send_from_directory
 import os
 from .utils import TEMPLATES_DIR
+from shared import  video_queue_lock
 
 def init_routes(app, socketio, run_name, preference_buffer, video_queue, stored_pairs, feedback_event, preference_mutex):
     @app.route("/", methods=["GET"])
@@ -12,10 +13,12 @@ def init_routes(app, socketio, run_name, preference_buffer, video_queue, stored_
     @app.route('/get_video_pairs', methods=["GET"])
     def get_video_pairs():
         video_pairs = []
-        while not video_queue.empty():
-            pair_id, _, _, video1_path, video2_path = video_queue.get()
-            video_pairs.append({'id': pair_id, 'video1': video1_path, 'video2': video2_path})
-        return jsonify({'video_pairs': video_pairs})
+        with video_queue_lock:
+            while not video_queue.empty():
+                pair_id, _, _, video1_path, video2_path = video_queue.get()
+                video_pairs.append({'id': pair_id, 'video1': video1_path, 'video2': video2_path})
+            return jsonify({'video_pairs': video_pairs})
+
 
     # Return the current run name
     @app.route("/get_run_name", methods=["GET"])
@@ -31,7 +34,11 @@ def init_routes(app, socketio, run_name, preference_buffer, video_queue, stored_
     # Handle preferences from the user
     @app.route('/submit_preferences', methods=['POST'])
     def submit_preferences():
-        feedback = request.json.get('preferences', [])
+        data = request.get_json()
+        if not data:
+            return jsonify({'status': 'error', 'message': 'Invalid JSON'}), 400
+            ##TODO: implement a recovery from here, or let the user know the session is gone
+        feedback = data.get('preferences', [])
         print("Received feedback: ", feedback)
         # Iterate over every user feedback
         for feedback_item in feedback:

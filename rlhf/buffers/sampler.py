@@ -70,16 +70,6 @@ class TrajectorySampler:
 
     # trajectory pair
     def uniform_trajectory_pair(self, traj_length, time_window, synthetic_feedback):
-        """
-        Sample two trajectories as a pair (tuple).
-        :param traj_length: Length of the trajectory in steps. Must be less than or equal to the current buffer size.
-        :param time_window: Relevant range within the replay buffer to sample from. Defines the range between
-                               the most recent and earlier entries. Must be greater than `traj_length`.
-        :param synthetic_feedback: Flag to indicate whether to include synthetic feedback.
-                                       If True, includes `env_rewards` in the trajectory; otherwise excludes them.
-
-        :return: Returns two trajectories saved as a tuple.
-        """
         trajectory1 = self.uniform_trajectory(traj_length, time_window, synthetic_feedback)
         trajectory2 = self.uniform_trajectory(traj_length, time_window, synthetic_feedback)
 
@@ -117,11 +107,12 @@ class TrajectorySampler:
 
         return trajectories_batch
 
-    def ensemble_sampling(self, query_size, traj_length, time_window, synthetic_feedback, preference_optimizer):
+    def ensemble_sampling(self,ensemble_size, uniform_size, traj_length, time_window, synthetic_feedback, preference_optimizer):
         """
         Performs ensemble-based sampling by evaluating variance across an ensemble of predicted probabilities.
 
-        :param query_size: Number of trajectory pairs to sample
+        :param ensemble_size: Number of trajectory pairs to select with the highest variance.
+        :param uniform_size: Number of trajectory pairs to sample uniformly before selecting the top pairs.
         :param traj_length: Length of the trajectory in steps. Must be less than or equal to the current buffer size.
         :param time_window: Relevant range within the replay buffer to sample from. Defines the range between
                             the most recent and earlier entries. Must be greater than `traj_length`.
@@ -136,7 +127,7 @@ class TrajectorySampler:
 
         # Create empty list for variance: ((traj1, traj2), variance)
         variance_list = []
-        for _ in range(query_size * 10):
+        for _ in range(uniform_size): #TODO: query_size * 10?
             # sample one trajectory pair
             traj_pair = self.uniform_trajectory_pair(traj_length, time_window, synthetic_feedback)
 
@@ -149,6 +140,8 @@ class TrajectorySampler:
             variance_list.append((traj_pair, variance))
 
         # sort list in descending order
-        sorted_variance = sorted(variance_list, key=lambda x: x[1], reverse=True)
+        sorted_variance = sorted(variance_list, key=lambda x: x[1], reverse=True) #TODO: Sampling might be wrong here!!
 
-        return [element[0] for element in sorted_variance[:query_size]]
+        return [element[0] for element in sorted_variance[:ensemble_size]]
+        # This first takes a random sample, then sorts it, and then chooses the one with the highest varience.
+        # only ensemble based, no uniform sampling. always takes the ones that have the most variance.

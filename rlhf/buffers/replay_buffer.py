@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 from stable_baselines3.common.buffers import ReplayBuffer
-from gym import spaces
+from gymnasium import spaces
 from typing import Union, NamedTuple
 
 class ReplayBufferSamples(NamedTuple):

@@ -8,7 +8,7 @@ LOG_STD_MIN = -5
 
 class Actor(nn.Module):
     """
-    Actor network for our algorithm.
+    Actor network for the algorithm.
     """
     # Neural network architecture
     def __init__(self, env):

@@ -1,7 +1,7 @@
 import numpy as np
 from rlhf.args import Args
 
-class IntrinsicRewardCalculator:
+class IntrinsicRewardCalculator: #TODO: the distances are not calculated optimally in this calculation. fix this
     """
     A class for calculating intrinsic rewards based on the novelty of states.
 

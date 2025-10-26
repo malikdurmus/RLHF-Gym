@@ -19,10 +19,12 @@ class PreferencePredictor:
     def __init__(self, reward_networks: list, reward_model_lr, device, l2):
         """
         Initializes the PreferencePredictor with the specified parameters.
-        :param reward_networks: List of reward models (neural networks) used for predicting preferences.
-        :param reward_model_lr: Learning rate for the reward models.
-        :param device: The device (e.g., "cuda" or "cpu") where models and data are loaded.
-        :param l2: The L2 regularization coefficient used in the optimizer.
+
+        Args:
+            reward_networks (list): List of reward models (neural networks) used for predicting preferences.
+            reward_model_lr (float): Learning rate for the reward models.
+            device: The device (e.g., "cuda" or "cpu") where models and data are loaded.
+            l2 (float): The L2 regularization coefficient used in the optimizer.
         """
         self.reward_networks = reward_networks
         self.device = device
@@ -34,7 +36,8 @@ class PreferencePredictor:
         """
         Initializes Adam optimizers for each reward network with the specified learning rate and L2 regularization.
 
-        :return: A list of Adam optimizers, one for each reward model.
+        Returns:
+            list: A list of Adam optimizers, one for each reward model.
         """
         return [
             optim.Adam(
@@ -72,15 +75,15 @@ class PreferencePredictor:
         and updates the model parameters using an optimizer. It also validates the models
         using a validation subset of the preference buffer.
 
-        :param pb: The preference buffer containing human-labeled trajectory pairs.
-        :param batch_size: The batch size used for training.
-        :param recent_data_size: The number of elements each feedback query
+        Args:
+            pb: The preference buffer containing human-labeled trajectory pairs.
+            batch_size (int): The batch size used for training.
+            recent_data_size: The number of elements each feedback query
 
-        :return: A tuple containing:
-        - avg_post_update_loss (float): The average training loss after update.
-        - avg_val_loss (float): The average validation loss over all models.
-        - ratio (float): The ratio of the validation loss to the training loss.
-        - l2 (float): The updated L2 regularization coefficient.
+        Returns:
+            tuple: A tuple containing:
+                - avg_entropy_loss (float): The average entropy loss over all models.
+                - ratio (float): The ratio of the validation loss to the training loss.
         """
         val_losses = []
         post_update_losses = []
@@ -119,12 +122,13 @@ class PreferencePredictor:
         avg_val_loss = sum(val_losses) / len(val_losses)
         avg_post_update_loss = sum(post_update_losses) / len(post_update_losses)
 
-        ratio = avg_val_loss / avg_post_update_loss
+        # Calculate ratio of validation loss to training loss
+        vloss_trainloss_ratio  = avg_val_loss / avg_post_update_loss
 
         # Adjust L2 regularization based on the ratio: Keep validation loss between 1.1 and 1.5
-        self._adjust_l2(ratio)
+        self._adjust_l2(vloss_trainloss_ratio )
 
-        return avg_post_update_loss, avg_val_loss, ratio, self.l2
+        return avg_post_update_loss, avg_val_loss, vloss_trainloss_ratio , self.l2
 
     def train_reward_models_surf(self, augmented_preference_buffer, ssl_preference_buffer,
                                  batch_size, recent_data_size, loss_weight_ssl):
@@ -134,17 +138,16 @@ class PreferencePredictor:
         This function combines the human-labeled data in the augmented preference buffer and the pseudo-labeled
         data in the SSL buffer, applying the given weight to the pseudo-labeled loss.
 
-        :param augmented_preference_buffer: The preference buffer with human-labeled trajectory pairs, possibly augmented.
-        :param ssl_preference_buffer: The preference buffer containing pseudo-labeled trajectory pairs.
-        :param batch_size: The batch size used for training.
-        :param recent_data_size: The number of elements each feedback query
-        :param loss_weight_ssl: The weight applied to the loss from pseudo-labeled data.
+        Args:
+            augmented_preference_buffer: The preference buffer with human-labeled trajectory pairs, possibly augmented.
+            ssl_preference_buffer: The preference buffer containing pseudo-labeled trajectory pairs.
+            batch_size (int): The batch size used for training.
+            loss_weight_ssl (float): The weight applied to the loss from pseudo-labeled data.
 
-        :return: A tuple containing:
-            - avg_post_update_loss (float): The average training loss after update.
-            - avg_val_loss (float): The average validation loss.
-            - ratio (float): The ratio of the validation loss to the training loss.
-            - l2 (float): The updated L2 regularization coefficient.
+        Returns:
+            tuple: A tuple containing:
+                - entropy_loss (float): The average entropy loss over all models.
+                - ratio (float): The ratio of the validation loss to the training loss.
         """
         val_losses = []
         post_update_losses = []
@@ -198,19 +201,22 @@ class PreferencePredictor:
         avg_val_loss = sum(val_losses) / len(val_losses)
         avg_post_update_loss = sum(post_update_losses) / len(post_update_losses)
 
-        ratio = avg_val_loss / avg_post_update_loss
+        vloss_trainloss_ratio  = avg_val_loss / avg_post_update_loss
 
         # Adjust L2 regularization based on the ratio: Keep validation loss between 1.1 and 1.5
-        self._adjust_l2(ratio)
+        self._adjust_l2(vloss_trainloss_ratio )
 
-        return avg_post_update_loss, avg_val_loss, ratio, self.l2
+        return avg_post_update_loss, avg_val_loss, vloss_trainloss_ratio , self.l2
 
     def compute_predicted_probabilities(self, trajectories):
         """
         Computes predicted probabilities for human preference between two trajectories from each reward model.
-        :param trajectories: A tuple containing two trajectory objects (trajectory0, trajectory1).
 
-        :return: A list of predicted probabilities from each reward model
+        Args:
+            trajectories (tuple): A tuple containing two trajectory objects (trajectory0, trajectory1).
+
+        Returns:
+            list: A list of predicted probabilities from each reward model in the ensemble.
         """
         predictions = [
             self.compute_predicted_probability_batch(reward_model, trajectories)
@@ -221,10 +227,13 @@ class PreferencePredictor:
     def _compute_loss_batch(self, reward_model, sample):
         """
         Computes the cumulative entropy loss for the given sample from the preference buffer.
-        :param reward_model: The reward model used to compute preferences.
-        :param sample: A batch of trajectory pairs and their corresponding human feedback labels.
 
-        :return: The cumulative entropy loss for the batch.
+        Args:
+            reward_model: The reward model used to compute preferences.
+            sample: A batch of trajectory pairs and their corresponding human feedback labels.
+
+        Returns:
+            torch.Tensor: The cumulative entropy loss for the batch.
         """
         entropy_loss = torch.tensor(0.0, requires_grad=True)
 
@@ -246,11 +255,13 @@ class PreferencePredictor:
     def compute_predicted_probability_batch(self, reward_model, trajectories):
         """
         Computes the predicted probability of human preference for trajectory0 over trajectory1.
-        :param reward_model: The reward model used to compute preferences.
-        :param trajectories: A tuple containing two trajectory objects (trajectory0, trajectory1).
 
-        :return: The predicted probability of human preference for trajectory0 over trajectory1.
-        :raises ValueError: If the lengths of the two trajectories do not match.
+        Args:
+            reward_model: The reward model used to compute preferences.
+            trajectories (tuple): A tuple containing two trajectory objects (trajectory0, trajectory1).
+
+        Returns:
+            torch.Tensor: The predicted probability of human preference for trajectory0 over trajectory1.
         """
         trajectory0, trajectory1 = trajectories
 

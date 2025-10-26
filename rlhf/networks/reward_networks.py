@@ -37,6 +37,5 @@ class EstimatedRewardNetwork(nn.Module):
         x = F.relu(self.fc2(x))
         reward = self.fc3(x)
 
-
         return reward
 
